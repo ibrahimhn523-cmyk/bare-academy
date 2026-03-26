@@ -88,7 +88,7 @@
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 6px;
-            font-family: Arial, sans-serif;
+            font-family: 'TheYearofHandicrafts', Arial, sans-serif;
             font-size: 1em;
             transition: border-color 0.3s;
         }
@@ -131,32 +131,56 @@
             font-size: 1.2em;
         }
 
-        .term-item {
-            margin-bottom: 15px;
+        .terms-list {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 20px;
+        }
+
+        .terms-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 0.95em;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .terms-list li::before {
+            content: '●';
+            color: var(--secondary-color);
+            font-size: 1em;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .agree-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 18px;
             padding: 12px;
             background-color: white;
             border-radius: 6px;
-            transition: background-color 0.3s;
+            border: 2px solid var(--secondary-color);
         }
 
-        .term-item:hover {
-            background-color: #f0f0f0;
-        }
-
-        .term-item input[type="checkbox"] {
-            margin-left: 10px;
-            width: 18px;
-            height: 18px;
+        .agree-row input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
             cursor: pointer;
+            flex-shrink: 0;
+            accent-color: var(--primary-color);
         }
 
-        .term-item label {
+        .agree-row label {
             display: inline;
             margin: 0;
-            font-weight: normal;
-            font-size: 0.95em;
+            font-weight: bold;
+            font-size: 1em;
             cursor: pointer;
-            margin-bottom: 0;
+            color: var(--primary-color);
         }
 
         /* ==================== الأزرار ==================== */
@@ -264,7 +288,7 @@
             <!-- ==================== الاسم الثلاثي ==================== -->
             <div class="form-group">
                 <label for="fullName">الاسم الثلاثي <span style="color: red;">*</span></label>
-                <input type="text" id="fullName" name="fullName" placeholder="مثال: محمد أحمد علي" required>
+                <input type="text" id="fullName" name="fullName" placeholder="" required>
                 <div class="error-message" id="fullNameError"></div>
             </div>
 
@@ -293,7 +317,7 @@
 
             <!-- ==================== حقل النص الإضافي ==================== -->
             <div class="form-group" id="otherCategoryInput">
-                <input type="text" id="otherCategory" placeholder="حدد المرحلة">
+                <input type="text" id="otherCategory" placeholder="">
                 <div class="error-message" id="otherCategoryError"></div>
             </div>
 
@@ -301,34 +325,18 @@
             <div class="terms-section">
                 <h3>⚠️ تنبيهات وشروط مهمة</h3>
 
-                <!-- البند الأول -->
-                <div class="term-item">
-                    <input type="checkbox" id="term1" name="term1" required>
-                    <label for="term1">تحتفظ الأكاديمية بحق تصوير طالبك وتوثيق أنشطته على الصور والفيديوهات، واستخدامها في الترويج عبر وسائل التواصل الاجتماعي والمواد التسويقية، دون مسؤولية قانونية.</label>
-                </div>
+                <ul class="terms-list">
+                    <li>تحتفظ الأكاديمية بحق تصوير طالبك وتوثيق أنشطته على الصور والفيديوهات، واستخدامها في الترويج عبر وسائل التواصل الاجتماعي والمواد التسويقية، دون مسؤولية قانونية.</li>
+                    <li>نبذل قصارى جهدنا لضمان سلامة طلابنا، لكننا نتمنى تفهمكم أن الأكاديمية غير مسؤولة عن أي إصابات قد تحدث.</li>
+                    <li>يجب على ولي الأمر الإفصاح الكامل عن أي مشاكل صحية أو حالات طبية لدى الطالب لضمان سلامته أثناء البرنامج.</li>
+                    <li>نرجو الالتزام بأوقات البرنامج المحددة. الأكاديمية غير مسؤولة عن الطالب خارج هذه الأوقات.</li>
+                    <li>تحتفظ الأكاديمية بحق استبعاد أي طالب في حالات المخالفة المتكررة.</li>
+                </ul>
 
-                <!-- البند الثاني -->
-                <div class="term-item">
-                    <input type="checkbox" id="term2" name="term2" required>
-                    <label for="term2">نبذل قصارى جهدنا لضمان سلامة طلابنا، لكننا نتمنى تفهمكم أن الأكاديمية غير مسؤولة عن أي إصابات قد تحدث.</label>
-                </div>
-
-                <!-- البند الثالث -->
-                <div class="term-item">
-                    <input type="checkbox" id="term3" name="term3" required>
-                    <label for="term3">يجب على ولي الأمر الإفصاح الكامل عن أي مشاكل صحية أو حالات طبية لدى الطالب لضمان سلامته أثناء البرنامج.</label>
-                </div>
-
-                <!-- البند الرابع -->
-                <div class="term-item">
-                    <input type="checkbox" id="term4" name="term4" required>
-                    <label for="term4">نرجو الالتزام بأوقات البرنامج المحددة. الأكاديمية غير مسؤولة عن الطالب خارج هذه الأوقات.</label>
-                </div>
-
-                <!-- البند الخامس -->
-                <div class="term-item">
-                    <input type="checkbox" id="term5" name="term5" required>
-                    <label for="term5">تحتفظ الأكاديمية بحق استبعاد أي طالب في حالات المخالفة المتكررة.</label>
+                <!-- checkbox موافقة واحد -->
+                <div class="agree-row">
+                    <input type="checkbox" id="agreeAll" name="agreeAll" required>
+                    <label for="agreeAll">أوافق على جميع الشروط والتنبيهات المذكورة أعلاه</label>
                 </div>
             </div>
 
@@ -396,17 +404,9 @@
                 }
             }
 
-            // التحقق من الشروط
-            const terms = [
-                document.getElementById('term1').checked,
-                document.getElementById('term2').checked,
-                document.getElementById('term3').checked,
-                document.getElementById('term4').checked,
-                document.getElementById('term5').checked
-            ];
-
-            if (!terms.every(t => t === true)) {
-                alert('يجب الموافقة على جميع الشروط والتنبيهات');
+            // التحقق من الموافقة على الشروط
+            if (!document.getElementById('agreeAll').checked) {
+                alert('يجب الموافقة على الشروط والتنبيهات للمتابعة');
                 isValid = false;
             }
 
