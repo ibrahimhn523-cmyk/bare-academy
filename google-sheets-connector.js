@@ -32,7 +32,12 @@ const SHEETS_CONNECTOR = (function () {
         LOGS:          ['id','operation','description','performedBy','timestamp','status']
     };
 
-    let _scriptUrl = localStorage.getItem('appsScriptUrl') || '';
+    const _DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwleug6tXApiaOvghnOSZaw6H_HVU-xIqupeXsdBftPLuHLw4PEEksvYwz4HxlTgTsJ/exec';
+    // حفظ الرابط الافتراضي في localStorage إن لم يكن موجوداً
+    if (!localStorage.getItem('appsScriptUrl')) {
+        localStorage.setItem('appsScriptUrl', _DEFAULT_SCRIPT_URL);
+    }
+    let _scriptUrl = localStorage.getItem('appsScriptUrl') || _DEFAULT_SCRIPT_URL;
 
     // --------------------------------------------------------
     // قراءة ورقة كاملة → مصفوفة كائنات
