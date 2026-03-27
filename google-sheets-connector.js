@@ -79,7 +79,7 @@ const SHEETS_CONNECTOR = (function () {
     // --------------------------------------------------------
     async function callScript(action, data = {}) {
         if (!_scriptUrl) throw new Error('لم يتم تكوين رابط Google Apps Script بعد');
-        const body = JSON.stringify({ action, ...data });
+        const body = JSON.stringify({ action, password: 'bareadmin1212', ...data });
         const res = await fetch(_scriptUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -87,7 +87,7 @@ const SHEETS_CONNECTOR = (function () {
         });
         if (!res.ok) throw new Error(`Apps Script HTTP ${res.status}`);
         const json = await res.json();
-        if (json.error) throw new Error(json.error);
+        if (!json.ok) throw new Error(json.error || 'خطأ غير معروف من Apps Script');
         return json;
     }
 

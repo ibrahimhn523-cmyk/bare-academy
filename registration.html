@@ -449,11 +449,20 @@
             };
 
             try {
-                // إرسال إلى Google Sheets (مؤقتاً سيتم استخدام Apps Script)
-                // للآن، نحفظ البيانات محلياً ونعرض رسالة نجاح
-                
-                // محاكاة التأخير
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // إرسال البيانات إلى Google Apps Script → Google Sheets
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action:   'addStudent',
+                        password: 'bareadmin1212',
+                        data:     formData
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+                if (!result.ok) throw new Error(result.error || 'فشل الحفظ في Sheets');
 
                 // إظهار رسالة النجاح
                 showSuccessMessage();
@@ -466,7 +475,7 @@
 
             } catch (error) {
                 console.error('خطأ في الإرسال:', error);
-                alert('حدث خطأ في الإرسال. يرجى المحاولة لاحقاً.');
+                alert('حدث خطأ في الإرسال: ' + error.message + '\nيرجى المحاولة لاحقاً.');
             } finally {
                 document.getElementById('loading').classList.remove('show');
             }
