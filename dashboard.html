@@ -31,39 +31,70 @@
         /* ==================== تسجيل الدخول ==================== */
         #loginScreen{
             display:flex;justify-content:center;align-items:center;min-height:100vh;
-            background:linear-gradient(135deg, var(--primary) 0%, #1a2438 100%);
+            background:#ffffff;
         }
         .login-box{
-            background:#fff;padding:45px 40px;border-radius:16px;
-            box-shadow:0 12px 32px rgba(0,0,0,0.3);width:380px;max-width:95%;text-align:center;
+            background:var(--primary);padding:48px 40px 40px;border-radius:20px;
+            box-shadow:0 16px 48px rgba(45,54,81,0.22);width:400px;max-width:95%;text-align:center;
         }
-        .login-box img{width:80px;margin-bottom:15px;}
-        .login-box h2{color:var(--primary);margin-bottom:8px;font-size:1.6em;}
-        .login-box p{color:#888;margin-bottom:28px;font-size:.9em;}
+        .login-logo-wrap{
+            width:90px;height:90px;background:#fff;border-radius:50%;
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 20px;box-shadow:0 4px 16px rgba(0,0,0,0.15);
+        }
+        .login-logo-wrap img{width:62px;height:62px;object-fit:contain;}
+        .login-logo-icon{font-size:2.4em;line-height:1;}
+        .login-box h2{color:#fff;margin-bottom:6px;font-size:1.7em;font-weight:bold;}
+        .login-box p{color:rgba(255,255,255,.65);margin-bottom:30px;font-size:.9em;}
         .login-box input{
-            width:100%;padding:13px 16px;margin-bottom:16px;
-            border:1.5px solid #ddd;border-radius:8px;font-size:1em;
+            width:100%;padding:13px 16px;margin-bottom:14px;
+            border:none;border-radius:10px;font-size:1em;
             font-family:'TheYearofHandicrafts',Arial,sans-serif;
-            transition:border-color .3s;
+            background:rgba(255,255,255,.12);color:#fff;
+            transition:background .3s,box-shadow .3s;
         }
-        .login-box input:focus{outline:none;border-color:var(--secondary);}
+        .login-box input::placeholder{color:rgba(255,255,255,.45);}
+        .login-box input:focus{
+            outline:none;background:rgba(255,255,255,.2);
+            box-shadow:0 0 0 2px var(--secondary);
+        }
         .login-box button{
-            width:100%;padding:14px;background:var(--primary);color:#fff;
-            border:none;border-radius:8px;font-size:1.1em;cursor:pointer;
-            font-family:'TheYearofHandicrafts',Arial,sans-serif;transition:all .3s;
+            width:100%;padding:14px;background:var(--secondary);color:var(--primary);
+            border:none;border-radius:10px;font-size:1.1em;cursor:pointer;font-weight:bold;
+            font-family:'TheYearofHandicrafts',Arial,sans-serif;transition:all .3s;margin-top:4px;
         }
-        .login-box button:hover{background:#1a2438;transform:translateY(-1px);}
-        .login-error{color:var(--danger);margin-bottom:12px;display:none;font-size:.95em;}
+        .login-box button:hover{background:#c9a226;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.25);}
+        .login-error{
+            color:#ffcdd2;background:rgba(244,67,54,.2);border-radius:8px;
+            padding:10px 14px;margin-bottom:14px;display:none;font-size:.9em;
+        }
 
         /* ==================== لوحة التحكم ==================== */
-        #dashboardScreen{display:none;}
+        #dashboardScreen{display:none;overflow-x:hidden;}
         #dashboardScreen.active{display:flex;}
 
         /* ==================== الشريط الجانبي ==================== */
         .sidebar{
             width:var(--sidebar-w);background:var(--primary);min-height:100vh;
-            display:flex;flex-direction:column;position:fixed;right:0;top:0;bottom:0;
-            z-index:100;transition:transform .3s;overflow-y:auto;
+            display:flex;flex-direction:column;
+            position:fixed;right:0;top:0;bottom:0;
+            z-index:200;
+            transition:transform .32s cubic-bezier(.4,0,.2,1),box-shadow .32s;
+            overflow-y:auto;overflow-x:hidden;
+            will-change:transform;
+        }
+        /* Desktop: sidebar always visible */
+        @media(min-width:769px){
+            .sidebar{transform:translateX(0) !important;box-shadow:none;}
+            .sidebar-overlay{display:none !important;}
+        }
+        /* Mobile: sidebar hidden by default, shown when .open */
+        @media(max-width:768px){
+            .sidebar{transform:translateX(100%);}
+            .sidebar.open{
+                transform:translateX(0);
+                box-shadow:-8px 0 32px rgba(0,0,0,.35);
+            }
         }
         .sidebar-header{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
         .sidebar-header img{width:52px;display:block;margin:0 auto 10px;}
@@ -73,30 +104,39 @@
         .sidebar-nav a{
             display:flex;align-items:center;gap:10px;padding:12px 14px;color:rgba(255,255,255,.85);
             text-decoration:none;border-radius:8px;margin-bottom:4px;cursor:pointer;
-            transition:all .25s;font-size:.97em;
+            transition:background .2s,color .2s,transform .15s;font-size:.97em;
         }
-        .sidebar-nav a:hover,.sidebar-nav a.active{
+        .sidebar-nav a:hover{background:rgba(212,175,55,.18);color:#fff;transform:translateX(-3px);}
+        .sidebar-nav a.active{
             background:var(--secondary);color:var(--primary);font-weight:bold;
         }
         .sidebar-nav a .nav-icon{font-size:1.1em;width:22px;text-align:center;flex-shrink:0;}
         .sidebar-nav .coming-soon{opacity:.5;cursor:default;}
-        .sidebar-nav .coming-soon:hover{background:transparent;color:rgba(255,255,255,.85);}
+        .sidebar-nav .coming-soon:hover{background:transparent !important;color:rgba(255,255,255,.85) !important;transform:none !important;}
         .sidebar-footer{padding:16px 12px;border-top:1px solid rgba(255,255,255,.1);}
         .sidebar-footer a{
             display:flex;align-items:center;gap:10px;padding:11px 14px;
-            color:#ff8a80;text-decoration:none;border-radius:8px;cursor:pointer;transition:all .25s;
+            color:#ff8a80;text-decoration:none;border-radius:8px;cursor:pointer;
+            transition:background .2s;
         }
         .sidebar-footer a:hover{background:rgba(244,67,54,.15);}
 
         /* ==================== المحتوى الرئيسي ==================== */
-        .main-wrap{margin-right:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;}
+        .main-wrap{
+            margin-right:var(--sidebar-w);min-height:100vh;
+            display:flex;flex-direction:column;
+            overflow-x:hidden;min-width:0;
+            transition:margin-right .32s cubic-bezier(.4,0,.2,1);
+        }
+        @media(max-width:768px){.main-wrap{margin-right:0;}}
         .main-header{
             background:#fff;padding:16px 28px;display:flex;align-items:center;
-            justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.08);position:sticky;top:0;z-index:50;
+            justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.08);
+            position:sticky;top:0;z-index:50;min-width:0;
         }
         .main-header h3{color:var(--primary);font-size:1.2em;}
-        .main-header .header-info{display:flex;align-items:center;gap:14px;color:#888;font-size:.9em;}
-        .main-content{padding:28px;flex:1;}
+        .main-header .header-info{display:flex;align-items:center;gap:14px;color:#888;font-size:.9em;flex-shrink:0;}
+        .main-content{padding:28px;flex:1;min-width:0;overflow-x:hidden;}
 
         .page{display:none;}
         .page.active{display:block;}
@@ -250,22 +290,43 @@
 
         /* ==================== Mobile ==================== */
         @media(max-width:768px){
-            .sidebar{transform:translateX(100%);width:240px;}
-            .sidebar.open{transform:translateX(0);}
-            .main-wrap{margin-right:0;}
             .main-header{padding:12px 16px;}
             .main-content{padding:16px;}
             .form-grid{grid-template-columns:1fr;}
             .form-group.full{grid-column:1;}
             .kpi-grid{grid-template-columns:1fr 1fr;}
             .charts-grid{grid-template-columns:1fr;}
-            .mobile-menu-btn{display:block;}
+            .filter-bar input,.filter-bar select{min-width:140px;flex:1;}
+            .page-title{font-size:1.4em;}
         }
+        @media(max-width:480px){
+            .kpi-grid{grid-template-columns:1fr;}
+            .form-actions{flex-direction:column;}
+            .btn-lg{width:100%;}
+            .main-header .header-info span:first-child{display:none;}
+        }
+        /* Burger button: visible only on mobile */
         .mobile-menu-btn{
-            display:none;background:none;border:none;cursor:pointer;font-size:1.4em;color:var(--primary);
+            display:none;background:none;border:none;cursor:pointer;
+            font-size:1.5em;color:var(--primary);padding:4px 6px;
+            border-radius:6px;transition:background .2s;line-height:1;
         }
-        .sidebar-overlay{position:fixed;inset:0;z-index:99;background:rgba(0,0,0,.4);display:none;}
+        .mobile-menu-btn:hover{background:rgba(45,54,81,.08);}
+        @media(max-width:768px){.mobile-menu-btn{display:block;}}
+
+        /* Overlay: only for mobile */
+        .sidebar-overlay{
+            position:fixed;inset:0;z-index:199;
+            background:rgba(0,0,0,.45);
+            display:none;
+            transition:opacity .32s;
+        }
         .sidebar-overlay.active{display:block;}
+
+        /* No horizontal scroll anywhere */
+        html,body{overflow-x:hidden;max-width:100%;}
+        .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+        .filter-bar{overflow-x:visible;}
     </style>
 </head>
 <body>
@@ -273,13 +334,16 @@
 <!-- ==================== شاشة تسجيل الدخول ==================== -->
 <div id="loginScreen">
     <div class="login-box">
-        <img src="./image/bare-logo.png" alt="شعار بارع" onerror="this.style.display='none'">
+        <div class="login-logo-wrap">
+            <img src="./image/bare-logo.png" alt="شعار بارع"
+                 onerror="this.parentElement.innerHTML='<span class=\'login-logo-icon\'>🎓</span>'">
+        </div>
         <h2>أكاديمية بارع</h2>
         <p>لوحة التحكم الإدارية</p>
         <div class="login-error" id="loginError">⛔ كلمة المرور غير صحيحة</div>
-        <input type="password" id="passwordInput" placeholder="كلمة المرور"
+        <input type="password" id="passwordInput" placeholder="🔑  كلمة المرور"
                onkeydown="if(event.key==='Enter') login()">
-        <button onclick="login()">🔐 دخول</button>
+        <button onclick="login()">دخول</button>
     </div>
 </div>
 
@@ -325,7 +389,7 @@
     </div>
 
     <!-- غطاء Mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- المحتوى الرئيسي -->
     <div class="main-wrap">
@@ -974,11 +1038,17 @@
     function openSidebar() {
         document.getElementById('sidebar').classList.add('open');
         document.getElementById('sidebarOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden'; // منع scroll الخلفية
     }
     function closeSidebar() {
         document.getElementById('sidebar').classList.remove('open');
         document.getElementById('sidebarOverlay').classList.remove('active');
+        document.body.style.overflow = '';
     }
+    // إغلاق عند النقر على الـ overlay
+    document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
+    // إغلاق بـ Escape key
+    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSidebar(); });
 
     // =============================================
     // Toast Notification
