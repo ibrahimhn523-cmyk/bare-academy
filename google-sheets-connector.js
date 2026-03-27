@@ -186,16 +186,18 @@ const StudentsDB = {
             const rows = await SHEETS_CONNECTOR.readSheet(SHEETS_CONNECTOR.SHEETS.STUDENTS);
             const parsed = rows
                 .map(r => ({
-                    id: parseInt(r.id) || 0,
-                    fullName:  r.fullName  || '',
-                    phone:     r.phone     || '',
-                    category:  r.category  || '',
-                    status:    r.status    || 'نشط',
-                    notes:     r.notes     || '',
-                    createdAt: r.createdAt || ''
+                    // يدعم كلا التسميتين: camelCase (بعد الإصلاح) و English (قبل)
+                    id:        parseInt(r.id || r['ID']) || 0,
+                    fullName:  r.fullName  || r['Student Name']     || '',
+                    phone:     r.phone     || r['Phone']            || '',
+                    category:  r.category  || r['Category']         || '',
+                    status:    r.status    || r['Student Type']      || 'نشط',
+                    notes:     r.notes     || r['Notes']            || '',
+                    createdAt: r.createdAt || r['Registration Date'] || r['Status'] || ''
                 }))
                 .filter(s => s.id > 0);
             LOCAL_DB.set('students', parsed);
+            console.log(`[StudentsDB] ✅ تم تحميل ${parsed.length} طالب من Sheets`);
             return parsed;
         } catch (e) {
             console.error('[StudentsDB] ❌ فشل تحميل البيانات من Sheets:', e.message);
