@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>لوحة التحكم - أكاديمية بارع</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="./google-sheets-api.js"></script>
-    <script src="./google-sheets-integration.js"></script>
+    <script src="./google-sheets-connector.js"></script>
     <style>
         /* ==================== الخطوط ==================== */
         @font-face { font-family:'TheYearofHandicrafts'; src:url('fonts/TheYearofHandicrafts-Regular.otf') format('opentype'); font-weight:normal; }
@@ -1095,33 +1094,28 @@
     }
 
     async function submitAddStudent() {
-        const fullName = document.getElementById('add_fullName').value.trim();
-        const phone = document.getElementById('add_phone').value.trim();
-        const categoryRaw = document.getElementById('add_category').value;
-        const category = categoryRaw === 'أخرى'
+        const fullName     = document.getElementById('add_fullName').value.trim();
+        const phone        = document.getElementById('add_phone').value.trim();
+        const categoryRaw  = document.getElementById('add_category').value;
+        const category     = categoryRaw === 'أخرى'
             ? document.getElementById('add_otherCategory').value.trim()
             : categoryRaw;
-        const paymentType = document.getElementById('add_paymentType').value;
-        const status = document.getElementById('add_status').value;
-        const startDate = document.getElementById('add_startDate').value;
+        const startDate    = document.getElementById('add_startDate').value;
         const durationDays = document.getElementById('add_durationDays').value;
-        const notes = document.getElementById('add_notes').value.trim();
+        const notes        = document.getElementById('add_notes').value.trim();
 
         if (!fullName || fullName.length < 5) return showToast('الاسم الثلاثي يجب أن يكون 5 أحرف على الأقل', 'error');
-        if (!/^05\d{8}$/.test(phone)) return showToast('رقم الجوال غير صحيح (05xxxxxxxxx)', 'error');
-        if (!category) return showToast('يرجى اختيار الفئة الدراسية', 'error');
-        if (!paymentType) return showToast('يرجى اختيار نوع الدفعة', 'error');
+        if (!/^05\d{8}$/.test(phone))         return showToast('رقم الجوال غير صحيح (05xxxxxxxxx)', 'error');
+        if (!category)                         return showToast('يرجى اختيار الفئة الدراسية', 'error');
 
         try {
-            const student = await StudentsDB.add({ fullName, phone, category, status, notes });
+            const student = await StudentsDB.add({ fullName, phone, category, status: 'نشط', notes });
             if (startDate && durationDays) {
                 await SubscriptionsDB.add({
-                    studentId: student.id,
+                    studentId:   student.id,
                     studentName: fullName,
-                    paymentType,
                     durationDays,
-                    startDate,
-                    status
+                    startDate
                 });
             }
             showToast(`تم تسجيل الطالب "${fullName}" بنجاح`);
@@ -1132,13 +1126,9 @@
     }
 
     function resetAddStudentForm() {
-        ['add_fullName','add_phone','add_otherCategory','add_startDate','add_durationDays','add_notes'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        ['add_fullName','add_phone','add_otherCategory','add_startDate','add_durationDays','add_notes']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         document.getElementById('add_category').value = '';
-        document.getElementById('add_paymentType').value = '';
-        document.getElementById('add_status').value = 'نشط';
         document.getElementById('add_otherCategoryGroup').style.display = 'none';
     }
 
