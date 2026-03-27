@@ -18,8 +18,8 @@
         *{margin:0;padding:0;box-sizing:border-box;}
         :root{
             --primary:#2D3651;
-            --secondary:#D4AF37;
-            --bg:#F5E6D3;
+            --secondary:#c19d2e;
+            --bg:#f8fafc;
             --dark:#333;
             --success:#4CAF50;
             --danger:#f44336;
@@ -125,7 +125,7 @@
 
         /* ==================== المحتوى الرئيسي ==================== */
         .main-wrap{
-            flex:1;min-width:0;
+            flex:1;min-width:0;width:0; /* width:0 يمنع overflow مع flex:1 */
             display:flex;flex-direction:column;
             overflow-x:hidden;overflow-y:auto;
             height:100vh;
@@ -135,10 +135,16 @@
             display:flex;align-items:center;justify-content:space-between;
             box-shadow:0 1px 4px rgba(0,0,0,.08);
             position:sticky;top:0;z-index:50;flex-shrink:0;
+            width:100%;
         }
         .main-header h3{color:var(--primary);font-size:1.2em;min-width:0;}
         .main-header .header-info{display:flex;align-items:center;gap:14px;color:#888;font-size:.9em;flex-shrink:0;}
-        .main-content{padding:28px;flex:1;min-width:0;overflow-x:hidden;}
+        .main-content{
+            padding:28px;flex:1;
+            width:100%;min-width:0;
+            overflow-x:hidden;box-sizing:border-box;
+        }
+        @media(max-width:768px){.main-content{padding:16px;}}
 
         .page{display:none;}
         .page.active{display:block;}
@@ -447,23 +453,6 @@
                         <div class="form-group" id="add_otherCategoryGroup" style="display:none;">
                             <label>حدد الفئة</label>
                             <input type="text" id="add_otherCategory">
-                        </div>
-                        <div class="form-group">
-                            <label>نوع الدفعة <span style="color:red">*</span></label>
-                            <select id="add_paymentType">
-                                <option value="">-- اختر نوع الدفعة --</option>
-                                <option>دفعة كاملة</option>
-                                <option>الدفعة الأولى</option>
-                                <option>الدفعة الثانية</option>
-                                <option>تجربة</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>حالة الاشتراك</label>
-                            <select id="add_status">
-                                <option value="نشط">نشط</option>
-                                <option value="معلق">معلق</option>
-                            </select>
                         </div>
                         <div class="form-group">
                             <label>تاريخ بداية الاشتراك</label>
