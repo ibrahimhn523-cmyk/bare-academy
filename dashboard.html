@@ -70,31 +70,23 @@
         }
 
         /* ==================== لوحة التحكم ==================== */
-        #dashboardScreen{display:none;overflow-x:hidden;}
-        #dashboardScreen.active{display:flex;}
+        #dashboardScreen{display:none;}
+        #dashboardScreen.active{
+            display:flex;flex-direction:row;
+            width:100%;min-height:100vh;
+            overflow:hidden; /* حاوية القص الرئيسية */
+        }
 
-        /* ==================== الشريط الجانبي ==================== */
+        /* ==================== الشريط الجانبي (Desktop: sticky في الـ flex) ==================== */
         .sidebar{
-            width:var(--sidebar-w);background:var(--primary);min-height:100vh;
+            width:var(--sidebar-w);flex-shrink:0;
+            background:var(--primary);
             display:flex;flex-direction:column;
-            position:fixed;right:0;top:0;bottom:0;
-            z-index:200;
-            transition:transform .32s cubic-bezier(.4,0,.2,1),box-shadow .32s;
+            height:100vh;position:sticky;top:0;
             overflow-y:auto;overflow-x:hidden;
+            transition:transform .32s cubic-bezier(.4,0,.2,1),box-shadow .32s;
             will-change:transform;
-        }
-        /* Desktop: sidebar always visible */
-        @media(min-width:769px){
-            .sidebar{transform:translateX(0) !important;box-shadow:none;}
-            .sidebar-overlay{display:none !important;}
-        }
-        /* Mobile: sidebar hidden by default, shown when .open */
-        @media(max-width:768px){
-            .sidebar{transform:translateX(100%);}
-            .sidebar.open{
-                transform:translateX(0);
-                box-shadow:-8px 0 32px rgba(0,0,0,.35);
-            }
+            z-index:200;
         }
         .sidebar-header{padding:24px 20px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
         .sidebar-header img{width:52px;display:block;margin:0 auto 10px;}
@@ -107,34 +99,44 @@
             transition:background .2s,color .2s,transform .15s;font-size:.97em;
         }
         .sidebar-nav a:hover{background:rgba(212,175,55,.18);color:#fff;transform:translateX(-3px);}
-        .sidebar-nav a.active{
-            background:var(--secondary);color:var(--primary);font-weight:bold;
-        }
+        .sidebar-nav a.active{background:var(--secondary);color:var(--primary);font-weight:bold;}
         .sidebar-nav a .nav-icon{font-size:1.1em;width:22px;text-align:center;flex-shrink:0;}
         .sidebar-nav .coming-soon{opacity:.5;cursor:default;}
         .sidebar-nav .coming-soon:hover{background:transparent !important;color:rgba(255,255,255,.85) !important;transform:none !important;}
         .sidebar-footer{padding:16px 12px;border-top:1px solid rgba(255,255,255,.1);}
         .sidebar-footer a{
             display:flex;align-items:center;gap:10px;padding:11px 14px;
-            color:#ff8a80;text-decoration:none;border-radius:8px;cursor:pointer;
-            transition:background .2s;
+            color:#ff8a80;text-decoration:none;border-radius:8px;cursor:pointer;transition:background .2s;
         }
         .sidebar-footer a:hover{background:rgba(244,67,54,.15);}
 
+        /* ==================== Mobile: Sidebar كـ Drawer ==================== */
+        @media(max-width:768px){
+            .sidebar{
+                position:fixed;right:0;top:0;bottom:0;
+                transform:translateX(100%);
+                height:100%;box-shadow:none;
+            }
+            .sidebar.active{
+                transform:translateX(0);
+                box-shadow:-6px 0 28px rgba(0,0,0,.35);
+            }
+        }
+
         /* ==================== المحتوى الرئيسي ==================== */
         .main-wrap{
-            margin-right:var(--sidebar-w);min-height:100vh;
+            flex:1;min-width:0;
             display:flex;flex-direction:column;
-            overflow-x:hidden;min-width:0;
-            transition:margin-right .32s cubic-bezier(.4,0,.2,1);
+            overflow-x:hidden;overflow-y:auto;
+            height:100vh;
         }
-        @media(max-width:768px){.main-wrap{margin-right:0;}}
         .main-header{
-            background:#fff;padding:16px 28px;display:flex;align-items:center;
-            justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.08);
-            position:sticky;top:0;z-index:50;min-width:0;
+            background:#fff;padding:16px 28px;
+            display:flex;align-items:center;justify-content:space-between;
+            box-shadow:0 1px 4px rgba(0,0,0,.08);
+            position:sticky;top:0;z-index:50;flex-shrink:0;
         }
-        .main-header h3{color:var(--primary);font-size:1.2em;}
+        .main-header h3{color:var(--primary);font-size:1.2em;min-width:0;}
         .main-header .header-info{display:flex;align-items:center;gap:14px;color:#888;font-size:.9em;flex-shrink:0;}
         .main-content{padding:28px;flex:1;min-width:0;overflow-x:hidden;}
 
@@ -305,26 +307,34 @@
             .btn-lg{width:100%;}
             .main-header .header-info span:first-child{display:none;}
         }
-        /* Burger button: visible only on mobile */
-        .mobile-menu-btn{
-            display:none;background:none;border:none;cursor:pointer;
-            font-size:1.5em;color:var(--primary);padding:4px 6px;
-            border-radius:6px;transition:background .2s;line-height:1;
-        }
-        .mobile-menu-btn:hover{background:rgba(45,54,81,.08);}
-        @media(max-width:768px){.mobile-menu-btn{display:block;}}
 
-        /* Overlay: only for mobile */
-        .sidebar-overlay{
-            position:fixed;inset:0;z-index:199;
-            background:rgba(0,0,0,.45);
-            display:none;
-            transition:opacity .32s;
+        /* ==================== Burger Button ==================== */
+        .burger-btn{
+            display:none; /* مخفي على Desktop */
+            background:var(--primary);color:#fff;border:none;
+            width:38px;height:38px;border-radius:8px;
+            font-size:1.25em;cursor:pointer;line-height:1;
+            align-items:center;justify-content:center;
+            transition:background .2s,transform .15s;flex-shrink:0;
         }
-        .sidebar-overlay.active{display:block;}
+        .burger-btn:hover{background:#1a2438;transform:scale(1.07);}
+        @media(max-width:768px){.burger-btn{display:flex;}}
+        /* إخفاء الـ burger كلياً على Desktop */
+        @media(min-width:769px){.burger-btn{display:none !important;}}
 
-        /* No horizontal scroll anywhere */
-        html,body{overflow-x:hidden;max-width:100%;}
+        /* ==================== Backdrop (Mobile Overlay) ==================== */
+        .backdrop{
+            display:none;position:fixed;inset:0;
+            background:rgba(0,0,0,0);z-index:199;
+            transition:background .32s ease-in-out;
+        }
+        .backdrop.active{
+            display:block;background:rgba(0,0,0,.5);
+        }
+        @media(min-width:769px){.backdrop{display:none !important;}}
+
+        /* ==================== منع Horizontal Scroll كلياً ==================== */
+        html,body{overflow-x:hidden;max-width:100%;width:100%;}
         .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
         .filter-bar{overflow-x:visible;}
     </style>
@@ -334,9 +344,8 @@
 <!-- ==================== شاشة تسجيل الدخول ==================== -->
 <div id="loginScreen">
     <div class="login-box">
-        <div class="login-logo-wrap">
-            <img src="./image/bare-logo.png" alt="شعار بارع"
-                 onerror="this.parentElement.innerHTML='<span class=\'login-logo-icon\'>🎓</span>'">
+        <div class="login-logo-wrap" id="loginLogoWrap">
+            <img src="./image/bare-logo.png" alt="شعار بارع" id="loginLogoImg">
         </div>
         <h2>أكاديمية بارع</h2>
         <p>لوحة التحكم الإدارية</p>
@@ -349,6 +358,9 @@
 
 <!-- ==================== لوحة التحكم ==================== -->
 <div id="dashboardScreen">
+
+    <!-- Backdrop للموبايل -->
+    <div class="backdrop" id="backdrop"></div>
 
     <!-- الشريط الجانبي -->
     <div class="sidebar" id="sidebar">
@@ -388,14 +400,11 @@
         </div>
     </div>
 
-    <!-- غطاء Mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
     <!-- المحتوى الرئيسي -->
     <div class="main-wrap">
         <div class="main-header">
-            <div style="display:flex;align-items:center;gap:14px;">
-                <button class="mobile-menu-btn" onclick="openSidebar()">☰</button>
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="burger-btn" id="burgerBtn" onclick="toggleSidebar()" title="القائمة">☰</button>
                 <h3 id="pageTitle">تسجيل طالب جديد</h3>
             </div>
             <div class="header-info">
@@ -1033,22 +1042,44 @@
     }
 
     // =============================================
-    // Mobile Sidebar
+    // Sidebar (Responsive Drawer)
     // =============================================
+    function toggleSidebar() {
+        const sidebar  = document.getElementById('sidebar');
+        const backdrop = document.getElementById('backdrop');
+        const isOpen   = sidebar.classList.contains('active');
+        if (isOpen) { closeSidebar(); } else { openSidebar(); }
+    }
     function openSidebar() {
-        document.getElementById('sidebar').classList.add('open');
-        document.getElementById('sidebarOverlay').classList.add('active');
-        document.body.style.overflow = 'hidden'; // منع scroll الخلفية
+        document.getElementById('sidebar').classList.add('active');
+        document.getElementById('backdrop').classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
     function closeSidebar() {
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('sidebarOverlay').classList.remove('active');
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('backdrop').classList.remove('active');
         document.body.style.overflow = '';
     }
-    // إغلاق عند النقر على الـ overlay
-    document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar);
-    // إغلاق بـ Escape key
-    document.addEventListener('keydown', e => { if(e.key === 'Escape') closeSidebar(); });
+    // إغلاق عند النقر على الـ backdrop
+    document.getElementById('backdrop').addEventListener('click', closeSidebar);
+    // إغلاق بـ Escape
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+    // عند resize: إغلاق الـ drawer تلقائياً على Desktop
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 769) { closeSidebar(); }
+    });
+
+    // =============================================
+    // Logo Fallback (شاشة الدخول)
+    // =============================================
+    (function(){
+        const img = document.getElementById('loginLogoImg');
+        if (!img) return;
+        img.onerror = function() {
+            const wrap = document.getElementById('loginLogoWrap');
+            if (wrap) wrap.innerHTML = '<span style="font-size:2.6em;line-height:1;">🎓</span>';
+        };
+    })();
 
     // =============================================
     // Toast Notification
