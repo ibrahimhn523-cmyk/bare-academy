@@ -198,16 +198,18 @@ const StudentsDB = {
             LOCAL_DB.set('students', parsed);
             return parsed;
         } catch (e) {
-            console.warn('[StudentsDB] استخدام بيانات محلية:', e.message);
-            return LOCAL_DB.get('students');
+            console.error('[StudentsDB] ❌ فشل تحميل البيانات من Sheets:', e.message);
+            const cached = LOCAL_DB.get('students');
+            if (!cached.length) console.warn('[StudentsDB] لا توجد بيانات محلية — الجدول سيكون فارغاً');
+            return cached;
         }
     },
 
     async add(data) {
         const students = LOCAL_DB.get('students');
-        const id = LOCAL_DB.nextId('students');
+        const localId = LOCAL_DB.nextId('students');
         const student = {
-            id,
+            id:        localId,
             fullName:  data.fullName,
             phone:     data.phone,
             category:  data.category,
@@ -218,10 +220,17 @@ const StudentsDB = {
         students.push(student);
         LOCAL_DB.set('students', students);
 
-        _syncAppend(SHEETS_CONNECTOR.SHEETS.STUDENTS, [
-            id, student.fullName, student.phone, student.category,
-            student.status, student.notes, student.createdAt
-        ]);
+        // استخدام addStudent المخصصة (تتحقق من الـ headers + تسجل في LOGS)
+        SHEETS_CONNECTOR.callScript('addStudent', { data: student })
+            .then(res => {
+                // مزامنة الـ ID الفعلي من Sheets مع المحلي
+                if (res.id && parseInt(res.id) !== localId) {
+                    const all = LOCAL_DB.get('students');
+                    const idx = all.findIndex(s => s.id === localId);
+                    if (idx !== -1) { all[idx].id = parseInt(res.id); LOCAL_DB.set('students', all); }
+                }
+            })
+            .catch(e => console.error('[StudentsDB] ❌ فشل حفظ الطالب في Sheets:', e.message));
 
         LogsDB.add('إضافة طالب', `تم تسجيل الطالب: ${student.fullName}`);
         return student;
@@ -287,7 +296,7 @@ const SubscriptionsDB = {
             LOCAL_DB.set('subscriptions', parsed);
             return parsed;
         } catch (e) {
-            console.warn('[SubscriptionsDB] استخدام بيانات محلية:', e.message);
+            console.error('[SubscriptionsDB] ❌ فشل تحميل البيانات من Sheets:', e.message);
             return LOCAL_DB.get('subscriptions');
         }
     },
@@ -360,7 +369,7 @@ const PaymentsDB = {
             LOCAL_DB.set('payments', parsed);
             return parsed;
         } catch (e) {
-            console.warn('[PaymentsDB] استخدام بيانات محلية:', e.message);
+            console.error('[PaymentsDB] ❌ فشل تحميل البيانات من Sheets:', e.message);
             return LOCAL_DB.get('payments');
         }
     },
@@ -391,13 +400,16 @@ const PaymentsDB = {
         payments.push(payment);
         LOCAL_DB.set('payments', payments);
 
-        _syncAppend(SHEETS_CONNECTOR.SHEETS.PAYMENTS, [
-            id, payment.studentId, payment.studentName, payment.subscriptionId,
-            payment.requiredAmount, payment.paidAmount, payment.remainingAmount,
-            payment.paymentStatus, payment.paymentMethod, payment.paymentMethodOther,
-            payment.paymentDate, payment.durationDays, payment.startDate, payment.endDate,
-            payment.notes, payment.createdAt
-        ]);
+        // استخدام addPayment المخصصة (تحسب المتبقي + تسجل في LOGS)
+        SHEETS_CONNECTOR.callScript('addPayment', { data: payment })
+            .then(res => {
+                if (res.id && parseInt(res.id) !== id) {
+                    const all = LOCAL_DB.get('payments');
+                    const idx = all.findIndex(p => p.id === id);
+                    if (idx !== -1) { all[idx].id = parseInt(res.id); LOCAL_DB.set('payments', all); }
+                }
+            })
+            .catch(e => console.error('[PaymentsDB] ❌ فشل حفظ الدفعة في Sheets:', e.message));
 
         LogsDB.add('إضافة دفعة', `دفعة للطالب: ${payment.studentName} — ${payment.paidAmount.toLocaleString()} ر.س`);
         return payment;
@@ -477,7 +489,7 @@ const LogsDB = {
             LOCAL_DB.set('logs', parsed);
             return parsed;
         } catch (e) {
-            console.warn('[LogsDB] استخدام بيانات محلية:', e.message);
+            console.error('[LogsDB] ❌ فشل تحميل البيانات من Sheets:', e.message);
             return LOCAL_DB.get('logs');
         }
     },
