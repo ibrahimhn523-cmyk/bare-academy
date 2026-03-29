@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم بارع — تجريبي</title>
+<style>
+@font-face { font-family: 'Bare'; src: url('./fonts/TheYearofHandicrafts-Regular.otf'); font-weight: 400; }
+@font-face { font-family: 'Bare'; src: url('./fonts/TheYearofHandicrafts-Bold.otf'); font-weight: 700; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #2D3651;
+  --gold: #c19d2e;
+  --bg: #f8fafc;
+  --white: #fff;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #3b82f6;
+  --sidebar: 250px;
+  --topbar: 58px;
+}
+
+body { font-family: 'Bare', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ── TOPBAR ── */
+.topbar {
+  position: fixed; top: 0; right: 0; left: 0; height: var(--topbar);
+  background: var(--primary); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 18px; z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.burger { background: none; border: none; color: #fff; font-size: 1.35rem; cursor: pointer; padding: 4px 6px; border-radius: 5px; }
+.burger:hover { background: rgba(255,255,255,.12); }
+.topbar-logo { height: 34px; }
+.topbar-title { color: #fff; font-size: 1rem; font-weight: 700; }
+.topbar-right { display: flex; align-items: center; gap: 10px; color: rgba(255,255,255,.8); font-size: .85rem; }
+.btn-logout { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 5px 13px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: .82rem; }
+.btn-logout:hover { background: rgba(255,255,255,.24); }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  position: fixed; top: var(--topbar); right: 0; width: var(--sidebar);
+  height: calc(100vh - var(--topbar)); background: var(--primary);
+  overflow-y: auto; z-index: 150; transition: transform .28s ease;
+}
+.sidebar.hidden { transform: translateX(100%); }
+.nav-section { padding: 8px 0 4px; }
+.nav-label { font-size: .68rem; color: rgba(255,255,255,.4); padding: 8px 16px 4px; letter-spacing: .05em; text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; color: rgba(255,255,255,.72); cursor: pointer;
+  border-right: 3px solid transparent; transition: all .18s; font-size: .9rem;
+}
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: rgba(193,157,46,.18); color: var(--gold); border-right-color: var(--gold); }
+.nav-icon { font-size: 1.1rem; min-width: 22px; text-align: center; }
+.nav-badge { margin-right: auto; background: var(--gold); color: var(--primary); font-size: .68rem; font-weight: 700; padding: 1px 7px; border-radius: 10px; }
+
+/* ── MAIN ── */
+.main {
+  margin-right: var(--sidebar); margin-top: var(--topbar);
+  padding: 22px; min-height: calc(100vh - var(--topbar)); transition: margin-right .28s;
+}
+.main.full { margin-right: 0; }
+
+/* ── SECTION ── */
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── PAGE HEADER ── */
+.page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+.page-title { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+.page-sub { font-size: .8rem; color: var(--muted); font-weight: 400; margin-right: 6px; }
+.hdr-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* ── STATS ── */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.stat-card { background: var(--white); border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); border-right: 3px solid var(--gold); }
+.stat-lbl { font-size: .75rem; color: var(--muted); margin-bottom: 3px; }
+.stat-val { font-size: 1.65rem; font-weight: 700; color: var(--primary); }
+
+/* ── FILTER BAR ── */
+.filter-bar {
+  background: var(--white); border-radius: 10px; padding: 12px 14px;
+  margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.filter-bar input, .filter-bar select {
+  border: 1px solid var(--border); border-radius: 7px; padding: 7px 11px;
+  font-family: inherit; font-size: .88rem; background: var(--bg); color: var(--text);
+  outline: none; transition: border-color .18s;
+}
+.filter-bar input { flex: 1; min-width: 180px; }
+.filter-bar input:focus, .filter-bar select:focus { border-color: var(--primary); }
+
+/* ── TABLE ── */
+.table-card { background: var(--white); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); overflow: hidden; }
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+thead th { background: var(--primary); color: #fff; padding: 11px 13px; text-align: right; font-weight: 600; white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .14s; }
+tbody tr:hover { background: #f1f5f9; }
+tbody tr:last-child { border-bottom: none; }
+tbody td { padding: 10px 13px; vertical-align: middle; }
+.tbl-footer { padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); font-size: .82rem; color: var(--muted); }
+
+/* ── EMPTY / LOADING ── */
+.empty { text-align: center; padding: 45px 20px; color: var(--muted); }
+.empty .ei { font-size: 2.8rem; margin-bottom: 10px; }
+.loading-row td { text-align: center; padding: 28px; color: var(--muted); }
+.spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .65s linear infinite; vertical-align: middle; margin-left: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── BADGES ── */
+.badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: .76rem; font-weight: 600; white-space: nowrap; }
+.b-visitor    { background: #e0f2fe; color: #0369a1; }
+.b-trial      { background: #fef3c7; color: #92400e; }
+.b-registered { background: #d1fae5; color: #065f46; }
+.b-cancelled  { background: #fee2e2; color: #991b1b; }
+.b-active     { background: #d1fae5; color: #065f46; }
+.b-partial    { background: #fef3c7; color: #92400e; }
+.b-expired    { background: #fee2e2; color: #991b1b; }
+.b-paused     { background: #e0e7ff; color: #3730a3; }
+
+/* ── ACTION BUTTONS ── */
+.actions { display: flex; gap: 5px; }
+.abt { width: 28px; height: 28px; border: none; border-radius: 6px; cursor: pointer; font-size: .82rem; display: flex; align-items: center; justify-content: center; transition: transform .14s; }
+.abt:hover { transform: scale(1.12); }
+.abt-edit    { background: #dbeafe; color: #1d4ed8; }
+.abt-convert { background: #d1fae5; color: #065f46; }
+.abt-delete  { background: #fee2e2; color: #dc2626; }
+.abt-view    { background: #ede9fe; color: #6d28d9; }
+.abt-pause   { background: #fef3c7; color: #b45309; }
+.abt-extend  { background: #e0f2fe; color: #0369a1; }
+
+/* ── BUTTONS ── */
+.btn { border: none; border-radius: 8px; padding: 8px 16px; font-family: inherit; font-size: .88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity .18s; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { opacity: .87; }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+.btn-refresh { background: var(--bg); color: var(--primary); border: 1px solid var(--primary); font-size: .82rem; padding: 7px 12px; }
+.btn-refresh:hover { background: var(--primary); color: #fff; }
+.btn-gold { background: var(--gold); color: var(--primary); font-weight: 700; }
+
+/* ── MODAL ── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.48); z-index: 300; align-items: center; justify-content: center; padding: 14px; }
+.overlay.open { display: flex; }
+.modal { background: var(--white); border-radius: 14px; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; animation: mIn .22s ease; }
+.modal-lg { max-width: 680px; }
+@keyframes mIn { from { opacity: 0; transform: translateY(-16px) scale(.97); } }
+.modal-hdr { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 1.05rem; font-weight: 700; color: var(--primary); }
+.modal-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--muted); width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+.modal-close:hover { background: var(--bg); }
+.modal-body { padding: 18px; }
+.modal-ftr { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+/* ── FORM ── */
+.frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.frow.single { grid-template-columns: 1fr; }
+.fg { display: flex; flex-direction: column; gap: 4px; }
+.fg label { font-size: .82rem; font-weight: 600; color: var(--text); }
+.fg input, .fg select, .fg textarea {
+  border: 1px solid var(--border); border-radius: 7px; padding: 8px 11px;
+  font-family: inherit; font-size: .88rem; color: var(--text); background: var(--bg); outline: none; transition: border-color .18s;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--primary); background: var(--white); }
+.fg textarea { resize: vertical; min-height: 65px; }
+.req { color: var(--danger); }
+.readonly-field { background: #e8f4fd !important; }
+
+/* ── PROGRAMS CARDS ── */
+.prog-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.prog-card { background: var(--white); border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.07); border-top: 3px solid var(--primary); }
+.prog-card.pc-active  { border-top-color: var(--success); }
+.prog-card.pc-expired { border-top-color: #94a3b8; }
+.prog-card.pc-paused  { border-top-color: var(--warning); }
+.prog-card-hdr { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.prog-name { font-size: .98rem; font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+.prog-dates { font-size: .76rem; color: var(--muted); }
+.prog-stats { display: flex; gap: 14px; margin: 10px 0; }
+.ps { text-align: center; }
+.ps .v { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+.ps .l { font-size: .7rem; color: var(--muted); }
+.prog-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.prog-btn { flex: 1; padding: 6px; border-radius: 7px; border: none; cursor: pointer; font-family: inherit; font-size: .8rem; }
+
+/* ── VIEW TOGGLE ── */
+.view-toggle { display: flex; gap: 3px; }
+.vbtn { padding: 6px 9px; border: 1px solid var(--border); background: var(--white); cursor: pointer; border-radius: 6px; font-size: .9rem; }
+.vbtn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* ── TOAST ── */
+#toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: var(--primary); color: #fff; padding: 11px 22px; border-radius: 30px; box-shadow: 0 4px 16px rgba(0,0,0,.2); font-size: .88rem; z-index: 999; opacity: 0; transition: opacity .28s; pointer-events: none; white-space: nowrap; }
+#toast.show { opacity: 1; }
+#toast.t-success { background: var(--success); }
+#toast.t-error   { background: var(--danger); }
+
+/* ── SUBSCRIBER DETAIL ── */
+.sub-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: .88rem; background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 14px; }
+.sub-info-grid b { color: var(--primary); }
+.sub-entry { border: 1px solid var(--border); border-radius: 8px; padding: 11px; margin-bottom: 7px; }
+.sub-entry-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.sub-entry-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font-size: .79rem; color: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 760px) {
+  .sidebar { transform: translateX(100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-right: 0; padding: 14px; }
+  .frow { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .topbar-right .user-label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ TOPBAR ══ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="burger" onclick="toggleSidebar()" title="القائمة">☰</button>
+    <img src="./image/bare-logo.png" alt="بارع" class="topbar-logo">
+    <span class="topbar-title">لوحة التحكم</span>
+  </div>
+  <div class="topbar-right">
+    <span class="user-label">مرحباً، المدير</span>
+    <button class="btn-logout" onclick="handleLogout()">خروج</button>
+  </div>
+</header>
+
+<!-- ══ SIDEBAR ══ -->
+<nav class="sidebar" id="sidebar">
+  <div class="nav-section">
+    <div class="nav-label">القوائم الرئيسية</div>
+    <div class="nav-item active" data-sec="registrations" onclick="switchSection('registrations')">
+      <span class="nav-icon">📋</span>
+      <span>التسجيل الأولي</span>
+      <span class="nav-badge" id="badge-reg">0</span>
+    </div>
+    <div class="nav-item" data-sec="subscribers" onclick="switchSection('subscribers')">
+      <span class="nav-icon">👥</span>
+      <span>سجل المشتركين</span>
+      <span class="nav-badge" id="badge-sub">0</span>
+    </div>
+    <div class="nav-item" data-sec="programs" onclick="switchSection('programs')">
+      <span class="nav-icon">📊</span>
+      <span>سجل البرامج</span>
+      <span class="nav-badge" id="badge-prog">0</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main class="main" id="main">
+
+  <!-- ══════ SECTION 1: REGISTRATIONS ══════ -->
+  <section class="section active" id="section-registrations">
+    <div class="page-hdr">
+      <div class="page-title">التسجيل الأولي <span class="page-sub">سجل المتقدمين</span></div>
+      <div class="hdr-actions">
+        <button class="btn btn-refresh" onclick="loadRegistrations()">🔄 تحديث</button>
+        <button class="btn btn-primary" onclick="openAddReg()">➕ إضافة</button>
+      </div>
+    </div>
+
+    <div class="stats" id="reg-stats"></div>
+
+    <div class="filter-bar">
+      <input type="text" id="reg-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderRegs()">
+      <select id="reg-status-filter" onchange="renderRegs()">
+        <option value="">كل الحالات</option>
+        <option value="زائر">زائر</option>
+        <option value="تجربة">تجربة</option>
+        <option value="مسجل">مسجل</option>
+        <option value="ملغي">ملغي</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>الاسم الثلاثي</th><th>رقم الجوال</th>
+              <th>الفئة</th><th>تاريخ التسجيل</th><th>الحالة</th>
+              <th>ملاحظات</th><th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody">
+            <tr class="loading-row"><td colspan="8">جاري التحميل… <span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-footer"><span id="reg-count">—</span></div>
+    </div>
+  </section>
+
+  <!-- ══════ SECTION 2: SUBSCRIBERS ══════ -->
+  <section class="section" id="section-subscribers">
+    <div class="page-hdr">
+      <div class="page-title">سجل المشتركين <span class="page-sub">الكلي</span></div>
+      <button class="btn btn-refresh" onclick="loadSubscriptions()">🔄 تحديث</button>
+    </div>
+
+    <div class="stats" id="sub-stats"></div>
+
+    <div class="filter-bar">
+      <input type="text" id="sub-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderSubs()">
+      <select id="sub-status-filter" onchange="renderSubs()">
+        <option value="">كل الحالات</option>
+        <option value="نشط">نشط</option>
+        <option value="جزئياً نشط">جزئياً نشط</option>
+        <option value="منتهي">منتهي</option>
+      </select>
+      <select id="sub-prog-filter" onchange="renderSubs()">
+        <option value="">كل البرامج</option>
+      </select>
+    </div>
+
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>الاسم الثلاثي</th><th>رقم الجوال</th>
+              <th>الفئة</th><th>البرامج</th><th>الاشتراكات</th>
+              <th>أول اشتراك</th><th>آخر اشتراك</th>
+              <th>الحالة</th><th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="sub-tbody">
+            <tr class="loading-row"><td colspan="10">جاري التحميل… <span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-footer"><span id="sub-count">—</span></div>
+    </div>
+  </section>
+
+  <!-- ══════ SECTION 3: PROGRAMS ══════ -->
+  <section class="section" id="section-programs">
+    <div class="page-hdr">
+      <div class="page-title">سجل البرامج</div>
+      <div class="hdr-actions">
+        <div class="view-toggle">
+          <button class="vbtn active" id="vbtn-cards" onclick="setView('cards')">⊞</button>
+          <button class="vbtn" id="vbtn-table" onclick="setView('table')">☰</button>
+        </div>
+        <button class="btn btn-refresh" onclick="loadPrograms()">🔄 تحديث</button>
+        <button class="btn btn-primary" onclick="openAddProg()">➕ برنامج جديد</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="prog-search" placeholder="🔍 بحث باسم البرنامج..." oninput="renderProgs()">
+      <select id="prog-status-filter" onchange="renderProgs()">
+        <option value="">كل الحالات</option>
+        <option value="نشط">نشط</option>
+        <option value="منتهي">منتهي</option>
+        <option value="موقوف">موقوف</option>
+      </select>
+    </div>
+
+    <div id="view-cards"><div class="prog-grid" id="prog-cards"></div></div>
+
+    <div id="view-table" style="display:none">
+      <div class="table-card">
+        <div class="tbl-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>اسم البرنامج</th><th>البداية</th><th>النهاية</th>
+                <th>الأيام</th><th>الرسم</th><th>المجموعات</th>
+                <th>المشتركين</th><th>الحالة</th><th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="prog-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div id="toast"></div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Modal: Add/Edit Registration -->
+<div class="overlay" id="m-reg">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-reg-title">إضافة تسجيل</div>
+      <button class="modal-close" onclick="closeM('m-reg')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="r-id">
+      <div class="frow">
+        <div class="fg"><label>الاسم الثلاثي <span class="req">*</span></label><input id="r-name" placeholder="الاسم الكامل"></div>
+        <div class="fg"><label>رقم الجوال <span class="req">*</span></label><input id="r-phone" placeholder="05XXXXXXXX"></div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>الفئة الدراسية <span class="req">*</span></label>
+          <select id="r-cat">
+            <option value="">اختر الفئة</option>
+            <option>طالب ابتدائي</option><option>طالب متوسط</option>
+            <option>طالب ثانوي</option><option>طالب جامعي</option><option>بالغ</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>الحالة</label>
+          <select id="r-status">
+            <option value="زائر">زائر</option><option value="تجربة">تجربة</option>
+            <option value="مسجل">مسجل</option><option value="ملغي">ملغي</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow single">
+        <div class="fg"><label>ملاحظات</label><textarea id="r-notes" placeholder="أي ملاحظات…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-reg')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveReg()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add Subscription (تحويل إلى مشترك) -->
+<div class="overlay" id="m-sub">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title">➕ إضافة اشتراك</div>
+      <button class="modal-close" onclick="closeM('m-sub')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sub-reg-id">
+      <div class="frow">
+        <div class="fg"><label>الاسم</label><input id="sub-name" class="readonly-field" readonly></div>
+        <div class="fg"><label>الجوال</label><input id="sub-phone" class="readonly-field" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>الفئة</label><input id="sub-cat" class="readonly-field" readonly></div>
+        <div class="fg">
+          <label>البرنامج <span class="req">*</span></label>
+          <select id="sub-prog" onchange="onProgSelect()">
+            <option value="">اختر البرنامج</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="sub-start"></div>
+        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="sub-end"></div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>نوع الاشتراك</label>
+          <select id="sub-type">
+            <option value="كامل">كامل</option><option value="جزئي">جزئي</option><option value="مجاني">مجاني</option>
+          </select>
+        </div>
+        <div class="fg"><label>المبلغ المطلوب (ر.س)</label><input type="number" id="sub-required" placeholder="600" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>المبلغ المدفوع (ر.س)</label><input type="number" id="sub-paid" placeholder="0" min="0"></div>
+        <div class="fg">
+          <label>طريقة الدفع</label>
+          <select id="sub-method">
+            <option>نقداً</option><option>تحويل بنكي</option><option>مدى</option><option>آجل</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-sub')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveSub()">✅ تأكيد الاشتراك</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Subscriber Details -->
+<div class="overlay" id="m-sub-detail">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-sub-detail-title">تفاصيل المشترك</div>
+      <button class="modal-close" onclick="closeM('m-sub-detail')">✕</button>
+    </div>
+    <div class="modal-body" id="m-sub-detail-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Edit Subscriber -->
+<div class="overlay" id="m-edit-sub">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">✏️ تعديل المشترك</div>
+      <button class="modal-close" onclick="closeM('m-edit-sub')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="es-sid">
+      <div class="frow">
+        <div class="fg"><label>الاسم <span class="req">*</span></label><input id="es-name"></div>
+        <div class="fg"><label>الجوال <span class="req">*</span></label><input id="es-phone"></div>
+      </div>
+      <div class="frow single">
+        <div class="fg">
+          <label>الفئة</label>
+          <select id="es-cat">
+            <option>طالب ابتدائي</option><option>طالب متوسط</option>
+            <option>طالب ثانوي</option><option>طالب جامعي</option><option>بالغ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-edit-sub')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveSubEdit()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Add/Edit Program -->
+<div class="overlay" id="m-prog">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-prog-title">➕ برنامج جديد</div>
+      <button class="modal-close" onclick="closeM('m-prog')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="p-id">
+      <div class="frow">
+        <div class="fg"><label>اسم البرنامج <span class="req">*</span></label><input id="p-name" placeholder="اسم البرنامج"></div>
+        <div class="fg">
+          <label>الحالة</label>
+          <select id="p-status"><option value="نشط">نشط</option><option value="موقوف">موقوف</option><option value="منتهي">منتهي</option></select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="p-start"></div>
+        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="p-end"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>الرسم الكامل (ر.س) <span class="req">*</span></label><input type="number" id="p-fee" value="600" min="0"></div>
+        <div class="fg"><label>عدد المجموعات <span class="req">*</span></label><input type="number" id="p-groups" value="1" min="1" oninput="renderGroupInputs()"></div>
+      </div>
+      <div id="p-groups-wrap"></div>
+      <div class="frow single">
+        <div class="fg"><label>ملاحظات</label><textarea id="p-notes" placeholder="ملاحظات اختيارية…"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-prog')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveProg()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Extend Program -->
+<div class="overlay" id="m-extend">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">📅 تمديد البرنامج</div>
+      <button class="modal-close" onclick="closeM('m-extend')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ext-id">
+      <div class="frow single">
+        <div class="fg"><label>البرنامج</label><input id="ext-name" class="readonly-field" readonly></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>تاريخ النهاية الحالي</label><input id="ext-cur" class="readonly-field" readonly></div>
+        <div class="fg"><label>إضافة أيام</label><input type="number" id="ext-days" min="1" placeholder="عدد الأيام" oninput="calcExtend()"></div>
+      </div>
+      <div class="frow single">
+        <div class="fg"><label>تاريخ النهاية الجديد</label><input type="date" id="ext-new"></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-extend')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveExtend()">✅ تمديد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ SCRIPTS ══════════════════ -->
+<script src="./google-sheets-connector.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════ */
+const SPREADSHEET_ID = '16us-8KcHTb6XHwOzeWlrqhzHFGyCsWv20qZT_pFN4nI';
+const API_KEY        = 'AIzaSyBzaTDL-gQ-Ss5LCTdnvS6ITThcO5JwRBY';
+const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwleug6tXApiaOvghnOSZaw6H_HVU-xIqupeXsdBftPLuHLw4PEEksvYwz4HxlTgTsJ/exec';
+const SCRIPT_PASS    = 'bareadmin1212';
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let _regs  = [];
+let _subs  = [];
+let _progs = [];
+let _currentView = 'cards';
+let _sidebarOpen = true;
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+async function init() {
+  await Promise.all([loadRegistrations(), loadPrograms()]);
+  await loadSubscriptions();
+}
+
+/* ══════════════════════════════════════════
+   API HELPERS
+══════════════════════════════════════════ */
+async function readSheet(sheet) {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}?key=${API_KEY}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const j = await res.json();
+  if (j.error) throw new Error(j.error.message);
+  const rows = j.values || [];
+  if (rows.length < 2) return [];
+  const headers = rows[0].map(h => String(h).trim());
+  return rows.slice(1)
+    .map(row => {
+      const o = {};
+      headers.forEach((h, i) => { o[h] = row[i] !== undefined ? String(row[i]) : ''; });
+      return o;
+    })
+    .filter(o => headers.some(h => o[h] !== ''));
+}
+
+async function callScript(action, data = {}) {
+  const res = await fetch(SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, password: SCRIPT_PASS, ...data })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || 'خطأ من Apps Script');
+  return j;
+}
+
+/* ══════════════════════════════════════════
+   LOCAL CACHE
+══════════════════════════════════════════ */
+const cache = {
+  get: (k) => { try { return JSON.parse(localStorage.getItem('db_' + k)) || []; } catch { return []; } },
+  set: (k, v) => { try { localStorage.setItem('db_' + k, JSON.stringify(v)); } catch {} }
+};
+
+/* ══════════════════════════════════════════
+   ── SECTION 1: REGISTRATIONS ──
+══════════════════════════════════════════ */
+async function loadRegistrations() {
+  try {
+    const rows = await readSheet('REGISTRATIONS');
+    _regs = rows.map(r => ({
+      id:        parseInt(r.id) || 0,
+      fullName:  r.fullName  || r['Full Name']  || '',
+      phone:     r.phone     || r['Phone']      || '',
+      category:  r.category  || r['Category']   || '',
+      status:    r.status    || r['Status']      || 'زائر',
+      notes:     r.notes     || r['Notes']       || '',
+      createdAt: r.createdAt || r['Created At']  || ''
+    })).filter(r => r.id > 0);
+    cache.set('regs', _regs);
+  } catch (e) {
+    console.error('[REGS]', e);
+    _regs = cache.get('regs');
+    toast('تعذر تحميل التسجيلات — يعمل بالبيانات المحلية', 'error');
+  }
+  renderRegs(); updateBadges();
+}
+
+function renderRegs() {
+  const q  = document.getElementById('reg-search').value.toLowerCase();
+  const st = document.getElementById('reg-status-filter').value;
+  let d = _regs.filter(r => r.status !== 'محذوف');
+  if (st) d = d.filter(r => r.status === st);
+  if (q)  d = d.filter(r => r.fullName.toLowerCase().includes(q) || r.phone.includes(q));
+  d.sort((a, b) => b.id - a.id);
+
+  const tbody = document.getElementById('reg-tbody');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="ei">📋</div><p>لا توجد تسجيلات</p></div></td></tr>`;
+    document.getElementById('reg-count').textContent = '0 تسجيل';
+    renderRegStats(); return;
+  }
+
+  tbody.innerHTML = d.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td><strong>${esc(r.fullName)}</strong></td>
+      <td dir="ltr">${r.phone}</td>
+      <td>${r.category}</td>
+      <td>${fmtDate(r.createdAt)}</td>
+      <td>${regBadge(r.status)}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.notes)}">${r.notes || '—'}</td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-edit"    title="تعديل"           onclick="openEditReg(${r.id})">✏️</button>
+          ${r.status !== 'مسجل' ? `<button class="abt abt-convert" title="تحويل إلى مشترك" onclick="openConvert(${r.id})">➕</button>` : ''}
+          <button class="abt abt-delete"  title="حذف (ناعم)"      onclick="deleteReg(${r.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('reg-count').textContent = `${d.length} تسجيل`;
+  renderRegStats();
+}
+
+function renderRegStats() {
+  const d = _regs.filter(r => r.status !== 'محذوف');
+  const s = [
+    { l: 'الكل',    v: d.length },
+    { l: 'زائر',    v: d.filter(r => r.status === 'زائر').length },
+    { l: 'تجربة',   v: d.filter(r => r.status === 'تجربة').length },
+    { l: 'مسجل',    v: d.filter(r => r.status === 'مسجل').length },
+    { l: 'ملغي',    v: d.filter(r => r.status === 'ملغي').length },
+  ];
+  document.getElementById('reg-stats').innerHTML = s.map(x =>
+    `<div class="stat-card"><div class="stat-lbl">${x.l}</div><div class="stat-val">${x.v}</div></div>`
+  ).join('');
+}
+
+function regBadge(s) {
+  const m = { زائر: 'visitor', تجربة: 'trial', مسجل: 'registered', ملغي: 'cancelled' };
+  return `<span class="badge b-${m[s] || 'visitor'}">${s}</span>`;
+}
+
+function openAddReg() {
+  document.getElementById('m-reg-title').textContent = 'إضافة تسجيل';
+  ['r-id','r-name','r-phone','r-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('r-cat').value = '';
+  document.getElementById('r-status').value = 'زائر';
+  openM('m-reg');
+}
+
+function openEditReg(id) {
+  const r = _regs.find(x => x.id === id); if (!r) return;
+  document.getElementById('m-reg-title').textContent = '✏️ تعديل التسجيل';
+  document.getElementById('r-id').value     = r.id;
+  document.getElementById('r-name').value   = r.fullName;
+  document.getElementById('r-phone').value  = r.phone;
+  document.getElementById('r-cat').value    = r.category;
+  document.getElementById('r-status').value = r.status;
+  document.getElementById('r-notes').value  = r.notes;
+  openM('m-reg');
+}
+
+async function saveReg() {
+  const id       = parseInt(document.getElementById('r-id').value) || 0;
+  const fullName = document.getElementById('r-name').value.trim();
+  const phone    = document.getElementById('r-phone').value.trim();
+  const category = document.getElementById('r-cat').value;
+  const status   = document.getElementById('r-status').value;
+  const notes    = document.getElementById('r-notes').value.trim();
+
+  if (!fullName || !phone || !category) { toast('يرجى ملء الحقول الإجبارية', 'error'); return; }
+
+  if (id) {
+    const i = _regs.findIndex(r => r.id === id);
+    if (i !== -1) {
+      Object.assign(_regs[i], { fullName, phone, category, status, notes });
+      cache.set('regs', _regs);
+      callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
+      toast('تم تعديل التسجيل ✅');
+    }
+  } else {
+    const newId = _regs.length ? Math.max(..._regs.map(r => r.id)) + 1 : 1;
+    const entry = { id: newId, fullName, phone, category, status, notes, createdAt: today() };
+    _regs.push(entry);
+    cache.set('regs', _regs);
+    callScript('appendRow', {
+      sheet: 'REGISTRATIONS',
+      values: [entry.id, entry.fullName, entry.phone, entry.category, entry.status, entry.notes, entry.createdAt]
+    }).catch(console.error);
+    toast('تم إضافة التسجيل ✅');
+  }
+
+  closeM('m-reg'); renderRegs(); updateBadges();
+}
+
+async function deleteReg(id) {
+  if (!confirm('تحويل الحالة إلى "ملغي"؟')) return;
+  const i = _regs.findIndex(r => r.id === id);
+  if (i !== -1) {
+    _regs[i].status = 'ملغي';
+    cache.set('regs', _regs);
+    callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
+    toast('تم الحذف الناعم'); renderRegs(); updateBadges();
+  }
+}
+
+/* ══════════════════════════════════════════
+   ── SECTION 2: SUBSCRIBERS ──
+══════════════════════════════════════════ */
+async function loadSubscriptions() {
+  try {
+    const rows = await readSheet('SUBSCRIPTIONS');
+    _subs = rows.map(r => ({
+      id:          parseInt(r.id) || 0,
+      studentId:   parseInt(r.studentId) || 0,
+      studentName: r.studentName || r.fullName || '',
+      phone:       r.phone || '',
+      category:    r.category || '',
+      programId:   parseInt(r.programId) || 0,
+      programName: r.programName || '',
+      paymentType: r.paymentType || 'كامل',
+      startDate:   r.startDate || '',
+      endDate:     r.endDate || '',
+      status:      r.status || 'نشط',
+      createdAt:   r.createdAt || ''
+    })).filter(s => s.id > 0);
+    // Recompute statuses based on dates
+    _subs = _subs.map(s => ({ ...s, status: subStatus(s.endDate) }));
+    cache.set('subs', _subs);
+  } catch (e) {
+    console.error('[SUBS]', e);
+    _subs = cache.get('subs');
+    toast('تعذر تحميل الاشتراكات — يعمل بالبيانات المحلية', 'error');
+  }
+  renderSubs(); updateBadges(); fillProgFilter();
+}
+
+function subStatus(endDate) {
+  if (!endDate) return 'نشط';
+  const today = new Date(); today.setHours(0,0,0,0);
+  return new Date(endDate + 'T00:00:00') < today ? 'منتهي' : 'نشط';
+}
+
+function buildSubsMap() {
+  const map = {};
+  _subs.forEach(s => {
+    if (!s.studentId) return;
+    if (!map[s.studentId]) map[s.studentId] = {
+      studentId: s.studentId, fullName: s.studentName,
+      phone: s.phone, category: s.category, entries: []
+    };
+    map[s.studentId].entries.push(s);
+  });
+  return Object.values(map);
+}
+
+function overallStatus(entries) {
+  const a = entries.some(e => e.status === 'نشط');
+  const b = entries.some(e => e.status === 'منتهي');
+  if (a && b) return 'جزئياً نشط';
+  return a ? 'نشط' : 'منتهي';
+}
+
+function renderSubs() {
+  const q   = document.getElementById('sub-search').value.toLowerCase();
+  const st  = document.getElementById('sub-status-filter').value;
+  const prg = document.getElementById('sub-prog-filter').value;
+
+  let d = buildSubsMap();
+  if (st)  d = d.filter(s => overallStatus(s.entries) === st);
+  if (prg) d = d.filter(s => s.entries.some(e => String(e.programId) === prg));
+  if (q)   d = d.filter(s => s.fullName.toLowerCase().includes(q) || s.phone.includes(q));
+
+  const tbody = document.getElementById('sub-tbody');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">👥</div><p>لا يوجد مشتركون</p></div></td></tr>`;
+    document.getElementById('sub-count').textContent = '0 مشترك';
+    renderSubStats(); return;
+  }
+
+  tbody.innerHTML = d.map(s => {
+    const progs   = [...new Set(s.entries.map(e => e.programName).filter(Boolean))].join('، ') || '—';
+    const first   = s.entries.reduce((a, b) => (a.startDate < b.startDate ? a : b));
+    const last    = s.entries.reduce((a, b) => (a.startDate > b.startDate ? a : b));
+    const overall = overallStatus(s.entries);
+    return `
+      <tr>
+        <td>${s.studentId}</td>
+        <td><strong>${esc(s.fullName)}</strong></td>
+        <td dir="ltr">${s.phone}</td>
+        <td>${s.category}</td>
+        <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${progs}">${progs}</td>
+        <td style="text-align:center">${s.entries.length}</td>
+        <td>${fmtDate(first.startDate)}</td>
+        <td>${fmtDate(last.startDate)}</td>
+        <td>${subBadge(overall)}</td>
+        <td>
+          <div class="actions">
+            <button class="abt abt-view"   title="تفاصيل" onclick="viewSubDetail(${s.studentId})">👁️</button>
+            <button class="abt abt-edit"   title="تعديل"  onclick="openEditSub(${s.studentId})">✏️</button>
+            <button class="abt abt-delete" title="حذف"    onclick="deleteSub(${s.studentId})">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+
+  document.getElementById('sub-count').textContent = `${d.length} مشترك`;
+  renderSubStats();
+}
+
+function renderSubStats() {
+  const all = buildSubsMap();
+  const s = [
+    { l: 'إجمالي المشتركين', v: all.length },
+    { l: 'نشط',              v: all.filter(s => overallStatus(s.entries) === 'نشط').length },
+    { l: 'جزئياً نشط',       v: all.filter(s => overallStatus(s.entries) === 'جزئياً نشط').length },
+    { l: 'منتهي',            v: all.filter(s => overallStatus(s.entries) === 'منتهي').length },
+  ];
+  document.getElementById('sub-stats').innerHTML = s.map(x =>
+    `<div class="stat-card"><div class="stat-lbl">${x.l}</div><div class="stat-val">${x.v}</div></div>`
+  ).join('');
+}
+
+function subBadge(s) {
+  const m = { 'نشط': 'active', 'جزئياً نشط': 'partial', 'منتهي': 'expired' };
+  return `<span class="badge b-${m[s] || 'active'}">${s}</span>`;
+}
+
+function fillProgFilter() {
+  const ids = [...new Set(_subs.map(s => s.programId).filter(Boolean))];
+  const sel = document.getElementById('sub-prog-filter');
+  sel.innerHTML = '<option value="">كل البرامج</option>' + ids.map(pid => {
+    const p = _progs.find(x => x.id === pid);
+    const name = p ? p.name : (_subs.find(s => s.programId === pid)?.programName || `برنامج ${pid}`);
+    return `<option value="${pid}">${name}</option>`;
+  }).join('');
+}
+
+function viewSubDetail(studentId) {
+  const s = buildSubsMap().find(x => x.studentId === studentId); if (!s) return;
+  document.getElementById('m-sub-detail-title').textContent = `تفاصيل: ${s.fullName}`;
+  document.getElementById('m-sub-detail-body').innerHTML = `
+    <div class="sub-info-grid">
+      <div><b>الاسم:</b> ${esc(s.fullName)}</div>
+      <div><b>الجوال:</b> <span dir="ltr">${s.phone}</span></div>
+      <div><b>الفئة:</b> ${s.category}</div>
+      <div><b>عدد الاشتراكات:</b> ${s.entries.length}</div>
+    </div>
+    <h4 style="margin-bottom:10px;color:var(--primary)">الاشتراكات (${s.entries.length})</h4>
+    ${s.entries.map(e => `
+      <div class="sub-entry">
+        <div class="sub-entry-hdr">
+          <strong>${esc(e.programName) || 'برنامج غير محدد'}</strong>
+          ${subBadge(e.status)}
+        </div>
+        <div class="sub-entry-meta">
+          <span>البداية: ${fmtDate(e.startDate)}</span>
+          <span>النهاية: ${fmtDate(e.endDate)}</span>
+          <span>النوع: ${e.paymentType}</span>
+        </div>
+      </div>`).join('')}`;
+  openM('m-sub-detail');
+}
+
+function openEditSub(studentId) {
+  const s = buildSubsMap().find(x => x.studentId === studentId); if (!s) return;
+  document.getElementById('es-sid').value   = studentId;
+  document.getElementById('es-name').value  = s.fullName;
+  document.getElementById('es-phone').value = s.phone;
+  document.getElementById('es-cat').value   = s.category;
+  openM('m-edit-sub');
+}
+
+async function saveSubEdit() {
+  const sid      = parseInt(document.getElementById('es-sid').value);
+  const fullName = document.getElementById('es-name').value.trim();
+  const phone    = document.getElementById('es-phone').value.trim();
+  const category = document.getElementById('es-cat').value;
+  if (!fullName || !phone) { toast('يرجى ملء الحقول الإجبارية', 'error'); return; }
+  _subs = _subs.map(s => s.studentId === sid ? { ...s, studentName: fullName, phone, category } : s);
+  cache.set('subs', _subs);
+  toast('تم تعديل المشترك ✅'); closeM('m-edit-sub'); renderSubs();
+}
+
+async function deleteSub(studentId) {
+  if (!confirm('حذف هذا المشترك وجميع اشتراكاته؟')) return;
+  _subs = _subs.filter(s => s.studentId !== studentId);
+  cache.set('subs', _subs);
+  toast('تم الحذف'); renderSubs(); updateBadges();
+}
+
+/* Convert registration → subscriber */
+function openConvert(regId) {
+  const r = _regs.find(x => x.id === regId); if (!r) return;
+  document.getElementById('sub-reg-id').value = regId;
+  document.getElementById('sub-name').value   = r.fullName;
+  document.getElementById('sub-phone').value  = r.phone;
+  document.getElementById('sub-cat').value    = r.category;
+  document.getElementById('sub-start').value  = today().split('T')[0];
+  document.getElementById('sub-end').value    = '';
+  document.getElementById('sub-required').value = '';
+  document.getElementById('sub-paid').value   = '0';
+
+  const active = _progs.filter(p => p.status === 'نشط');
+  document.getElementById('sub-prog').innerHTML =
+    '<option value="">اختر البرنامج</option>' +
+    active.map(p => `<option value="${p.id}" data-fee="${p.fullFee}" data-end="${p.endDate}">${p.name}</option>`).join('');
+
+  openM('m-sub');
+}
+
+function onProgSelect() {
+  const sel = document.getElementById('sub-prog');
+  const opt = sel.options[sel.selectedIndex];
+  if (opt?.dataset?.fee) {
+    document.getElementById('sub-required').value = opt.dataset.fee;
+    document.getElementById('sub-end').value = opt.dataset.end || '';
+  }
+}
+
+async function saveSub() {
+  const regId      = parseInt(document.getElementById('sub-reg-id').value) || 0;
+  const fullName   = document.getElementById('sub-name').value;
+  const phone      = document.getElementById('sub-phone').value;
+  const category   = document.getElementById('sub-cat').value;
+  const progId     = parseInt(document.getElementById('sub-prog').value) || 0;
+  const startDate  = document.getElementById('sub-start').value;
+  const endDate    = document.getElementById('sub-end').value;
+  const payType    = document.getElementById('sub-type').value;
+  const required   = parseFloat(document.getElementById('sub-required').value) || 0;
+  const paid       = parseFloat(document.getElementById('sub-paid').value) || 0;
+  const method     = document.getElementById('sub-method').value;
+
+  if (!progId || !startDate || !endDate) { toast('يرجى اختيار البرنامج والتواريخ', 'error'); return; }
+
+  const prog = _progs.find(p => p.id === progId);
+  const progName = prog ? prog.name : '';
+
+  const existing = _subs.find(s => s.phone === phone);
+  const studentId = existing ? existing.studentId : (_subs.length ? Math.max(..._subs.map(s => s.studentId)) + 1 : 1);
+  const newId = _subs.length ? Math.max(..._subs.map(s => s.id)) + 1 : 1;
+
+  const sub = {
+    id: newId, studentId, studentName: fullName, phone, category,
+    programId: progId, programName: progName, paymentType: payType,
+    startDate, endDate, status: subStatus(endDate), createdAt: today()
+  };
+
+  _subs.push(sub);
+  cache.set('subs', _subs);
+
+  callScript('appendRow', {
+    sheet: 'SUBSCRIPTIONS',
+    values: [sub.id, sub.studentId, sub.studentName, sub.phone, sub.category,
+             sub.programId, sub.programName, sub.paymentType,
+             sub.startDate, sub.endDate, sub.status, sub.createdAt]
+  }).catch(console.error);
+
+  if (paid > 0) {
+    callScript('appendRow', {
+      sheet: 'PAYMENTS',
+      values: [Date.now(), studentId, fullName, newId, required, paid,
+               Math.max(0, required - paid),
+               paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
+               method, '', today().split('T')[0], 0, startDate, endDate, '', today()]
+    }).catch(console.error);
+  }
+
+  if (regId) {
+    const i = _regs.findIndex(r => r.id === regId);
+    if (i !== -1) {
+      _regs[i].status = 'مسجل';
+      cache.set('regs', _regs);
+      callScript('updateRow', { sheet: 'REGISTRATIONS', id: regId, data: _regs[i] }).catch(console.error);
+    }
+  }
+
+  toast('تم إضافة الاشتراك وتحديث التسجيل ✅');
+  closeM('m-sub'); renderSubs(); renderRegs(); updateBadges(); fillProgFilter();
+}
+
+/* ══════════════════════════════════════════
+   ── SECTION 3: PROGRAMS ──
+══════════════════════════════════════════ */
+async function loadPrograms() {
+  try {
+    const rows = await readSheet('PROGRAMS');
+    _progs = rows.map(r => ({
+      id:          parseInt(r.id) || 0,
+      name:        r.name || '',
+      startDate:   r.startDate || '',
+      endDate:     r.endDate || '',
+      durationDays:parseInt(r.durationDays) || calcDays(r.startDate, r.endDate),
+      fullFee:     parseFloat(r.fullFee) || 600,
+      groupCount:  parseInt(r.groupCount) || 1,
+      groups:      r.groups || '',
+      status:      r.status || 'نشط',
+      notes:       r.notes || '',
+      createdAt:   r.createdAt || ''
+    })).filter(p => p.id > 0);
+    cache.set('progs', _progs);
+  } catch (e) {
+    console.error('[PROGS]', e);
+    _progs = cache.get('progs');
+    toast('تعذر تحميل البرامج — يعمل بالبيانات المحلية', 'error');
+  }
+  renderProgs(); updateBadges();
+}
+
+function calcDays(s, e) {
+  if (!s || !e) return 0;
+  return Math.max(0, Math.ceil((new Date(e + 'T00:00:00') - new Date(s + 'T00:00:00')) / 86400000));
+}
+
+function progSubCount(progId) {
+  return new Set(_subs.filter(s => s.programId === progId).map(s => s.studentId)).size;
+}
+
+function renderProgs() {
+  const q  = document.getElementById('prog-search').value.toLowerCase();
+  const st = document.getElementById('prog-status-filter').value;
+  let d = [..._progs];
+  if (st) d = d.filter(p => p.status === st);
+  if (q)  d = d.filter(p => p.name.toLowerCase().includes(q));
+  d.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+  if (_currentView === 'cards') renderProgCards(d);
+  else renderProgTable(d);
+}
+
+function renderProgCards(d) {
+  const el = document.getElementById('prog-cards');
+  if (!d.length) {
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="ei">📊</div><p>لا توجد برامج</p></div>`;
+    return;
+  }
+  el.innerHTML = d.map(p => {
+    const days = calcDays(p.startDate, p.endDate);
+    const cnt  = progSubCount(p.id);
+    const cls  = p.status === 'نشط' ? 'pc-active' : p.status === 'موقوف' ? 'pc-paused' : 'pc-expired';
+    return `
+      <div class="prog-card ${cls}">
+        <div class="prog-card-hdr">
+          <div>
+            <div class="prog-name">${esc(p.name)}</div>
+            <div class="prog-dates">📅 ${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          </div>
+          ${progBadge(p.status)}
+        </div>
+        <div class="prog-stats">
+          <div class="ps"><div class="v">${days}</div><div class="l">يوم</div></div>
+          <div class="ps"><div class="v">${p.fullFee.toLocaleString()}</div><div class="l">ر.س</div></div>
+          <div class="ps"><div class="v">${p.groupCount}</div><div class="l">مجموعات</div></div>
+          <div class="ps"><div class="v">${cnt}</div><div class="l">مشترك</div></div>
+        </div>
+        ${p.notes ? `<div style="font-size:.78rem;color:var(--muted);margin:4px 0">${esc(p.notes)}</div>` : ''}
+        <div class="prog-actions">
+          <button class="prog-btn" style="background:#dbeafe;color:#1d4ed8" onclick="openEditProg(${p.id})">✏️ تعديل</button>
+          <button class="prog-btn" style="background:#d1fae5;color:#065f46" onclick="openExtend(${p.id})">📅 تمديد</button>
+          ${p.status === 'نشط' ? `<button class="prog-btn" style="background:#fef3c7;color:#b45309" onclick="pauseProg(${p.id})">⏸️ إيقاف</button>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderProgTable(d) {
+  const tbody = document.getElementById('prog-tbody');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">📊</div><p>لا توجد برامج</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = d.map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td><strong>${esc(p.name)}</strong></td>
+      <td>${fmtDate(p.startDate)}</td>
+      <td>${fmtDate(p.endDate)}</td>
+      <td>${calcDays(p.startDate, p.endDate)}</td>
+      <td>${p.fullFee.toLocaleString()} ر.س</td>
+      <td>${p.groupCount}</td>
+      <td>${progSubCount(p.id)}</td>
+      <td>${progBadge(p.status)}</td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-edit"   onclick="openEditProg(${p.id})">✏️</button>
+          <button class="abt abt-extend" onclick="openExtend(${p.id})">📅</button>
+          ${p.status === 'نشط' ? `<button class="abt abt-pause" onclick="pauseProg(${p.id})">⏸️</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function progBadge(s) {
+  const m = { 'نشط': 'active', 'منتهي': 'expired', 'موقوف': 'paused' };
+  return `<span class="badge b-${m[s] || 'active'}">${s}</span>`;
+}
+
+function renderGroupInputs() {
+  const n = parseInt(document.getElementById('p-groups').value) || 1;
+  let html = '<div class="fg" style="margin-bottom:12px"><label>أسماء المجموعات</label><div style="display:flex;flex-direction:column;gap:6px">';
+  for (let i = 1; i <= n; i++)
+    html += `<input type="text" id="g-${i}" placeholder="اسم المجموعة ${i}" style="border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-family:inherit;font-size:.88rem;background:var(--bg)">`;
+  html += '</div></div>';
+  document.getElementById('p-groups-wrap').innerHTML = html;
+}
+
+function openAddProg() {
+  document.getElementById('m-prog-title').textContent = '➕ برنامج جديد';
+  ['p-id','p-name','p-start','p-end','p-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('p-fee').value    = '600';
+  document.getElementById('p-groups').value = '1';
+  document.getElementById('p-status').value = 'نشط';
+  renderGroupInputs();
+  openM('m-prog');
+}
+
+function openEditProg(id) {
+  const p = _progs.find(x => x.id === id); if (!p) return;
+  document.getElementById('m-prog-title').textContent = '✏️ تعديل البرنامج';
+  document.getElementById('p-id').value     = p.id;
+  document.getElementById('p-name').value   = p.name;
+  document.getElementById('p-start').value  = p.startDate;
+  document.getElementById('p-end').value    = p.endDate;
+  document.getElementById('p-fee').value    = p.fullFee;
+  document.getElementById('p-groups').value = p.groupCount;
+  document.getElementById('p-status').value = p.status;
+  document.getElementById('p-notes').value  = p.notes;
+  renderGroupInputs();
+  if (p.groups) {
+    p.groups.split('،').map(s => s.trim()).forEach((name, i) => {
+      const el = document.getElementById(`g-${i+1}`); if (el) el.value = name;
+    });
+  }
+  openM('m-prog');
+}
+
+async function saveProg() {
+  const id       = parseInt(document.getElementById('p-id').value) || 0;
+  const name     = document.getElementById('p-name').value.trim();
+  const startDate= document.getElementById('p-start').value;
+  const endDate  = document.getElementById('p-end').value;
+  const fullFee  = parseFloat(document.getElementById('p-fee').value) || 600;
+  const groupCnt = parseInt(document.getElementById('p-groups').value) || 1;
+  const status   = document.getElementById('p-status').value;
+  const notes    = document.getElementById('p-notes').value.trim();
+
+  if (!name || !startDate || !endDate) { toast('يرجى ملء الحقول الإجبارية', 'error'); return; }
+
+  const days = calcDays(startDate, endDate);
+  const groupNames = [];
+  for (let i = 1; i <= groupCnt; i++) {
+    const el = document.getElementById(`g-${i}`);
+    if (el?.value.trim()) groupNames.push(el.value.trim());
+  }
+  const groups = groupNames.join('، ');
+
+  if (id) {
+    const i = _progs.findIndex(p => p.id === id);
+    if (i !== -1) {
+      Object.assign(_progs[i], { name, endDate, fullFee, groupCount: groupCnt, groups, status, notes, durationDays: days });
+      callScript('updateRow', { sheet: 'PROGRAMS', id, data: _progs[i] }).catch(console.error);
+      toast('تم تعديل البرنامج ✅');
+    }
+  } else {
+    const newId = _progs.length ? Math.max(..._progs.map(p => p.id)) + 1 : 1;
+    const prog = { id: newId, name, startDate, endDate, durationDays: days, fullFee, groupCount: groupCnt, groups, status, notes, createdAt: today() };
+    _progs.push(prog);
+    callScript('appendRow', {
+      sheet: 'PROGRAMS',
+      values: [prog.id, prog.name, prog.startDate, prog.endDate, prog.durationDays, prog.fullFee, prog.groupCount, prog.groups, prog.status, prog.notes, prog.createdAt]
+    }).catch(console.error);
+    toast('تم إضافة البرنامج ✅');
+  }
+
+  cache.set('progs', _progs);
+  closeM('m-prog'); renderProgs(); updateBadges();
+}
+
+function openExtend(id) {
+  const p = _progs.find(x => x.id === id); if (!p) return;
+  document.getElementById('ext-id').value   = p.id;
+  document.getElementById('ext-name').value = p.name;
+  document.getElementById('ext-cur').value  = fmtDate(p.endDate);
+  document.getElementById('ext-days').value = '';
+  document.getElementById('ext-new').value  = p.endDate;
+  openM('m-extend');
+}
+
+function calcExtend() {
+  const pid = parseInt(document.getElementById('ext-id').value);
+  const p   = _progs.find(x => x.id === pid); if (!p) return;
+  const days = parseInt(document.getElementById('ext-days').value) || 0;
+  if (!days) return;
+  const d = new Date(p.endDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  document.getElementById('ext-new').value = d.toISOString().split('T')[0];
+}
+
+async function saveExtend() {
+  const pid    = parseInt(document.getElementById('ext-id').value);
+  const newEnd = document.getElementById('ext-new').value;
+  if (!newEnd) { toast('يرجى تحديد تاريخ النهاية', 'error'); return; }
+  const i = _progs.findIndex(p => p.id === pid);
+  if (i !== -1) {
+    _progs[i].endDate      = newEnd;
+    _progs[i].durationDays = calcDays(_progs[i].startDate, newEnd);
+    cache.set('progs', _progs);
+    callScript('updateRow', { sheet: 'PROGRAMS', id: pid, data: _progs[i] }).catch(console.error);
+    toast('تم تمديد البرنامج ✅'); closeM('m-extend'); renderProgs();
+  }
+}
+
+async function pauseProg(id) {
+  if (!confirm('إيقاف هذا البرنامج مؤقتاً؟')) return;
+  const i = _progs.findIndex(p => p.id === id);
+  if (i !== -1) {
+    _progs[i].status = 'موقوف';
+    cache.set('progs', _progs);
+    callScript('updateRow', { sheet: 'PROGRAMS', id, data: _progs[i] }).catch(console.error);
+    toast('تم إيقاف البرنامج مؤقتاً'); renderProgs();
+  }
+}
+
+/* ══════════════════════════════════════════
+   UI UTILITIES
+══════════════════════════════════════════ */
+function switchSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`)?.classList.add('active');
+  document.querySelector(`[data-sec="${name}"]`)?.classList.add('active');
+  if (window.innerWidth <= 760) { document.getElementById('sidebar').classList.remove('open'); }
+}
+
+function setView(v) {
+  _currentView = v;
+  document.getElementById('vbtn-cards').classList.toggle('active', v === 'cards');
+  document.getElementById('vbtn-table').classList.toggle('active', v === 'table');
+  document.getElementById('view-cards').style.display = v === 'cards' ? '' : 'none';
+  document.getElementById('view-table').style.display = v === 'table' ? '' : 'none';
+  renderProgs();
+}
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const mn = document.getElementById('main');
+  if (window.innerWidth <= 760) {
+    sb.classList.toggle('open');
+  } else {
+    _sidebarOpen = !_sidebarOpen;
+    sb.classList.toggle('hidden', !_sidebarOpen);
+    mn.classList.toggle('full', !_sidebarOpen);
+  }
+}
+
+function updateBadges() {
+  document.getElementById('badge-reg').textContent  = _regs.filter(r => !['ملغي','محذوف'].includes(r.status)).length;
+  document.getElementById('badge-sub').textContent  = buildSubsMap().length;
+  document.getElementById('badge-prog').textContent = _progs.length;
+}
+
+function openM(id)  { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+});
+
+function handleLogout() { if (confirm('تسجيل الخروج؟')) toast('تم تسجيل الخروج'); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch { return d; }
+}
+
+function today() { return new Date().toISOString(); }
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show t-${type}`;
+  clearTimeout(el._t);
+  el._t = setTimeout(() => { el.className = ''; }, 3400);
+}
+
+// ── Start ──
+init();
+</script>
+</body>
+</html>
