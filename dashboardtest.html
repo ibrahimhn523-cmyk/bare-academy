@@ -210,6 +210,107 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .sub-entry-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
 .sub-entry-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; font-size: .79rem; color: var(--muted); }
 
+/* ── NAV DROPDOWN ── */
+.nav-dropdown-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; color: rgba(255,255,255,.72); cursor: pointer;
+  border-right: 3px solid transparent; transition: all .18s; font-size: .9rem;
+  user-select: none;
+}
+.nav-dropdown-btn:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-dropdown-btn.open { color: var(--gold); background: rgba(193,157,46,.08); }
+.nav-arrow { margin-right: auto; transition: transform .22s; font-size: .72rem; opacity: .75; }
+.nav-dropdown-btn.open .nav-arrow { transform: rotate(180deg); }
+.nav-dropdown-menu { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+.nav-dropdown-menu.open { max-height: 700px; }
+.nav-sub-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px 9px 10px; padding-right: 28px;
+  color: rgba(255,255,255,.58); cursor: pointer; font-size: .84rem;
+  border-right: 3px solid transparent; transition: all .16s;
+}
+.nav-sub-item:hover { background: rgba(255,255,255,.06); color: rgba(255,255,255,.9); }
+.nav-sub-item.active { color: var(--gold); border-right-color: var(--gold); background: rgba(193,157,46,.11); }
+.nav-sub-icon { font-size: .88rem; min-width: 18px; text-align: center; }
+.nav-divider { height: 1px; background: rgba(255,255,255,.08); margin: 5px 12px; }
+
+/* ── PAYMENT BADGES ── */
+.b-paid   { background: #d1fae5; color: #065f46; }
+.b-unpaid { background: #fee2e2; color: #991b1b; }
+
+/* ── KPI ROW ── */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi-card { background: var(--white); border-radius: 10px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(0,0,0,.06); border-top: 3px solid var(--border); }
+.kpi-card.kpi-gold   { border-top-color: var(--gold); }
+.kpi-card.kpi-green  { border-top-color: var(--success); }
+.kpi-card.kpi-red    { border-top-color: var(--danger); }
+.kpi-card.kpi-blue   { border-top-color: var(--info); }
+.kpi-card.kpi-purple { border-top-color: #8b5cf6; }
+.kpi-lbl { font-size: .74rem; color: var(--muted); margin-bottom: 3px; }
+.kpi-val { font-size: 1.55rem; font-weight: 700; color: var(--primary); }
+.kpi-sub { font-size: .72rem; color: var(--muted); margin-top: 2px; }
+
+/* ── MESSAGING ── */
+.msg-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.msg-panel { background: var(--white); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); padding: 18px; margin-bottom: 14px; }
+.msg-panel-title { font-size: .9rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.msg-type-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.msg-type-btn { padding: 6px 12px; border-radius: 18px; border: 1px solid var(--border); background: var(--bg); cursor: pointer; font-family: inherit; font-size: .8rem; transition: all .15s; white-space: nowrap; }
+.msg-type-btn.active { background: var(--gold); color: var(--primary); border-color: var(--gold); font-weight: 700; }
+.recipients-box { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: var(--bg); margin-bottom: 12px; }
+.rec-title { font-size: .78rem; font-weight: 700; color: var(--muted); margin-bottom: 7px; text-transform: uppercase; letter-spacing: .04em; }
+.rec-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: .85rem; cursor: pointer; }
+.rec-row input[type=radio] { accent-color: var(--gold); cursor: pointer; }
+.manual-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); }
+.chip { padding: 3px 9px; border: 1px solid var(--border); border-radius: 13px; font-size: .78rem; cursor: pointer; background: var(--white); transition: all .13s; }
+.chip.sel { background: var(--gold); color: var(--primary); border-color: var(--gold); font-weight: 600; }
+.msg-textarea { width: 100%; min-height: 110px; border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-family: inherit; font-size: .87rem; resize: vertical; background: var(--bg); outline: none; transition: border-color .18s; }
+.msg-textarea:focus { border-color: var(--primary); background: var(--white); }
+.msg-actions-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.whatsapp-preview { background: #e7fbd0; border-radius: 12px; padding: 14px; margin-top: 4px; font-size: .85rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; border: 1px solid #c3e6a0; min-height: 80px; }
+@media (max-width: 900px) { .msg-layout { grid-template-columns: 1fr; } }
+
+/* ── CHARTS ── */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.chart-card { background: var(--white); border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,.07); padding: 16px; }
+.chart-title { font-size: .88rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+.bar-chart { display: flex; flex-direction: column; gap: 8px; }
+.bar-item { display: flex; align-items: center; gap: 8px; font-size: .8rem; }
+.bar-lbl { min-width: 90px; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-track { flex: 1; background: #f0f0f0; border-radius: 4px; height: 15px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: var(--gold); transition: width .6s; }
+.bar-num { min-width: 32px; font-weight: 700; color: var(--primary); font-size: .8rem; text-align: left; }
+.legend-list { display: flex; flex-direction: column; gap: 9px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-size: .84rem; }
+.l-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+.l-lbl { flex: 1; }
+.l-val { font-weight: 700; color: var(--primary); }
+.progress-bar-full { height: 12px; background: #f0f0f0; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+.progress-bar-full .bar-fill { height: 100%; border-radius: 6px; }
+@media (max-width: 760px) { .charts-grid { grid-template-columns: 1fr; } }
+
+/* ── ATTENDANCE ── */
+.att-controls { background: var(--white); border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.att-controls select, .att-controls input[type=date] { border: 1px solid var(--border); border-radius: 7px; padding: 7px 11px; font-family: inherit; font-size: .88rem; background: var(--bg); outline: none; transition: border-color .18s; }
+.att-controls select:focus, .att-controls input:focus { border-color: var(--primary); }
+.att-summary { display: flex; gap: 12px; flex-wrap: wrap; background: var(--white); border-radius: 8px; padding: 10px 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 12px; font-size: .83rem; align-items: center; }
+.att-sum-item { display: flex; align-items: center; gap: 5px; }
+.att-s-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.att-list { display: flex; flex-direction: column; gap: 6px; }
+.att-row { display: flex; align-items: center; gap: 10px; background: var(--white); border-radius: 9px; padding: 11px 15px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.att-row-num { min-width: 24px; color: var(--muted); font-size: .79rem; text-align: center; }
+.att-row-info { flex: 1; }
+.att-row-name { font-size: .89rem; font-weight: 600; }
+.att-row-phone { font-size: .77rem; color: var(--muted); }
+.att-btns { display: flex; gap: 5px; }
+.ab { padding: 5px 10px; border: 1.5px solid; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: .78rem; font-weight: 600; background: transparent; transition: all .14s; white-space: nowrap; }
+.ab-p { border-color: var(--success); color: var(--success); }
+.ab-p.on { background: var(--success); color: #fff; }
+.ab-a { border-color: var(--danger); color: var(--danger); }
+.ab-a.on { background: var(--danger); color: #fff; }
+.ab-l { border-color: var(--warning); color: #b45309; }
+.ab-l.on { background: var(--warning); color: #fff; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 760px) {
   .sidebar { transform: translateX(100%); }
@@ -240,20 +341,51 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 <nav class="sidebar" id="sidebar">
   <div class="nav-section">
     <div class="nav-label">القوائم الرئيسية</div>
-    <div class="nav-item active" data-sec="registrations" onclick="switchSection('registrations')">
-      <span class="nav-icon">📋</span>
-      <span>التسجيل الأولي</span>
-      <span class="nav-badge" id="badge-reg">0</span>
-    </div>
-    <div class="nav-item" data-sec="subscribers" onclick="switchSection('subscribers')">
+
+    <!-- Dropdown: المشتركين -->
+    <div class="nav-dropdown-btn open" id="dd-subs-btn" onclick="toggleDropdown('dd-subs-btn','dd-subs-menu')">
       <span class="nav-icon">👥</span>
-      <span>سجل المشتركين</span>
-      <span class="nav-badge" id="badge-sub">0</span>
+      <span>المشتركين</span>
+      <span class="nav-arrow">▼</span>
     </div>
-    <div class="nav-item" data-sec="programs" onclick="switchSection('programs')">
-      <span class="nav-icon">📊</span>
-      <span>سجل البرامج</span>
-      <span class="nav-badge" id="badge-prog">0</span>
+    <div class="nav-dropdown-menu open" id="dd-subs-menu">
+      <div class="nav-sub-item active" data-sec="registrations" onclick="switchSection('registrations')">
+        <span class="nav-sub-icon">📝</span>
+        <span>التسجيل الأولي</span>
+        <span class="nav-badge" id="badge-reg">0</span>
+      </div>
+      <div class="nav-sub-item" data-sec="subscribers" onclick="switchSection('subscribers')">
+        <span class="nav-sub-icon">👥</span>
+        <span>سجل المشتركين</span>
+        <span class="nav-badge" id="badge-sub">0</span>
+      </div>
+      <div class="nav-sub-item" data-sec="programs" onclick="switchSection('programs')">
+        <span class="nav-sub-icon">📋</span>
+        <span>سجل البرامج</span>
+        <span class="nav-badge" id="badge-prog">0</span>
+      </div>
+      <div class="nav-sub-item" data-sec="fees" onclick="switchSection('fees')">
+        <span class="nav-sub-icon">💰</span>
+        <span>إدارة الرسوم</span>
+      </div>
+      <div class="nav-sub-item" data-sec="messaging" onclick="switchSection('messaging')">
+        <span class="nav-sub-icon">💬</span>
+        <span>التواصل والواتس</span>
+      </div>
+      <div class="nav-sub-item" data-sec="stats" onclick="switchSection('stats')">
+        <span class="nav-sub-icon">📊</span>
+        <span>الإحصائيات</span>
+      </div>
+      <div class="nav-sub-item" data-sec="attendance" onclick="switchSection('attendance')">
+        <span class="nav-sub-icon">✅</span>
+        <span>التحضير</span>
+      </div>
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="nav-item" onclick="handleLogout()">
+      <span class="nav-icon">🚪</span>
+      <span>تسجيل الخروج</span>
     </div>
   </div>
 </nav>
@@ -386,6 +518,154 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
           </table>
         </div>
       </div>
+    </div>
+  </section>
+
+
+  <!-- ══════ SECTION 4: FEES ══════ -->
+  <section class="section" id="section-fees">
+    <div class="page-hdr">
+      <div class="page-title">إدارة الرسوم <span class="page-sub">متابعة الدفعات</span></div>
+      <div class="hdr-actions">
+        <button class="btn btn-refresh" onclick="loadFees()">🔄 تحديث</button>
+        <button class="btn btn-gold" onclick="openAddPayment()">➕ إضافة دفعة</button>
+      </div>
+    </div>
+    <div class="kpi-row" id="fees-stats"></div>
+    <div class="filter-bar">
+      <input type="text" id="fees-search" placeholder="🔍 بحث بالاسم..." oninput="renderFees()">
+      <select id="fees-status-filter" onchange="renderFees()">
+        <option value="">كل الحالات</option>
+        <option value="لم يدفع">🔴 لم يدفع</option>
+        <option value="جزئي">🟡 جزئي</option>
+        <option value="مسدد">🟢 مسدد</option>
+      </select>
+      <select id="fees-prog-filter" onchange="renderFees()">
+        <option value="">كل البرامج</option>
+      </select>
+    </div>
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>الاسم</th><th>البرنامج</th>
+              <th>المستحق</th><th>المدفوع</th><th>المتبقي</th>
+              <th>الحالة</th><th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="fees-tbody">
+            <tr class="loading-row"><td colspan="8">جاري التحميل… <span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-footer"><span id="fees-count">—</span></div>
+    </div>
+  </section>
+
+  <!-- ══════ SECTION 5: MESSAGING ══════ -->
+  <section class="section" id="section-messaging">
+    <div class="page-hdr">
+      <div class="page-title">التواصل والواتس <span class="page-sub">رسائل مخصصة</span></div>
+    </div>
+    <div class="msg-layout">
+      <!-- الإعدادات -->
+      <div>
+        <div class="msg-panel">
+          <div class="msg-panel-title">نوع الرسالة</div>
+          <div class="msg-type-btns">
+            <button class="msg-type-btn active" onclick="setMsgType('confirm')">✅ تأكيد اشتراك</button>
+            <button class="msg-type-btn" onclick="setMsgType('reminder')">⏰ تذكير سداد</button>
+            <button class="msg-type-btn" onclick="setMsgType('paid')">💰 تم السداد</button>
+            <button class="msg-type-btn" onclick="setMsgType('ending')">📅 قرب الانتهاء</button>
+            <button class="msg-type-btn" onclick="setMsgType('custom')">✏️ مخصصة</button>
+          </div>
+        </div>
+        <div class="msg-panel">
+          <div class="msg-panel-title">المستقبلون</div>
+          <div class="recipients-box">
+            <div class="rec-title">اختيار سريع</div>
+            <label class="rec-row"><input type="radio" name="rec-mode" value="all"     onchange="onRecModeChange()" checked> جميع المشتركين</label>
+            <label class="rec-row"><input type="radio" name="rec-mode" value="active"  onchange="onRecModeChange()"> المشتركون النشطون</label>
+            <label class="rec-row"><input type="radio" name="rec-mode" value="unpaid"  onchange="onRecModeChange()"> لم يسددوا</label>
+            <label class="rec-row"><input type="radio" name="rec-mode" value="partial" onchange="onRecModeChange()"> سداد جزئي</label>
+            <label class="rec-row"><input type="radio" name="rec-mode" value="manual"  onchange="onRecModeChange()"> اختيار يدوي</label>
+          </div>
+          <div id="manual-chips-wrap" style="display:none">
+            <div class="rec-title">اختر الطلاب:</div>
+            <div class="manual-chips" id="manual-chips"></div>
+          </div>
+          <div style="font-size:.8rem;color:var(--muted);margin-top:6px" id="rec-count-lbl">0 مستقبل محدد</div>
+        </div>
+      </div>
+      <!-- محرر الرسالة -->
+      <div>
+        <div class="msg-panel">
+          <div class="msg-panel-title">محتوى الرسالة</div>
+          <textarea class="msg-textarea" id="msg-text" placeholder="اكتب رسالتك هنا..." oninput="updateMsgPreview()"></textarea>
+          <div class="msg-actions-row">
+            <button class="btn btn-secondary" onclick="resetMsgTemplate()">🔄 استعادة النموذج</button>
+            <button class="btn btn-secondary" onclick="copyMsgText()">📋 نسخ</button>
+            <button class="btn btn-gold" onclick="sendWhatsApp()">📤 إرسال واتساب</button>
+          </div>
+        </div>
+        <div class="msg-panel">
+          <div class="msg-panel-title">معاينة الرسالة</div>
+          <div class="whatsapp-preview" id="msg-preview">اختر نوع الرسالة لمعاينتها...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ SECTION 6: STATS ══════ -->
+  <section class="section" id="section-stats">
+    <div class="page-hdr">
+      <div class="page-title">الإحصائيات <span class="page-sub">تحليل الأداء</span></div>
+      <button class="btn btn-refresh" onclick="renderStats()">🔄 تحديث</button>
+    </div>
+    <div class="kpi-row" id="stats-kpi"></div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📊 المشتركون حسب البرنامج</div>
+        <div class="bar-chart" id="chart-by-prog"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">💰 حالة السداد</div>
+        <div class="legend-list" id="chart-payment-status"></div>
+        <div id="stats-collection-bar" style="margin-top:14px"></div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">📅 حالة الاشتراكات</div>
+        <div class="legend-list" id="chart-sub-status"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">👤 الفئات الدراسية</div>
+        <div class="bar-chart" id="chart-by-cat"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ SECTION 7: ATTENDANCE ══════ -->
+  <section class="section" id="section-attendance">
+    <div class="page-hdr">
+      <div class="page-title">التحضير <span class="page-sub">متابعة الحضور</span></div>
+      <div class="hdr-actions">
+        <button class="btn btn-refresh" onclick="loadAttendance()">🔄 تحديث</button>
+        <button class="btn btn-gold" onclick="saveAttendance()">💾 حفظ التحضير</button>
+      </div>
+    </div>
+    <div class="att-controls">
+      <select id="att-prog" onchange="loadAttendanceStudents()">
+        <option value="">اختر البرنامج</option>
+      </select>
+      <input type="date" id="att-date" onchange="loadAttendanceStudents()">
+      <span style="color:var(--muted);font-size:.85rem" id="att-prog-label"></span>
+    </div>
+    <div class="att-summary" id="att-summary" style="display:none"></div>
+    <div class="att-list" id="att-list">
+      <div class="empty"><div class="ei">✅</div><p>اختر برنامجاً وتاريخاً لبدء التحضير</p></div>
     </div>
   </section>
 
@@ -592,6 +872,63 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
   </div>
 </div>
 
+<!-- Modal: Add Payment -->
+<div class="overlay" id="m-payment">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">➕ إضافة دفعة</div>
+      <button class="modal-close" onclick="closeM('m-payment')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="frow">
+        <div class="fg">
+          <label>الطالب <span class="req">*</span></label>
+          <select id="pay-student-sel" onchange="onPayStudentSelect()">
+            <option value="">اختر الطالب</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>البرنامج <span class="req">*</span></label>
+          <select id="pay-prog-sel" onchange="onPayProgSelect()">
+            <option value="">اختر البرنامج</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>المبلغ المدفوع (ر.س) <span class="req">*</span></label>
+          <input type="number" id="pay-amount" min="0" placeholder="0">
+        </div>
+        <div class="fg">
+          <label>طريقة الدفع</label>
+          <select id="pay-method">
+            <option>نقداً</option><option>تحويل بنكي</option><option>مدى</option><option>آجل</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>تاريخ الدفع</label><input type="date" id="pay-date"></div>
+        <div class="fg"><label>ملاحظات</label><input type="text" id="pay-notes" placeholder="اختياري"></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-payment')">إلغاء</button>
+      <button class="btn btn-gold" onclick="savePayment()">💾 حفظ الدفعة</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Payment History -->
+<div class="overlay" id="m-pay-history">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-pay-history-title">سجل الدفعات</div>
+      <button class="modal-close" onclick="closeM('m-pay-history')">✕</button>
+    </div>
+    <div class="modal-body" id="m-pay-history-body"></div>
+  </div>
+</div>
+
 <!-- ══════════════════ SCRIPTS ══════════════════ -->
 <script src="./google-sheets-connector.js"></script>
 <script>
@@ -609,6 +946,10 @@ const SCRIPT_PASS    = 'bareadmin1212';
 let _regs  = [];
 let _subs  = [];
 let _progs = [];
+let _payments = [];
+let _attState = {};
+let _msgType  = 'confirm';
+let _selectedRecipients = [];
 let _currentView = 'cards';
 let _sidebarOpen = true;
 
@@ -618,6 +959,7 @@ let _sidebarOpen = true;
 async function init() {
   await Promise.all([loadRegistrations(), loadPrograms()]);
   await loadSubscriptions();
+  await loadPayments();
 }
 
 /* ══════════════════════════════════════════
@@ -1322,14 +1664,518 @@ async function pauseProg(id) {
 }
 
 /* ══════════════════════════════════════════
+   ── SECTION 4: FEES ──
+══════════════════════════════════════════ */
+async function loadPayments() {
+  try {
+    const rows = await readSheet('PAYMENTS');
+    _payments = rows.map(r => ({
+      id:             r.id || String(Date.now()),
+      studentId:      parseInt(r.studentId) || 0,
+      studentName:    r.studentName || '',
+      subscriptionId: parseInt(r.subscriptionId) || 0,
+      required:       parseFloat(r.required) || 0,
+      paid:           parseFloat(r.paid) || 0,
+      remaining:      parseFloat(r.remaining) || 0,
+      paymentStatus:  r.paymentStatus || '',
+      method:         r.method || '',
+      notes:          r.notes || '',
+      date:           r.date || '',
+      createdAt:      r.createdAt || ''
+    })).filter(p => p.studentId > 0);
+    cache.set('payments', _payments);
+  } catch (e) {
+    console.error('[PAYMENTS]', e);
+    _payments = cache.get('payments');
+  }
+}
+
+async function loadFees() {
+  await loadPayments();
+  fillFeesProgFilter();
+  renderFees();
+}
+
+function buildFeesData() {
+  const seen = new Set();
+  const data = [];
+  _subs.forEach(sub => {
+    const key = `${sub.studentId}_${sub.programId}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const prog      = _progs.find(p => p.id === sub.programId);
+    const required  = prog ? prog.fullFee : 0;
+    const subIds    = _subs.filter(s => s.studentId === sub.studentId && s.programId === sub.programId).map(s => s.id);
+    const relPays   = _payments.filter(p => subIds.includes(p.subscriptionId) || p.studentId === sub.studentId);
+    const totalPaid = relPays.reduce((s, p) => s + p.paid, 0);
+    const remaining = Math.max(0, required - totalPaid);
+    let status = 'لم يدفع';
+    if (required > 0 && totalPaid >= required) status = 'مسدد';
+    else if (totalPaid > 0) status = 'جزئي';
+    data.push({ studentId: sub.studentId, fullName: sub.studentName, phone: sub.phone,
+                programId: sub.programId, programName: sub.programName,
+                required, paid: totalPaid, remaining, status, subscriptionId: sub.id });
+  });
+  return data.sort((a, b) => b.remaining - a.remaining);
+}
+
+function fillFeesProgFilter() {
+  const sel = document.getElementById('fees-prog-filter');
+  if (!sel) return;
+  const ids = [...new Set(_subs.map(s => s.programId).filter(Boolean))];
+  sel.innerHTML = '<option value="">كل البرامج</option>' + ids.map(pid => {
+    const p    = _progs.find(x => x.id === pid);
+    const name = p ? p.name : (_subs.find(s => s.programId === pid)?.programName || `برنامج ${pid}`);
+    return `<option value="${pid}">${name}</option>`;
+  }).join('');
+}
+
+function renderFees() {
+  const q   = (document.getElementById('fees-search')?.value || '').toLowerCase();
+  const st  = document.getElementById('fees-status-filter')?.value || '';
+  const prg = document.getElementById('fees-prog-filter')?.value || '';
+  let d = buildFeesData();
+  if (st)  d = d.filter(x => x.status === st);
+  if (prg) d = d.filter(x => String(x.programId) === prg);
+  if (q)   d = d.filter(x => x.fullName.toLowerCase().includes(q));
+
+  const tbody = document.getElementById('fees-tbody');
+  if (!tbody) return;
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="ei">💰</div><p>لا توجد بيانات رسوم</p></div></td></tr>`;
+    document.getElementById('fees-count').textContent = '0 سجل';
+    renderFeesStats([]); return;
+  }
+  tbody.innerHTML = d.map((r, i) => {
+    const icon     = r.status === 'مسدد' ? '🟢' : r.status === 'جزئي' ? '🟡' : '🔴';
+    const badgeCls = r.status === 'مسدد' ? 'b-paid' : r.status === 'جزئي' ? 'b-partial' : 'b-unpaid';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><strong>${esc(r.fullName)}</strong><br><small style="color:var(--muted)" dir="ltr">${r.phone}</small></td>
+      <td>${esc(r.programName)}</td>
+      <td>${r.required.toLocaleString()} ر.س</td>
+      <td>${r.paid.toLocaleString()} ر.س</td>
+      <td>${r.remaining > 0 ? `<strong style="color:var(--danger)">${r.remaining.toLocaleString()} ر.س</strong>` : '<span style="color:var(--success)">—</span>'}</td>
+      <td>${icon} <span class="badge ${badgeCls}">${r.status}</span></td>
+      <td><div class="actions">
+        <button class="abt abt-convert" title="إضافة دفعة" onclick="openAddPaymentFor(${r.studentId},${r.programId})">➕</button>
+        <button class="abt abt-view"    title="سجل الدفعات" onclick="viewPaymentHistory(${r.studentId})">📋</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('fees-count').textContent = `${d.length} سجل`;
+  renderFeesStats(d);
+}
+
+function renderFeesStats(d) {
+  if (!d || !d.length) d = buildFeesData();
+  const req  = d.reduce((s, x) => s + x.required, 0);
+  const paid = d.reduce((s, x) => s + x.paid, 0);
+  const rem  = d.reduce((s, x) => s + x.remaining, 0);
+  const rate = req > 0 ? Math.round((paid / req) * 100) : 0;
+  document.getElementById('fees-stats').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-lbl">إجمالي المطلوب</div><div class="kpi-val">${req.toLocaleString()}</div><div class="kpi-sub">ريال سعودي</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-lbl">إجمالي المحصّل</div><div class="kpi-val">${paid.toLocaleString()}</div><div class="kpi-sub">ريال سعودي</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-lbl">إجمالي المتبقي</div><div class="kpi-val">${rem.toLocaleString()}</div><div class="kpi-sub">ريال سعودي</div></div>
+    <div class="kpi-card kpi-gold"><div class="kpi-lbl">نسبة التحصيل</div><div class="kpi-val">${rate}%</div></div>`;
+}
+
+function openAddPayment() {
+  const students = buildSubsMap();
+  document.getElementById('pay-student-sel').innerHTML =
+    '<option value="">اختر الطالب</option>' +
+    students.map(s => `<option value="${s.studentId}">${esc(s.fullName)}</option>`).join('');
+  document.getElementById('pay-prog-sel').innerHTML = '<option value="">اختر البرنامج</option>';
+  document.getElementById('pay-amount').value = '';
+  document.getElementById('pay-method').value = 'نقداً';
+  document.getElementById('pay-notes').value  = '';
+  document.getElementById('pay-date').value   = today().split('T')[0];
+  openM('m-payment');
+}
+
+function openAddPaymentFor(studentId, programId) {
+  openAddPayment();
+  document.getElementById('pay-student-sel').value = studentId;
+  onPayStudentSelect();
+  setTimeout(() => {
+    document.getElementById('pay-prog-sel').value = programId;
+    onPayProgSelect();
+  }, 50);
+}
+
+function onPayStudentSelect() {
+  const sid = parseInt(document.getElementById('pay-student-sel').value);
+  const sel = document.getElementById('pay-prog-sel');
+  if (!sid) { sel.innerHTML = '<option value="">اختر البرنامج</option>'; return; }
+  const progIds = [...new Set(_subs.filter(s => s.studentId === sid).map(s => s.programId))];
+  sel.innerHTML = '<option value="">اختر البرنامج</option>' + progIds.map(pid => {
+    const p    = _progs.find(x => x.id === pid);
+    const name = p ? p.name : (_subs.find(s => s.programId === pid)?.programName || `برنامج ${pid}`);
+    return `<option value="${pid}">${name}</option>`;
+  }).join('');
+}
+
+function onPayProgSelect() {
+  const sid = parseInt(document.getElementById('pay-student-sel').value);
+  const pid = parseInt(document.getElementById('pay-prog-sel').value);
+  if (!sid || !pid) return;
+  const fd  = buildFeesData().find(f => f.studentId === sid && f.programId === pid);
+  const rem = fd ? fd.remaining : (_progs.find(p => p.id === pid)?.fullFee || 0);
+  document.getElementById('pay-amount').value = rem;
+}
+
+async function savePayment() {
+  const sid    = parseInt(document.getElementById('pay-student-sel').value);
+  const pid    = parseInt(document.getElementById('pay-prog-sel').value);
+  const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+  const method = document.getElementById('pay-method').value;
+  const notes  = document.getElementById('pay-notes').value.trim();
+  const date   = document.getElementById('pay-date').value;
+  if (!sid || !pid)  { toast('يرجى اختيار الطالب والبرنامج', 'error'); return; }
+  if (amount <= 0)   { toast('يرجى إدخال مبلغ صحيح', 'error'); return; }
+
+  const student  = buildSubsMap().find(s => s.studentId === sid);
+  const sub      = _subs.find(s => s.studentId === sid && s.programId === pid);
+  const prog     = _progs.find(p => p.id === pid);
+  const fd       = buildFeesData().find(f => f.studentId === sid && f.programId === pid);
+  const required = prog ? prog.fullFee : 0;
+  const newTotal = (fd ? fd.paid : 0) + amount;
+  const remaining= Math.max(0, required - newTotal);
+  const status   = newTotal >= required ? 'مسدد بالكامل' : 'مسدد جزئياً';
+
+  const entry = { id: String(Date.now()), studentId: sid, studentName: student?.fullName || '',
+    subscriptionId: sub?.id || 0, required, paid: amount, remaining, paymentStatus: status,
+    method, notes, date, createdAt: today() };
+  _payments.push(entry);
+  cache.set('payments', _payments);
+  callScript('appendRow', { sheet: 'PAYMENTS',
+    values: [entry.id, entry.studentId, entry.studentName, entry.subscriptionId, entry.required,
+             entry.paid, entry.remaining, entry.paymentStatus, entry.method, entry.notes,
+             entry.date, 0, '', '', '', entry.createdAt] }).catch(console.error);
+  toast('تم تسجيل الدفعة ✅');
+  closeM('m-payment'); renderFees();
+}
+
+function viewPaymentHistory(studentId) {
+  const student = buildSubsMap().find(s => s.studentId === studentId);
+  const pays    = _payments.filter(p => p.studentId === studentId);
+  document.getElementById('m-pay-history-title').textContent = `سجل دفعات: ${student?.fullName || ''}`;
+  const body = document.getElementById('m-pay-history-body');
+  if (!pays.length) {
+    body.innerHTML = `<div class="empty"><div class="ei">💰</div><p>لا توجد دفعات مسجلة</p></div>`;
+  } else {
+    const total = pays.reduce((s, p) => s + p.paid, 0);
+    body.innerHTML = `
+      <div style="background:var(--bg);padding:10px 12px;border-radius:8px;margin-bottom:12px;font-size:.85rem">
+        <strong>إجمالي المدفوع:</strong> ${total.toLocaleString()} ر.س
+      </div>
+      <div class="table-card"><div class="tbl-wrap"><table>
+        <thead><tr><th>#</th><th>التاريخ</th><th>المبلغ</th><th>الطريقة</th><th>الملاحظات</th></tr></thead>
+        <tbody>${pays.map((p, i) => `<tr>
+          <td>${i+1}</td><td>${fmtDate(p.date || p.createdAt)}</td>
+          <td><strong>${p.paid.toLocaleString()} ر.س</strong></td>
+          <td>${p.method}</td><td>${p.notes || '—'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div></div>`;
+  }
+  openM('m-pay-history');
+}
+
+/* ══════════════════════════════════════════
+   ── SECTION 5: MESSAGING ──
+══════════════════════════════════════════ */
+const MSG_TEMPLATES = {
+  confirm:  (n, prog, s, e)    => `السلام عليكم ورحمة الله وبركاته 🌟\n\nعزيزنا ${n}،\n\nيسعدنا إخطاركم بأنه تم تسجيلكم بنجاح في أكاديمية بارع.\n\n📚 البرنامج: ${prog}\n📅 تاريخ البداية: ${s}\n📅 تاريخ الانتهاء: ${e}\n\nنتمنى لكم تجربة تعليمية مثمرة 🎓\n\nأكاديمية بارع`,
+  reminder: (n, rem, due)      => `السلام عليكم ورحمة الله 🌙\n\nعزيزنا ${n}،\n\nنذكّركم بأن الرسوم المتبقية:\n💰 المبلغ المتبقي: ${rem} ر.س\n📅 الموعد: ${due}\n\nيرجى التواصل لإتمام السداد 🙏\n\nأكاديمية بارع`,
+  paid:     (n, amount, date)  => `السلام عليكم ورحمة الله 💚\n\nعزيزنا ${n}،\n\nتم استلام دفعتكم بنجاح ✅\n\n💰 المبلغ: ${amount} ر.س\n📅 التاريخ: ${date}\n\nنشكركم على ثقتكم بأكاديمية بارع 🌟`,
+  ending:   (n, days, end)     => `السلام عليكم ورحمة الله ⏰\n\nعزيزنا ${n}،\n\nنودّ إحاطتكم بأن اشتراككم سينتهي خلال ${days} يوم (${end}).\n\nللتجديد يرجى التواصل معنا 📞\n\nأكاديمية بارع`,
+  custom:   ()                 => ''
+};
+
+function initMessaging() {
+  updateManualChips();
+  setMsgType(_msgType || 'confirm');
+  onRecModeChange();
+}
+
+function setMsgType(type) {
+  _msgType = type;
+  document.querySelectorAll('.msg-type-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick').includes(`'${type}'`));
+  });
+  resetMsgTemplate();
+}
+
+function resetMsgTemplate() {
+  const recs  = getSelectedRecipients();
+  const first = recs[0];
+  let text = '';
+  if (_msgType === 'confirm' && first) {
+    const sub = _subs.find(s => s.studentId === first.studentId);
+    text = MSG_TEMPLATES.confirm(first.fullName, sub?.programName || '—', fmtDate(sub?.startDate), fmtDate(sub?.endDate));
+  } else if (_msgType === 'reminder' && first) {
+    const fd  = buildFeesData().find(f => f.studentId === first.studentId);
+    text = MSG_TEMPLATES.reminder(first.fullName, fd?.remaining?.toLocaleString() || '0', '—');
+  } else if (_msgType === 'paid' && first) {
+    text = MSG_TEMPLATES.paid(first.fullName, '—', fmtDate(today().split('T')[0]));
+  } else if (_msgType === 'ending' && first) {
+    const sub  = _subs.find(s => s.studentId === first.studentId && s.status === 'نشط');
+    const days = sub?.endDate ? Math.max(0, Math.ceil((new Date(sub.endDate + 'T00:00:00') - new Date()) / 86400000)) : '—';
+    text = MSG_TEMPLATES.ending(first.fullName, days, fmtDate(sub?.endDate));
+  } else if (_msgType !== 'custom') {
+    text = MSG_TEMPLATES[_msgType]?.('الطالب', '—', '—', '—') || '';
+  }
+  const ta = document.getElementById('msg-text');
+  if (ta) ta.value = text;
+  updateMsgPreview();
+}
+
+function updateMsgPreview() {
+  const text    = document.getElementById('msg-text')?.value || '';
+  const preview = document.getElementById('msg-preview');
+  if (preview) preview.textContent = text || 'اكتب رسالتك لمعاينتها...';
+}
+
+function onRecModeChange() {
+  const mode = document.querySelector('input[name="rec-mode"]:checked')?.value || 'all';
+  const wrap = document.getElementById('manual-chips-wrap');
+  if (wrap) wrap.style.display = mode === 'manual' ? '' : 'none';
+  updateRecCount();
+  resetMsgTemplate();
+}
+
+function updateManualChips() {
+  const wrap = document.getElementById('manual-chips');
+  if (!wrap) return;
+  wrap.innerHTML = buildSubsMap().map(s =>
+    `<span class="chip ${_selectedRecipients.includes(s.studentId) ? 'sel' : ''}" onclick="toggleChip(${s.studentId},this)">${esc(s.fullName)}</span>`
+  ).join('');
+}
+
+function toggleChip(id, el) {
+  const idx = _selectedRecipients.indexOf(id);
+  if (idx === -1) _selectedRecipients.push(id); else _selectedRecipients.splice(idx, 1);
+  el.classList.toggle('sel', _selectedRecipients.includes(id));
+  updateRecCount();
+}
+
+function getSelectedRecipients() {
+  const mode = document.querySelector('input[name="rec-mode"]:checked')?.value || 'all';
+  const all  = buildSubsMap();
+  const fd   = buildFeesData();
+  if (mode === 'all')     return all;
+  if (mode === 'active')  return all.filter(s => overallStatus(s.entries) === 'نشط');
+  if (mode === 'unpaid')  return all.filter(s => fd.find(f => f.studentId === s.studentId && f.status === 'لم يدفع'));
+  if (mode === 'partial') return all.filter(s => fd.find(f => f.studentId === s.studentId && f.status === 'جزئي'));
+  if (mode === 'manual')  return all.filter(s => _selectedRecipients.includes(s.studentId));
+  return all;
+}
+
+function updateRecCount() {
+  const lbl = document.getElementById('rec-count-lbl');
+  if (lbl) lbl.textContent = `${getSelectedRecipients().length} مستقبل محدد`;
+}
+
+function copyMsgText() {
+  const text = document.getElementById('msg-text')?.value;
+  if (!text) { toast('لا يوجد نص للنسخ', 'error'); return; }
+  navigator.clipboard?.writeText(text).then(() => toast('تم النسخ ✅')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    toast('تم النسخ ✅');
+  });
+}
+
+function sendWhatsApp() {
+  const recs = getSelectedRecipients();
+  const text = document.getElementById('msg-text')?.value;
+  if (!recs.length)  { toast('لا يوجد مستقبلون محددون', 'error'); return; }
+  if (!text?.trim()) { toast('يرجى كتابة محتوى الرسالة', 'error'); return; }
+  if (recs.length === 1) {
+    const raw   = recs[0].phone?.replace(/\D/g, '') || '';
+    const phone = raw.startsWith('0') ? '966' + raw.slice(1) : raw;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+    toast('تم فتح واتساب ✅');
+  } else {
+    copyMsgText();
+    toast(`تم نسخ الرسالة — أرسلها لـ ${recs.length} مستقبل عبر واتساب`);
+  }
+}
+
+/* ══════════════════════════════════════════
+   ── SECTION 6: STATISTICS ──
+══════════════════════════════════════════ */
+function renderStats() {
+  const allSubs = buildSubsMap();
+  const fd      = buildFeesData();
+  const req     = fd.reduce((s, x) => s + x.required, 0);
+  const paid    = fd.reduce((s, x) => s + x.paid, 0);
+  const rem     = fd.reduce((s, x) => s + x.remaining, 0);
+  const rate    = req > 0 ? Math.round((paid / req) * 100) : 0;
+
+  document.getElementById('stats-kpi').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-lbl">إجمالي المشتركين</div><div class="kpi-val">${allSubs.length}</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-lbl">نشطون</div><div class="kpi-val">${allSubs.filter(s => overallStatus(s.entries) === 'نشط').length}</div></div>
+    <div class="kpi-card kpi-gold"><div class="kpi-lbl">الإيرادات المحصّلة</div><div class="kpi-val">${paid.toLocaleString()}</div><div class="kpi-sub">ريال سعودي</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-lbl">الرسوم المتبقية</div><div class="kpi-val">${rem.toLocaleString()}</div><div class="kpi-sub">ريال سعودي</div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-lbl">نسبة التحصيل</div><div class="kpi-val">${rate}%</div></div>`;
+
+  /* Chart 1: by program */
+  const progMap = {};
+  _subs.forEach(s => { if (!s.programName) return; if (!progMap[s.programName]) progMap[s.programName] = new Set(); progMap[s.programName].add(s.studentId); });
+  const progItems = Object.entries(progMap).map(([name, ids]) => ({ name, count: ids.size })).sort((a,b) => b.count - a.count);
+  const maxP = progItems[0]?.count || 1;
+  document.getElementById('chart-by-prog').innerHTML = progItems.length
+    ? progItems.map(x => `<div class="bar-item"><span class="bar-lbl" title="${esc(x.name)}">${esc(x.name)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(x.count/maxP*100)}%"></div></div><span class="bar-num">${x.count}</span></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:16px">لا توجد بيانات</p>';
+
+  /* Chart 2: payment status */
+  const paidC    = fd.filter(f => f.status === 'مسدد').length;
+  const partialC = fd.filter(f => f.status === 'جزئي').length;
+  const unpaidC  = fd.filter(f => f.status === 'لم يدفع').length;
+  document.getElementById('chart-payment-status').innerHTML = `
+    <div class="legend-row"><span class="l-dot" style="background:#10b981"></span><span class="l-lbl">مسدد بالكامل</span><span class="l-val">${paidC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#f59e0b"></span><span class="l-lbl">جزئي</span><span class="l-val">${partialC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#ef4444"></span><span class="l-lbl">لم يدفع</span><span class="l-val">${unpaidC}</span></div>`;
+  document.getElementById('stats-collection-bar').innerHTML = `
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">نسبة التحصيل الكلية</div>
+    <div class="progress-bar-full"><div class="bar-fill" style="width:${rate}%;background:${rate>=80?'var(--success)':rate>=50?'var(--warning)':'var(--danger)'}"></div></div>
+    <div style="text-align:center;font-weight:700;color:var(--primary);margin-top:4px">${rate}%</div>`;
+
+  /* Chart 3: sub status */
+  const activeC  = allSubs.filter(s => overallStatus(s.entries) === 'نشط').length;
+  const partC    = allSubs.filter(s => overallStatus(s.entries) === 'جزئياً نشط').length;
+  const expC     = allSubs.filter(s => overallStatus(s.entries) === 'منتهي').length;
+  document.getElementById('chart-sub-status').innerHTML = `
+    <div class="legend-row"><span class="l-dot" style="background:#10b981"></span><span class="l-lbl">نشط</span><span class="l-val">${activeC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#f59e0b"></span><span class="l-lbl">جزئياً نشط</span><span class="l-val">${partC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#94a3b8"></span><span class="l-lbl">منتهي</span><span class="l-val">${expC}</span></div>`;
+
+  /* Chart 4: by category */
+  const catMap = {};
+  allSubs.forEach(s => { const c = s.category || 'غير محدد'; catMap[c] = (catMap[c] || 0) + 1; });
+  const catItems  = Object.entries(catMap).sort((a,b) => b[1]-a[1]);
+  const maxC      = catItems[0]?.[1] || 1;
+  const catColors = ['var(--gold)','#3b82f6','#10b981','#ef4444','#8b5cf6','#f59e0b'];
+  document.getElementById('chart-by-cat').innerHTML = catItems.length
+    ? catItems.map(([name, count], i) => `<div class="bar-item"><span class="bar-lbl" title="${esc(name)}">${esc(name)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(count/maxC*100)}%;background:${catColors[i%catColors.length]}"></div></div><span class="bar-num">${count}</span></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:16px">لا توجد بيانات</p>';
+}
+
+/* ══════════════════════════════════════════
+   ── SECTION 7: ATTENDANCE ──
+══════════════════════════════════════════ */
+function loadAttendance() {
+  const sel = document.getElementById('att-prog');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">اختر البرنامج</option>' +
+    _progs.filter(p => p.status === 'نشط').map(p => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  const dateEl = document.getElementById('att-date');
+  if (dateEl && !dateEl.value) dateEl.value = today().split('T')[0];
+  loadAttendanceStudents();
+}
+
+function loadAttendanceStudents() {
+  const progId  = parseInt(document.getElementById('att-prog')?.value) || 0;
+  const list    = document.getElementById('att-list');
+  const summary = document.getElementById('att-summary');
+  if (!progId) {
+    list.innerHTML = `<div class="empty"><div class="ei">✅</div><p>اختر برنامجاً وتاريخاً لبدء التحضير</p></div>`;
+    if (summary) summary.style.display = 'none';
+    return;
+  }
+  const prog  = _progs.find(p => p.id === progId);
+  const label = document.getElementById('att-prog-label');
+  if (label) label.textContent = prog ? `📅 ${fmtDate(prog.startDate)} — ${fmtDate(prog.endDate)}` : '';
+
+  const students = [...new Map(_subs.filter(s => s.programId === progId)
+    .map(s => [s.studentId, { studentId: s.studentId, fullName: s.studentName, phone: s.phone }])
+  ).values()];
+
+  if (!students.length) {
+    list.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد مشتركون في هذا البرنامج</p></div>`;
+    if (summary) summary.style.display = 'none';
+    return;
+  }
+  _attState = {};
+  students.forEach(s => { _attState[s.studentId] = ''; });
+  list.innerHTML = students.map((s, i) => `
+    <div class="att-row" id="att-row-${s.studentId}">
+      <span class="att-row-num">${i+1}</span>
+      <div class="att-row-info">
+        <div class="att-row-name">${esc(s.fullName)}</div>
+        <div class="att-row-phone" dir="ltr">${s.phone}</div>
+      </div>
+      <div class="att-btns">
+        <button class="ab ab-p" onclick="setAtt(${s.studentId},'حاضر',this)">✅ حاضر</button>
+        <button class="ab ab-a" onclick="setAtt(${s.studentId},'غائب',this)">❌ غائب</button>
+        <button class="ab ab-l" onclick="setAtt(${s.studentId},'متأخر',this)">⏱️ متأخر</button>
+      </div>
+    </div>`).join('');
+  if (summary) summary.style.display = '';
+  updateAttSummary(students.length);
+}
+
+function setAtt(studentId, status, btn) {
+  _attState[studentId] = status;
+  const row = document.getElementById(`att-row-${studentId}`);
+  if (row) row.querySelectorAll('.ab').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const progId   = parseInt(document.getElementById('att-prog')?.value) || 0;
+  const students = [...new Map(_subs.filter(s => s.programId === progId).map(s => [s.studentId, s])).values()];
+  updateAttSummary(students.length);
+}
+
+function updateAttSummary(total) {
+  const vals    = Object.values(_attState);
+  const present = vals.filter(v => v === 'حاضر').length;
+  const absent  = vals.filter(v => v === 'غائب').length;
+  const late    = vals.filter(v => v === 'متأخر').length;
+  const unset   = vals.filter(v => !v).length;
+  const sum     = document.getElementById('att-summary');
+  if (!sum) return;
+  sum.innerHTML = `
+    <div class="att-sum-item"><span class="att-s-dot" style="background:var(--success)"></span> حاضر: <strong>${present}</strong></div>
+    <div class="att-sum-item"><span class="att-s-dot" style="background:var(--danger)"></span> غائب: <strong>${absent}</strong></div>
+    <div class="att-sum-item"><span class="att-s-dot" style="background:var(--warning)"></span> متأخر: <strong>${late}</strong></div>
+    <div class="att-sum-item"><span class="att-s-dot" style="background:var(--border)"></span> لم يُحدد: <strong>${unset}</strong></div>
+    <div class="att-sum-item" style="margin-right:auto;font-weight:700">الإجمالي: ${total}</div>`;
+}
+
+async function saveAttendance() {
+  const progId = parseInt(document.getElementById('att-prog')?.value) || 0;
+  const date   = document.getElementById('att-date')?.value || '';
+  if (!progId || !date) { toast('يرجى اختيار البرنامج والتاريخ', 'error'); return; }
+  const entries = Object.entries(_attState).filter(([, v]) => v);
+  if (!entries.length) { toast('لم يتم تحديد أي حالة حضور', 'error'); return; }
+  const prog = _progs.find(p => p.id === progId);
+  const subsMap = buildSubsMap();
+  Promise.all(entries.map(([sid, status]) => {
+    const student = subsMap.find(s => s.studentId === parseInt(sid));
+    return callScript('appendRow', { sheet: 'ATTENDANCE',
+      values: [Date.now() + Math.random(), date, progId, prog?.name || '',
+               sid, student?.fullName || '', status, '', today()] }).catch(e => e);
+  })).then(() => toast(`تم حفظ تحضير ${entries.length} طالب ✅`));
+}
+
+/* ══════════════════════════════════════════
    UI UTILITIES
 ══════════════════════════════════════════ */
 function switchSection(name) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .nav-sub-item').forEach(n => n.classList.remove('active'));
   document.getElementById(`section-${name}`)?.classList.add('active');
   document.querySelector(`[data-sec="${name}"]`)?.classList.add('active');
+  if (name === 'fees')       { fillFeesProgFilter(); renderFees(); }
+  if (name === 'messaging')  { initMessaging(); }
+  if (name === 'stats')      { renderStats(); }
+  if (name === 'attendance') { loadAttendance(); }
   if (window.innerWidth <= 760) { document.getElementById('sidebar').classList.remove('open'); }
+}
+
+function toggleDropdown(btnId, menuId) {
+  document.getElementById(btnId).classList.toggle('open');
+  document.getElementById(menuId).classList.toggle('open');
 }
 
 function setView(v) {
