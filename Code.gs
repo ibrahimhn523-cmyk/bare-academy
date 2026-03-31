@@ -106,7 +106,7 @@ function doPost(e) {
         const regId = _nextId(regSheet);
         _appendRow(regSheet, [
           regId, d.fullName || '', d.phone || '', d.category || '',
-          d.status || 'زائر', d.notes || '', _now()
+          d.notes || '', _now()
         ]);
         _addLog('إضافة تسجيل', `تسجيل جديد: ${d.fullName}`, 'admin');
         return _json({ ok: true, id: regId, message: `تم تسجيل ${d.fullName}` });
@@ -334,7 +334,7 @@ const SHEET_HEADERS = {
   STUDENTS:      ['id','fullName','phone','category','status','notes','createdAt'],
   SUBSCRIPTIONS: ['id','studentId','studentName','phone','category','programId','programName','paymentType','startDate','endDate','status','createdAt'],
   PAYMENTS:      ['id','studentId','studentName','subscriptionId','required','paid','remaining','paymentStatus','method','notes','date','installmentNum','startDate','endDate','extraNotes','createdAt'],
-  REGISTRATIONS: ['id','fullName','phone','category','status','notes','createdAt'],
+  REGISTRATIONS: ['id','fullName','phone','category','notes','createdAt'],
   ATTENDANCE:    ['id','date','programId','programName','studentId','studentName','status','notes','createdAt'],
   LOGS:          ['id','operation','description','performedBy','timestamp','status']
 };

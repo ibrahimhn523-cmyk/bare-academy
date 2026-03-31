@@ -400,17 +400,8 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       </div>
     </div>
 
-    <div class="stats" id="reg-stats"></div>
-
     <div class="filter-bar">
       <input type="text" id="reg-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderRegs()">
-      <select id="reg-status-filter" onchange="renderRegs()">
-        <option value="">كل الحالات</option>
-        <option value="زائر">زائر</option>
-        <option value="تجربة">تجربة</option>
-        <option value="مسجل">مسجل</option>
-        <option value="ملغي">ملغي</option>
-      </select>
     </div>
 
     <div class="table-card">
@@ -419,12 +410,12 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
           <thead>
             <tr>
               <th>#</th><th>الاسم الثلاثي</th><th>رقم الجوال</th>
-              <th>الفئة</th><th>تاريخ التسجيل</th><th>الحالة</th>
+              <th>الفئة</th><th>تاريخ التسجيل</th>
               <th>ملاحظات</th><th>إجراءات</th>
             </tr>
           </thead>
           <tbody id="reg-tbody">
-            <tr class="loading-row"><td colspan="8">جاري التحميل… <span class="spinner"></span></td></tr>
+            <tr class="loading-row"><td colspan="7">جاري التحميل… <span class="spinner"></span></td></tr>
           </tbody>
         </table>
       </div>
@@ -1049,18 +1040,16 @@ async function loadRegistrations() {
 }
 
 function renderRegs() {
-  const q  = document.getElementById('reg-search').value.toLowerCase();
-  const st = document.getElementById('reg-status-filter').value;
+  const q = document.getElementById('reg-search').value.toLowerCase();
   let d = _regs.filter(r => r.status !== 'محذوف');
-  if (st) d = d.filter(r => r.status === st);
-  if (q)  d = d.filter(r => r.fullName.toLowerCase().includes(q) || r.phone.includes(q));
+  if (q) d = d.filter(r => r.fullName.toLowerCase().includes(q) || r.phone.includes(q));
   d.sort((a, b) => b.id - a.id);
 
   const tbody = document.getElementById('reg-tbody');
   if (!d.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><div class="ei">📋</div><p>لا توجد تسجيلات</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="ei">📋</div><p>لا توجد تسجيلات</p></div></td></tr>`;
     document.getElementById('reg-count').textContent = '0 تسجيل';
-    renderRegStats(); return;
+    return;
   }
 
   tbody.innerHTML = d.map(r => `
@@ -1070,39 +1059,19 @@ function renderRegs() {
       <td dir="ltr">${r.phone}</td>
       <td>${r.category}</td>
       <td>${fmtDate(r.createdAt)}</td>
-      <td>${regBadge(r.status)}</td>
-      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.notes)}">${r.notes || '—'}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.notes)}">${r.notes || '—'}</td>
       <td>
         <div class="actions">
           <button class="abt abt-edit"    title="تعديل"           onclick="openEditReg(${r.id})">✏️</button>
-          ${r.status !== 'مسجل' ? `<button class="abt abt-convert" title="تحويل إلى مشترك" onclick="openConvert(${r.id})">➕</button>` : ''}
-          <button class="abt abt-delete"  title="حذف (ناعم)"      onclick="deleteReg(${r.id})">🗑️</button>
+          <button class="abt abt-convert" title="تحويل إلى مشترك" onclick="openConvert(${r.id})">➕</button>
+          <button class="abt abt-delete"  title="حذف"             onclick="deleteReg(${r.id})">🗑️</button>
         </div>
       </td>
     </tr>`).join('');
 
   document.getElementById('reg-count').textContent = `${d.length} تسجيل`;
-  renderRegStats();
 }
 
-function renderRegStats() {
-  const d = _regs.filter(r => r.status !== 'محذوف');
-  const s = [
-    { l: 'الكل',    v: d.length },
-    { l: 'زائر',    v: d.filter(r => r.status === 'زائر').length },
-    { l: 'تجربة',   v: d.filter(r => r.status === 'تجربة').length },
-    { l: 'مسجل',    v: d.filter(r => r.status === 'مسجل').length },
-    { l: 'ملغي',    v: d.filter(r => r.status === 'ملغي').length },
-  ];
-  document.getElementById('reg-stats').innerHTML = s.map(x =>
-    `<div class="stat-card"><div class="stat-lbl">${x.l}</div><div class="stat-val">${x.v}</div></div>`
-  ).join('');
-}
-
-function regBadge(s) {
-  const m = { زائر: 'visitor', تجربة: 'trial', مسجل: 'registered', ملغي: 'cancelled' };
-  return `<span class="badge b-${m[s] || 'visitor'}">${s}</span>`;
-}
 
 function openAddReg() {
   document.getElementById('m-reg-title').textContent = 'إضافة تسجيل';
@@ -1158,13 +1127,13 @@ async function saveReg() {
 }
 
 async function deleteReg(id) {
-  if (!confirm('تحويل الحالة إلى "ملغي"؟')) return;
+  if (!confirm('حذف هذا التسجيل؟')) return;
   const i = _regs.findIndex(r => r.id === id);
   if (i !== -1) {
-    _regs[i].status = 'ملغي';
+    _regs[i].status = 'محذوف';
     cache.set('regs', _regs);
     callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
-    toast('تم الحذف الناعم'); renderRegs(); updateBadges();
+    toast('تم الحذف ✅'); renderRegs();
   }
 }
 
@@ -2220,11 +2189,7 @@ function toggleSidebar() {
   }
 }
 
-function updateBadges() {
-  document.getElementById('badge-reg').textContent  = _regs.filter(r => !['ملغي','محذوف'].includes(r.status)).length;
-  document.getElementById('badge-sub').textContent  = buildSubsMap().length;
-  document.getElementById('badge-prog').textContent = _progs.length;
-}
+function updateBadges() { /* badges removed from sidebar */ }
 
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
