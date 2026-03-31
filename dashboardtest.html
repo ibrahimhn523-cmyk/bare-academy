@@ -352,17 +352,14 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       <div class="nav-sub-item active" data-sec="registrations" onclick="switchSection('registrations')">
         <span class="nav-sub-icon">📝</span>
         <span>التسجيل الأولي</span>
-        <span class="nav-badge" id="badge-reg">0</span>
       </div>
       <div class="nav-sub-item" data-sec="subscribers" onclick="switchSection('subscribers')">
         <span class="nav-sub-icon">👥</span>
         <span>سجل المشتركين</span>
-        <span class="nav-badge" id="badge-sub">0</span>
       </div>
       <div class="nav-sub-item" data-sec="programs" onclick="switchSection('programs')">
         <span class="nav-sub-icon">📋</span>
         <span>سجل البرامج</span>
-        <span class="nav-badge" id="badge-prog">0</span>
       </div>
       <div class="nav-sub-item" data-sec="fees" onclick="switchSection('fees')">
         <span class="nav-sub-icon">💰</span>
@@ -688,20 +685,22 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
         <div class="fg"><label>الاسم الثلاثي <span class="req">*</span></label><input id="r-name" placeholder="الاسم الكامل"></div>
         <div class="fg"><label>رقم الجوال <span class="req">*</span></label><input id="r-phone" placeholder="05XXXXXXXX"></div>
       </div>
-      <div class="frow">
+      <input type="hidden" id="r-status" value="زائر">
+      <div class="frow single">
         <div class="fg">
           <label>الفئة الدراسية <span class="req">*</span></label>
           <select id="r-cat">
             <option value="">اختر الفئة</option>
-            <option>طالب ابتدائي</option><option>طالب متوسط</option>
-            <option>طالب ثانوي</option><option>طالب جامعي</option><option>بالغ</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label>الحالة</label>
-          <select id="r-status">
-            <option value="زائر">زائر</option><option value="تجربة">تجربة</option>
-            <option value="مسجل">مسجل</option><option value="ملغي">ملغي</option>
+            <option>أولى ابتدائي</option>
+            <option>ثاني ابتدائي</option>
+            <option>ثالث ابتدائي</option>
+            <option>رابع ابتدائي</option>
+            <option>خامس ابتدائي</option>
+            <option>سادس ابتدائي</option>
+            <option>أولى متوسط</option>
+            <option>ثاني متوسط</option>
+            <option>ثالث متوسط</option>
+            <option>أولى ثانوي</option>
           </select>
         </div>
       </div>
@@ -796,8 +795,16 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
         <div class="fg">
           <label>الفئة</label>
           <select id="es-cat">
-            <option>طالب ابتدائي</option><option>طالب متوسط</option>
-            <option>طالب ثانوي</option><option>طالب جامعي</option><option>بالغ</option>
+            <option>أولى ابتدائي</option>
+            <option>ثاني ابتدائي</option>
+            <option>ثالث ابتدائي</option>
+            <option>رابع ابتدائي</option>
+            <option>خامس ابتدائي</option>
+            <option>سادس ابتدائي</option>
+            <option>أولى متوسط</option>
+            <option>ثاني متوسط</option>
+            <option>ثالث متوسط</option>
+            <option>أولى ثانوي</option>
           </select>
         </div>
       </div>
@@ -940,6 +947,17 @@ const API_KEY        = 'AIzaSyBzaTDL-gQ-Ss5LCTdnvS6ITThcO5JwRBY';
 const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwleug6tXApiaOvghnOSZaw6H_HVU-xIqupeXsdBftPLuHLw4PEEksvYwz4HxlTgTsJ/exec';
 const SCRIPT_PASS    = 'bareadmin1212';
 
+/* ══ وضع الاختبار ══════════════════════════════════
+   true  → يقرأ/يكتب في جداول test (REGISTRATIONStest…)
+   false → يقرأ/يكتب في الجداول الأصلية (REGISTRATIONS…)
+════════════════════════════════════════════════════ */
+const USE_TEST_SHEETS = true;
+
+/** تُعيد اسم الجدول مع البادئة المناسبة */
+function sheetN(name) {
+  return USE_TEST_SHEETS ? name + 'test' : name;
+}
+
 /* ══════════════════════════════════════════
    STATE
 ══════════════════════════════════════════ */
@@ -966,7 +984,8 @@ async function init() {
    API HELPERS
 ══════════════════════════════════════════ */
 async function readSheet(sheet) {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheet)}?key=${API_KEY}`;
+  const resolved = sheetN(sheet);
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(resolved)}?key=${API_KEY}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const j = await res.json();
@@ -984,10 +1003,12 @@ async function readSheet(sheet) {
 }
 
 async function callScript(action, data = {}) {
+  // تطبيق البادئة تلقائياً على اسم الجدول في كل طلب
+  const resolved = data.sheet ? { ...data, sheet: sheetN(data.sheet) } : data;
   const res = await fetch(SCRIPT_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, password: SCRIPT_PASS, ...data })
+    body: JSON.stringify({ action, password: SCRIPT_PASS, ...resolved })
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const j = await res.json();

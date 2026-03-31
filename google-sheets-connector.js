@@ -8,6 +8,27 @@
  */
 
 // ================================================================
+// إعداد وضع الاختبار
+// ================================================================
+
+/**
+ * TEST_MODE
+ *  true  → جميع العمليات تذهب لجداول test  (PROGRAMStest, STUDENTStest…)
+ *  false → جداول الإنتاج الأصلية
+ *
+ * يمكن تجاوز هذه القيمة من أي صفحة قبل تحميل هذا الملف:
+ *   window.TEST_MODE = true; // أو false
+ */
+const TEST_MODE = (typeof window !== 'undefined' && window.TEST_MODE !== undefined)
+    ? window.TEST_MODE
+    : true;   // القيمة الافتراضية: وضع الاختبار
+
+const _SHEET_SUFFIX = TEST_MODE ? 'test' : '';
+
+/** تُعيد اسم الجدول مع البادئة المناسبة */
+function _sn(name) { return name + _SHEET_SUFFIX; }
+
+// ================================================================
 // SHEETS_CONNECTOR — الطبقة الأساسية
 // ================================================================
 const SHEETS_CONNECTOR = (function () {
@@ -16,12 +37,15 @@ const SHEETS_CONNECTOR = (function () {
     const API_KEY        = 'AIzaSyBzaTDL-gQ-Ss5LCTdnvS6ITThcO5JwRBY';
     const BASE_URL       = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}`;
 
+    // أسماء الجداول مع البادئة الديناميكية
     const SHEETS = {
-        PROGRAMS:      'PROGRAMS',
-        STUDENTS:      'STUDENTS',
-        SUBSCRIPTIONS: 'SUBSCRIPTIONS',
-        PAYMENTS:      'PAYMENTS',
-        LOGS:          'LOGS'
+        PROGRAMS:       _sn('PROGRAMS'),
+        STUDENTS:       _sn('STUDENTS'),
+        SUBSCRIPTIONS:  _sn('SUBSCRIPTIONS'),
+        PAYMENTS:       _sn('PAYMENTS'),
+        REGISTRATIONS:  _sn('REGISTRATIONS'),
+        ATTENDANCE:     _sn('ATTENDANCE'),
+        LOGS:           _sn('LOGS')
     };
 
     const SHEET_HEADERS = {
