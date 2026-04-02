@@ -20,16 +20,6 @@ const CONFIG = {
     REGISTRATIONS : 'REGISTRATIONS',
     ATTENDANCE    : 'ATTENDANCE',
     LOGS          : 'LOGS'
-  },
-  // أسماء الجداول للوضع التجريبي
-  TEST_SHEETS: {
-    PROGRAMS      : 'PROGRAMStest',
-    STUDENTS      : 'STUDENTStest',
-    SUBSCRIPTIONS : 'SUBSCRIPTIONStest',
-    PAYMENTS      : 'PAYMENTStest',
-    REGISTRATIONS : 'REGISTRATIONStest',
-    ATTENDANCE    : 'ATTENDANCEtest',
-    LOGS          : 'LOGStest'
   }
 };
 
@@ -131,8 +121,8 @@ function doPost(e) {
       case 'addPayment': {
         const d   = body.data || {};
         const id  = _nextId(CONFIG.SHEETS.PAYMENTS);
-        const req = parseFloat(d.requiredAmount) || 0;
-        const paid= parseFloat(d.paidAmount)     || 0;
+        const req = parseFloat(d.required || d.requiredAmount) || 0;
+        const paid= parseFloat(d.paid    || d.paidAmount)      || 0;
         const rem = Math.max(0, req - paid);
         const status = paid >= req && req > 0 ? 'مسدد بالكامل'
                      : paid > 0              ? 'مسدد جزئياً'
@@ -140,16 +130,14 @@ function doPost(e) {
         const row = [
           id, d.studentId || '', d.studentName || '', d.subscriptionId || '',
           req, paid, rem, status,
-          d.paymentMethod || '', d.paymentMethodOther || '',
-          d.paymentDate || _today(),
-          d.durationDays || '', d.startDate || '', d.endDate || '',
-          d.notes || '', _now()
+          d.method || d.paymentMethod || '',
+          d.notes || '',
+          d.date  || d.paymentDate || _today(),
+          d.installmentNum || 0,
+          d.startDate || '', d.endDate || '',
+          d.extraNotes || '', _now()
         ];
-        _ensureHeaders(CONFIG.SHEETS.PAYMENTS,
-          ['id','studentId','studentName','subscriptionId',
-           'requiredAmount','paidAmount','remainingAmount','paymentStatus',
-           'paymentMethod','paymentMethodOther','paymentDate',
-           'durationDays','startDate','endDate','notes','createdAt']);
+        _ensureHeaders(CONFIG.SHEETS.PAYMENTS, SHEET_HEADERS.PAYMENTS);
         _appendRow(CONFIG.SHEETS.PAYMENTS, row);
         _addLog('إضافة دفعة', `دفعة للطالب: ${d.studentName} — ${paid} ر.س`, 'admin');
         return _json({ ok: true, id, paymentStatus: status, remainingAmount: rem });
@@ -166,12 +154,11 @@ function doPost(e) {
       // ── تحديث معلومات البرنامج ───────────────────────────────
       case 'updateProgram': {
         const d = body.data || {};
-        _ensureHeaders(CONFIG.SHEETS.PROGRAMS,
-          ['id','name','startDate','endDate','location','status','createdAt']);
+        _ensureHeaders(CONFIG.SHEETS.PROGRAMS, SHEET_HEADERS.PROGRAMS);
         const rows = _readSheet(CONFIG.SHEETS.PROGRAMS);
         if (rows.length === 0) {
           _appendRow(CONFIG.SHEETS.PROGRAMS,
-            [1, d.name||'', d.startDate||'', d.endDate||'', d.location||'', 'نشط', _now()]);
+            [1, d.name||'', d.startDate||'', d.endDate||'', d.durationDays||'', d.fullFee||'', d.groupCount||'', d.groups||'', 'نشط', d.notes||'', _now()]);
         } else {
           _updateRow(CONFIG.SHEETS.PROGRAMS, String(rows[0].id), d);
         }
@@ -346,20 +333,6 @@ function setupSheets() {
   _buildSheets(CONFIG.SHEETS);
   _addLog('إعداد النظام', 'تم إنشاء ورقات الإنتاج بنجاح', 'system');
   Logger.log('✅ تم إعداد جميع أوراق الإنتاج بنجاح');
-}
-
-// ================================================================
-// دالة إعداد ورقات الاختبار — تشغيلها مرة واحدة
-// ================================================================
-function setupTestSheets() {
-  _buildSheets(CONFIG.TEST_SHEETS);
-  // تسجيل في ورقة LOGStest
-  const id = _nextId(CONFIG.TEST_SHEETS.LOGS);
-  _sheet(CONFIG.TEST_SHEETS.LOGS).appendRow(
-    [id, 'إعداد النظام', 'تم إنشاء ورقات الاختبار بنجاح', 'system',
-     new Date().toISOString(), 'نجاح']
-  );
-  Logger.log('✅ تم إعداد جميع أوراق الاختبار بنجاح');
 }
 
 /** بناء مجموعة ورقات بناءً على كائن أسماء */

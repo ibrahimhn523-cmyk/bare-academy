@@ -1026,7 +1026,6 @@ async function loadRegistrations() {
       fullName:  r.fullName  || r['Full Name']  || '',
       phone:     r.phone     || r['Phone']      || '',
       category:  r.category  || r['Category']   || '',
-      status:    r.status    || r['Status']      || 'زائر',
       notes:     r.notes     || r['Notes']       || '',
       createdAt: r.createdAt || r['Created At']  || ''
     })).filter(r => r.id > 0);
@@ -1041,7 +1040,7 @@ async function loadRegistrations() {
 
 function renderRegs() {
   const q = document.getElementById('reg-search').value.toLowerCase();
-  let d = _regs.filter(r => r.status !== 'محذوف');
+  let d = [..._regs];
   if (q) d = d.filter(r => r.fullName.toLowerCase().includes(q) || r.phone.includes(q));
   d.sort((a, b) => b.id - a.id);
 
@@ -1077,7 +1076,6 @@ function openAddReg() {
   document.getElementById('m-reg-title').textContent = 'إضافة تسجيل';
   ['r-id','r-name','r-phone','r-notes'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('r-cat').value = '';
-  document.getElementById('r-status').value = 'زائر';
   openM('m-reg');
 }
 
@@ -1088,7 +1086,6 @@ function openEditReg(id) {
   document.getElementById('r-name').value   = r.fullName;
   document.getElementById('r-phone').value  = r.phone;
   document.getElementById('r-cat').value    = r.category;
-  document.getElementById('r-status').value = r.status;
   document.getElementById('r-notes').value  = r.notes;
   openM('m-reg');
 }
@@ -1098,7 +1095,6 @@ async function saveReg() {
   const fullName = document.getElementById('r-name').value.trim();
   const phone    = document.getElementById('r-phone').value.trim();
   const category = document.getElementById('r-cat').value;
-  const status   = document.getElementById('r-status').value;
   const notes    = document.getElementById('r-notes').value.trim();
 
   if (!fullName || !phone || !category) { toast('يرجى ملء الحقول الإجبارية', 'error'); return; }
@@ -1106,19 +1102,19 @@ async function saveReg() {
   if (id) {
     const i = _regs.findIndex(r => r.id === id);
     if (i !== -1) {
-      Object.assign(_regs[i], { fullName, phone, category, status, notes });
+      Object.assign(_regs[i], { fullName, phone, category, notes });
       cache.set('regs', _regs);
       callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
       toast('تم تعديل التسجيل ✅');
     }
   } else {
     const newId = _regs.length ? Math.max(..._regs.map(r => r.id)) + 1 : 1;
-    const entry = { id: newId, fullName, phone, category, status, notes, createdAt: today() };
+    const entry = { id: newId, fullName, phone, category, notes, createdAt: today() };
     _regs.push(entry);
     cache.set('regs', _regs);
     callScript('appendRow', {
       sheet: 'REGISTRATIONS',
-      values: [entry.id, entry.fullName, entry.phone, entry.category, entry.status, entry.notes, entry.createdAt]
+      values: [entry.id, entry.fullName, entry.phone, entry.category, entry.notes, entry.createdAt]
     }).catch(console.error);
     toast('تم إضافة التسجيل ✅');
   }
@@ -1129,11 +1125,16 @@ async function saveReg() {
 async function deleteReg(id) {
   if (!confirm('حذف هذا التسجيل؟')) return;
   const i = _regs.findIndex(r => r.id === id);
-  if (i !== -1) {
-    _regs[i].status = 'محذوف';
-    cache.set('regs', _regs);
-    callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
-    toast('تم الحذف ✅'); renderRegs();
+  if (i === -1) return;
+  _regs.splice(i, 1);
+  cache.set('regs', _regs);
+  renderRegs();
+  try {
+    await callScript('deleteRow', { sheet: 'REGISTRATIONS', id });
+    toast('تم الحذف ✅');
+  } catch(e) {
+    console.error('[DELETE REG]', e);
+    toast('حُذف محلياً — تعذر الحذف من قوقل شيت: ' + e.message, 'error');
   }
 }
 
@@ -1402,9 +1403,7 @@ async function saveSub() {
   if (regId) {
     const i = _regs.findIndex(r => r.id === regId);
     if (i !== -1) {
-      _regs[i].status = 'مسجل';
       cache.set('regs', _regs);
-      callScript('updateRow', { sheet: 'REGISTRATIONS', id: regId, data: _regs[i] }).catch(console.error);
     }
   }
 

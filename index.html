@@ -518,7 +518,7 @@
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method:  'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body:    JSON.stringify({ action:'addStudent', password:'bareadmin1212', data:formData })
+                    body:    JSON.stringify({ action:'addRegistration', password:'bareadmin1212', data:formData })
                 });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
