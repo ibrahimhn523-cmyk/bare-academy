@@ -140,6 +140,13 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .abt-pause   { background: #fef3c7; color: #b45309; }
 .abt-extend  { background: #e0f2fe; color: #0369a1; }
 
+/* ── BULK CONVERT ── */
+.reg-check { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+#reg-check-all { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); }
+.btn-bulk { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; font-weight: 600; }
+.btn-bulk:disabled { opacity: .4; cursor: not-allowed; }
+.bulk-name-item { padding: 5px 8px; border-radius: 6px; background: #fff; margin-bottom: 4px; font-size: .85rem; border: 1px solid var(--border); }
+
 /* ── BUTTONS ── */
 .btn { border: none; border-radius: 8px; padding: 8px 16px; font-family: inherit; font-size: .88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity .18s; }
 .btn-primary { background: var(--primary); color: #fff; }
@@ -396,6 +403,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       <div class="page-title">التسجيل الأولي <span class="page-sub">سجل المتقدمين</span></div>
       <div class="hdr-actions">
         <button class="btn btn-refresh" onclick="loadRegistrations()">🔄 تحديث</button>
+        <button class="btn btn-bulk" id="btn-bulk-convert" onclick="openBulkConvert()" disabled>🔄 تحويل المحددين <span id="bulk-count"></span></button>
         <button class="btn btn-primary" onclick="openAddReg()">➕ إضافة</button>
       </div>
     </div>
@@ -409,6 +417,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" id="reg-check-all" onchange="toggleAllRegs(this)"></th>
               <th>#</th><th>الاسم الثلاثي</th><th>رقم الجوال</th>
               <th>الفئة</th><th>تاريخ التسجيل</th>
               <th>ملاحظات</th><th>إجراءات</th>
@@ -427,7 +436,10 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
   <section class="section" id="section-subscribers">
     <div class="page-hdr">
       <div class="page-title">سجل المشتركين <span class="page-sub">الكلي</span></div>
-      <button class="btn btn-refresh" onclick="loadSubscriptions()">🔄 تحديث</button>
+      <div class="hdr-actions">
+        <button class="btn btn-refresh" onclick="loadSubscriptions()">🔄 تحديث</button>
+        <button class="btn btn-primary" onclick="openDirectAddSub()">➕ مشترك جديد</button>
+      </div>
     </div>
 
     <div class="stats" id="sub-stats"></div>
@@ -706,6 +718,54 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
   </div>
 </div>
 
+<!-- Modal: Bulk Convert to Subscribers -->
+<div class="overlay" id="m-bulk-sub">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title">🔄 تحويل مجموعة إلى مشتركين</div>
+      <button class="modal-close" onclick="closeM('m-bulk-sub')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:12px">
+        <div style="font-size:.82rem;color:var(--muted);margin-bottom:6px">الطلاب المحددين:</div>
+        <div id="bulk-names-list" style="background:var(--bg);border-radius:8px;padding:8px;max-height:130px;overflow-y:auto;"></div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>البرنامج <span class="req">*</span></label>
+          <select id="bulk-prog" onchange="onBulkProgSelect()"><option value="">اختر البرنامج</option></select>
+        </div>
+        <div class="fg">
+          <label>نوع الاشتراك</label>
+          <select id="bulk-type">
+            <option value="كامل">كامل</option><option value="جزئي">جزئي</option><option value="مجاني">مجاني</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="bulk-start"></div>
+        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="bulk-end"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label>المبلغ المطلوب (ر.س)</label><input type="number" id="bulk-required" placeholder="600" min="0"></div>
+        <div class="fg"><label>المبلغ المدفوع (ر.س)</label><input type="number" id="bulk-paid" placeholder="0" min="0"></div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <label>طريقة الدفع</label>
+          <select id="bulk-method">
+            <option>نقداً</option><option>تحويل بنكي</option><option>مدى</option><option>آجل</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-bulk-sub')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveBulkSub()">✅ تحويل الجميع</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Add Subscription (تحويل إلى مشترك) -->
 <div class="overlay" id="m-sub">
   <div class="modal modal-lg">
@@ -716,11 +776,11 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
     <div class="modal-body">
       <input type="hidden" id="sub-reg-id">
       <div class="frow">
-        <div class="fg"><label>الاسم</label><input id="sub-name" class="readonly-field" readonly></div>
-        <div class="fg"><label>الجوال</label><input id="sub-phone" class="readonly-field" readonly></div>
+        <div class="fg"><label>الاسم <span class="req">*</span></label><input id="sub-name" placeholder="الاسم الثلاثي"></div>
+        <div class="fg"><label>الجوال <span class="req">*</span></label><input id="sub-phone" placeholder="05xxxxxxxx"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label>الفئة</label><input id="sub-cat" class="readonly-field" readonly></div>
+        <div class="fg"><label>الفئة</label><input id="sub-cat" placeholder="الفئة"></div>
         <div class="fg">
           <label>البرنامج <span class="req">*</span></label>
           <select id="sub-prog" onchange="onProgSelect()">
@@ -1053,6 +1113,7 @@ function renderRegs() {
 
   tbody.innerHTML = d.map(r => `
     <tr>
+      <td><input type="checkbox" class="reg-check" value="${r.id}" onchange="updateBulkBtn()"></td>
       <td>${r.id}</td>
       <td><strong>${esc(r.fullName)}</strong></td>
       <td dir="ltr">${r.phone}</td>
@@ -1326,21 +1387,148 @@ async function deleteSub(studentId) {
 /* Convert registration → subscriber */
 function openConvert(regId) {
   const r = _regs.find(x => x.id === regId); if (!r) return;
-  document.getElementById('sub-reg-id').value = regId;
-  document.getElementById('sub-name').value   = r.fullName;
-  document.getElementById('sub-phone').value  = r.phone;
-  document.getElementById('sub-cat').value    = r.category;
-  document.getElementById('sub-start').value  = today().split('T')[0];
-  document.getElementById('sub-end').value    = '';
+  _setSubFieldsReadonly(true);
+  document.getElementById('sub-reg-id').value   = regId;
+  document.getElementById('sub-name').value     = r.fullName;
+  document.getElementById('sub-phone').value    = r.phone;
+  document.getElementById('sub-cat').value      = r.category;
+  document.getElementById('sub-start').value    = today().split('T')[0];
+  document.getElementById('sub-end').value      = '';
   document.getElementById('sub-required').value = '';
-  document.getElementById('sub-paid').value   = '0';
+  document.getElementById('sub-paid').value     = '0';
+  _fillSubPrograms();
+  openM('m-sub');
+}
 
+function openDirectAddSub() {
+  _setSubFieldsReadonly(false);
+  document.getElementById('sub-reg-id').value   = '';
+  document.getElementById('sub-name').value     = '';
+  document.getElementById('sub-phone').value    = '';
+  document.getElementById('sub-cat').value      = '';
+  document.getElementById('sub-start').value    = today().split('T')[0];
+  document.getElementById('sub-end').value      = '';
+  document.getElementById('sub-required').value = '';
+  document.getElementById('sub-paid').value     = '0';
+  _fillSubPrograms();
+  openM('m-sub');
+}
+
+function _setSubFieldsReadonly(ro) {
+  ['sub-name','sub-phone','sub-cat'].forEach(id => {
+    const el = document.getElementById(id);
+    el.readOnly = ro;
+    el.classList.toggle('readonly-field', ro);
+  });
+}
+
+function _fillSubPrograms() {
   const active = _progs.filter(p => p.status === 'نشط');
   document.getElementById('sub-prog').innerHTML =
     '<option value="">اختر البرنامج</option>' +
     active.map(p => `<option value="${p.id}" data-fee="${p.fullFee}" data-end="${p.endDate}">${p.name}</option>`).join('');
+}
 
-  openM('m-sub');
+/* Bulk convert helpers */
+function toggleAllRegs(cb) {
+  document.querySelectorAll('.reg-check').forEach(c => c.checked = cb.checked);
+  updateBulkBtn();
+}
+
+function updateBulkBtn() {
+  const n = document.querySelectorAll('.reg-check:checked').length;
+  const btn = document.getElementById('btn-bulk-convert');
+  const cnt = document.getElementById('bulk-count');
+  btn.disabled = n === 0;
+  cnt.textContent = n ? `(${n})` : '';
+  const all = document.getElementById('reg-check-all');
+  if (all) all.indeterminate = n > 0 && n < document.querySelectorAll('.reg-check').length;
+}
+
+function getSelectedRegIds() {
+  return [...document.querySelectorAll('.reg-check:checked')].map(c => parseInt(c.value));
+}
+
+function openBulkConvert() {
+  const ids = getSelectedRegIds();
+  if (!ids.length) return;
+  const regs = ids.map(id => _regs.find(r => r.id === id)).filter(Boolean);
+  document.getElementById('bulk-names-list').innerHTML = regs.map(r =>
+    `<div class="bulk-name-item">👤 <strong>${esc(r.fullName)}</strong> — <span dir="ltr">${r.phone}</span></div>`
+  ).join('');
+  document.getElementById('bulk-start').value    = today().split('T')[0];
+  document.getElementById('bulk-end').value      = '';
+  document.getElementById('bulk-required').value = '';
+  document.getElementById('bulk-paid').value     = '0';
+  const active = _progs.filter(p => p.status === 'نشط');
+  document.getElementById('bulk-prog').innerHTML =
+    '<option value="">اختر البرنامج</option>' +
+    active.map(p => `<option value="${p.id}" data-fee="${p.fullFee}" data-end="${p.endDate}">${p.name}</option>`).join('');
+  openM('m-bulk-sub');
+}
+
+function onBulkProgSelect() {
+  const opt = document.getElementById('bulk-prog').selectedOptions[0];
+  if (opt?.dataset?.fee)  document.getElementById('bulk-required').value = opt.dataset.fee;
+  if (opt?.dataset?.end)  document.getElementById('bulk-end').value      = opt.dataset.end;
+}
+
+async function saveBulkSub() {
+  const ids       = getSelectedRegIds();
+  const progId    = parseInt(document.getElementById('bulk-prog').value) || 0;
+  const startDate = document.getElementById('bulk-start').value;
+  const endDate   = document.getElementById('bulk-end').value;
+  const payType   = document.getElementById('bulk-type').value;
+  const required  = parseFloat(document.getElementById('bulk-required').value) || 0;
+  const paid      = parseFloat(document.getElementById('bulk-paid').value) || 0;
+  const method    = document.getElementById('bulk-method').value;
+
+  if (!progId || !startDate || !endDate) { toast('يرجى اختيار البرنامج والتواريخ', 'error'); return; }
+  if (!ids.length) { toast('لم يتم تحديد أي طلاب', 'error'); return; }
+
+  const prog     = _progs.find(p => p.id === progId);
+  const progName = prog ? prog.name : '';
+  let maxSubId     = _subs.length ? Math.max(..._subs.map(s => s.id)) : 0;
+  let maxStudentId = _subs.length ? Math.max(..._subs.map(s => s.studentId)) : 0;
+  const regs = ids.map(id => _regs.find(r => r.id === id)).filter(Boolean);
+
+  for (const reg of regs) {
+    const existing  = _subs.find(s => s.phone === reg.phone);
+    const studentId = existing ? existing.studentId : ++maxStudentId;
+    const newId     = ++maxSubId;
+    const sub = {
+      id: newId, studentId, studentName: reg.fullName, phone: reg.phone, category: reg.category,
+      programId: progId, programName: progName, paymentType: payType,
+      startDate, endDate, status: subStatus(endDate), createdAt: today()
+    };
+    _subs.push(sub);
+    callScript('appendRow', {
+      sheet: 'SUBSCRIPTIONS',
+      values: [sub.id, sub.studentId, sub.studentName, sub.phone, sub.category,
+               sub.programId, sub.programName, sub.paymentType,
+               sub.startDate, sub.endDate, sub.status, sub.createdAt]
+    }).catch(console.error);
+    if (paid > 0) {
+      callScript('appendRow', {
+        sheet: 'PAYMENTS',
+        values: [Date.now() + newId, studentId, reg.fullName, newId, required, paid,
+                 Math.max(0, required - paid),
+                 paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
+                 method, '', today().split('T')[0], 0, startDate, endDate, '', today()]
+      }).catch(console.error);
+    }
+    const ri = _regs.findIndex(r => r.id === reg.id);
+    if (ri !== -1) {
+      _regs.splice(ri, 1);
+      callScript('deleteRow', { sheet: 'REGISTRATIONS', id: reg.id }).catch(console.error);
+    }
+  }
+
+  cache.set('subs', _subs);
+  cache.set('regs', _regs);
+  toast(`تم تحويل ${regs.length} طالب إلى مشتركين ✅`);
+  closeM('m-bulk-sub');
+  renderSubs(); renderRegs(); updateBadges(); fillProgFilter();
 }
 
 function onProgSelect() {
@@ -1365,6 +1553,7 @@ async function saveSub() {
   const paid       = parseFloat(document.getElementById('sub-paid').value) || 0;
   const method     = document.getElementById('sub-method').value;
 
+  if (!fullName || !phone) { toast('يرجى إدخال الاسم ورقم الجوال', 'error'); return; }
   if (!progId || !startDate || !endDate) { toast('يرجى اختيار البرنامج والتواريخ', 'error'); return; }
 
   const prog = _progs.find(p => p.id === progId);
