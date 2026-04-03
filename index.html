@@ -379,7 +379,8 @@
 
     <!-- ========== JavaScript ========== -->
     <script>
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwleug6tXApiaOvghnOSZaw6H_HVU-xIqupeXsdBftPLuHLw4PEEksvYwz4HxlTgTsJ/exec';
+        const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
 
         // ===== فتح / إغلاق Modal =====
         function openRegistration() {
@@ -515,15 +516,29 @@
             };
 
             try {
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                const newId = Date.now();
+                const response = await fetch(`${SB_URL}/registrations`, {
                     method:  'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body:    JSON.stringify({ action:'addRegistration', password:'bareadmin1212', data:formData })
+                    headers: {
+                        'apikey': SB_KEY,
+                        'Authorization': `Bearer ${SB_KEY}`,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        id: newId,
+                        fullName: formData.fullName,
+                        phone: formData.phone,
+                        category: formData.category,
+                        notes: '',
+                        createdAt: new Date().toISOString()
+                    })
                 });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const result = await response.json();
-                if (!result.ok) throw new Error(result.error || 'فشل الحفظ');
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.message || `HTTP ${response.status}`);
+                }
 
                 // ✅ نجاح: 1) أغلق النموذج، 2) أظهر رسالة الشكر
                 closeRegistration();

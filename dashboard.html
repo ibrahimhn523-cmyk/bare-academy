@@ -988,25 +988,57 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 </div>
 
 <!-- ══════════════════ SCRIPTS ══════════════════ -->
-<script src="./google-sheets-connector.js"></script>
 <script>
 /* ══════════════════════════════════════════
-   CONFIG
+   CONFIG — Supabase
 ══════════════════════════════════════════ */
-const SPREADSHEET_ID = '16us-8KcHTb6XHwOzeWlrqhzHFGyCsWv20qZT_pFN4nI';
-const API_KEY        = 'AIzaSyBzaTDL-gQ-Ss5LCTdnvS6ITThcO5JwRBY';
-const SCRIPT_URL     = 'https://script.google.com/macros/s/AKfycbwleug6tXApiaOvghnOSZaw6H_HVU-xIqupeXsdBftPLuHLw4PEEksvYwz4HxlTgTsJ/exec';
-const SCRIPT_PASS    = 'bareadmin1212';
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
 
-/* ══ وضع الاختبار ══════════════════════════════════
-   true  → يقرأ/يكتب في جداول test (REGISTRATIONStest…)
-   false → يقرأ/يكتب في الجداول الأصلية (REGISTRATIONS…)
-════════════════════════════════════════════════════ */
-const USE_TEST_SHEETS = false;
+const TB = {
+  REGISTRATIONS : 'registrations',
+  SUBSCRIPTIONS : 'subscriptions',
+  PAYMENTS      : 'payments',
+  PROGRAMS      : 'programs',
+  ATTENDANCE    : 'attendance',
+  LOGS          : 'logs'
+};
 
-/** تُعيد اسم الجدول مع البادئة المناسبة */
-function sheetN(name) {
-  return USE_TEST_SHEETS ? name + 'test' : name;
+function _sbHeaders(extra = {}) {
+  return {
+    'apikey'        : SB_KEY,
+    'Authorization' : `Bearer ${SB_KEY}`,
+    'Content-Type'  : 'application/json',
+    'Prefer'        : 'return=minimal',
+    ...extra
+  };
+}
+
+async function sbRead(table) {
+  const r = await fetch(`${SB_URL}/${table}?select=*&order=id.asc`, { headers: _sbHeaders() });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+  return r.json();
+}
+
+async function sbInsert(table, data) {
+  const r = await fetch(`${SB_URL}/${table}`, {
+    method: 'POST', headers: _sbHeaders(), body: JSON.stringify(data)
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbUpdate(table, id, data) {
+  const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, {
+    method: 'PATCH', headers: _sbHeaders(), body: JSON.stringify(data)
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, {
+    method: 'DELETE', headers: _sbHeaders()
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
 
 /* ══════════════════════════════════════════
@@ -1034,38 +1066,6 @@ async function init() {
 /* ══════════════════════════════════════════
    API HELPERS
 ══════════════════════════════════════════ */
-async function readSheet(sheet) {
-  const resolved = sheetN(sheet);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(resolved)}?key=${API_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  if (j.error) throw new Error(j.error.message);
-  const rows = j.values || [];
-  if (rows.length < 2) return [];
-  const headers = rows[0].map(h => String(h).trim());
-  return rows.slice(1)
-    .map(row => {
-      const o = {};
-      headers.forEach((h, i) => { o[h] = row[i] !== undefined ? String(row[i]) : ''; });
-      return o;
-    })
-    .filter(o => headers.some(h => o[h] !== ''));
-}
-
-async function callScript(action, data = {}) {
-  // تطبيق البادئة تلقائياً على اسم الجدول في كل طلب
-  const resolved = data.sheet ? { ...data, sheet: sheetN(data.sheet) } : data;
-  const res = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, password: SCRIPT_PASS, ...resolved })
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  if (!j.ok) throw new Error(j.error || 'خطأ من Apps Script');
-  return j;
-}
 
 /* ══════════════════════════════════════════
    LOCAL CACHE
@@ -1080,7 +1080,7 @@ const cache = {
 ══════════════════════════════════════════ */
 async function loadRegistrations() {
   try {
-    const rows = await readSheet('REGISTRATIONS');
+    const rows = await sbRead(TB.REGISTRATIONS);
     _regs = rows.map(r => ({
       id:        parseInt(r.id) || 0,
       fullName:  r.fullName  || r['Full Name']  || '',
@@ -1165,7 +1165,7 @@ async function saveReg() {
     if (i !== -1) {
       Object.assign(_regs[i], { fullName, phone, category, notes });
       cache.set('regs', _regs);
-      callScript('updateRow', { sheet: 'REGISTRATIONS', id, data: _regs[i] }).catch(console.error);
+      sbUpdate(TB.REGISTRATIONS, id, _regs[i]).catch(console.error);
       toast('تم تعديل التسجيل ✅');
     }
   } else {
@@ -1173,10 +1173,7 @@ async function saveReg() {
     const entry = { id: newId, fullName, phone, category, notes, createdAt: today() };
     _regs.push(entry);
     cache.set('regs', _regs);
-    callScript('appendRow', {
-      sheet: 'REGISTRATIONS',
-      values: [entry.id, entry.fullName, entry.phone, entry.category, entry.notes, entry.createdAt]
-    }).catch(console.error);
+    sbInsert(TB.REGISTRATIONS, entry).catch(console.error);
     toast('تم إضافة التسجيل ✅');
   }
 
@@ -1191,7 +1188,7 @@ async function deleteReg(id) {
   cache.set('regs', _regs);
   renderRegs();
   try {
-    await callScript('deleteRow', { sheet: 'REGISTRATIONS', id });
+    await sbDelete(TB.REGISTRATIONS, id);
     toast('تم الحذف ✅');
   } catch(e) {
     console.error('[DELETE REG]', e);
@@ -1204,7 +1201,7 @@ async function deleteReg(id) {
 ══════════════════════════════════════════ */
 async function loadSubscriptions() {
   try {
-    const rows = await readSheet('SUBSCRIPTIONS');
+    const rows = await sbRead(TB.SUBSCRIPTIONS);
     _subs = rows.map(r => ({
       id:          parseInt(r.id) || 0,
       studentId:   parseInt(r.studentId) || 0,
@@ -1502,25 +1499,20 @@ async function saveBulkSub() {
       startDate, endDate, status: subStatus(endDate), createdAt: today()
     };
     _subs.push(sub);
-    callScript('appendRow', {
-      sheet: 'SUBSCRIPTIONS',
-      values: [sub.id, sub.studentId, sub.studentName, sub.phone, sub.category,
-               sub.programId, sub.programName, sub.paymentType,
-               sub.startDate, sub.endDate, sub.status, sub.createdAt]
-    }).catch(console.error);
+    sbInsert(TB.SUBSCRIPTIONS, sub).catch(console.error);
     if (paid > 0) {
-      callScript('appendRow', {
-        sheet: 'PAYMENTS',
-        values: [Date.now() + newId, studentId, reg.fullName, newId, required, paid,
-                 Math.max(0, required - paid),
-                 paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
-                 method, '', today().split('T')[0], 0, startDate, endDate, '', today()]
+      sbInsert(TB.PAYMENTS, {
+        id: Date.now() + newId, studentId, studentName: reg.fullName, subscriptionId: newId,
+        required, paid, remaining: Math.max(0, required - paid),
+        paymentStatus: paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
+        method, notes: '', date: today().split('T')[0],
+        installmentNum: 0, startDate, endDate, extraNotes: '', createdAt: today()
       }).catch(console.error);
     }
     const ri = _regs.findIndex(r => r.id === reg.id);
     if (ri !== -1) {
       _regs.splice(ri, 1);
-      callScript('deleteRow', { sheet: 'REGISTRATIONS', id: reg.id }).catch(console.error);
+      sbDelete(TB.REGISTRATIONS, reg.id).catch(console.error);
     }
   }
 
@@ -1572,27 +1564,24 @@ async function saveSub() {
   _subs.push(sub);
   cache.set('subs', _subs);
 
-  callScript('appendRow', {
-    sheet: 'SUBSCRIPTIONS',
-    values: [sub.id, sub.studentId, sub.studentName, sub.phone, sub.category,
-             sub.programId, sub.programName, sub.paymentType,
-             sub.startDate, sub.endDate, sub.status, sub.createdAt]
-  }).catch(console.error);
+  sbInsert(TB.SUBSCRIPTIONS, sub).catch(console.error);
 
   if (paid > 0) {
-    callScript('appendRow', {
-      sheet: 'PAYMENTS',
-      values: [Date.now(), studentId, fullName, newId, required, paid,
-               Math.max(0, required - paid),
-               paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
-               method, '', today().split('T')[0], 0, startDate, endDate, '', today()]
+    sbInsert(TB.PAYMENTS, {
+      id: Date.now(), studentId, studentName: fullName, subscriptionId: newId,
+      required, paid, remaining: Math.max(0, required - paid),
+      paymentStatus: paid >= required ? 'مسدد بالكامل' : 'مسدد جزئياً',
+      method, notes: '', date: today().split('T')[0],
+      installmentNum: 0, startDate, endDate, extraNotes: '', createdAt: today()
     }).catch(console.error);
   }
 
   if (regId) {
     const i = _regs.findIndex(r => r.id === regId);
     if (i !== -1) {
+      _regs.splice(i, 1);
       cache.set('regs', _regs);
+      sbDelete(TB.REGISTRATIONS, regId).catch(console.error);
     }
   }
 
@@ -1605,7 +1594,7 @@ async function saveSub() {
 ══════════════════════════════════════════ */
 async function loadPrograms() {
   try {
-    const rows = await readSheet('PROGRAMS');
+    const rows = await sbRead(TB.PROGRAMS);
     _progs = rows.map(r => ({
       id:          parseInt(r.id) || 0,
       name:        r.name || '',
@@ -1778,17 +1767,14 @@ async function saveProg() {
     const i = _progs.findIndex(p => p.id === id);
     if (i !== -1) {
       Object.assign(_progs[i], { name, endDate, fullFee, groupCount: groupCnt, groups, status, notes, durationDays: days });
-      callScript('updateRow', { sheet: 'PROGRAMS', id, data: _progs[i] }).catch(console.error);
+      sbUpdate(TB.PROGRAMS, id, _progs[i]).catch(console.error);
       toast('تم تعديل البرنامج ✅');
     }
   } else {
     const newId = _progs.length ? Math.max(..._progs.map(p => p.id)) + 1 : 1;
     const prog = { id: newId, name, startDate, endDate, durationDays: days, fullFee, groupCount: groupCnt, groups, status, notes, createdAt: today() };
     _progs.push(prog);
-    callScript('appendRow', {
-      sheet: 'PROGRAMS',
-      values: [prog.id, prog.name, prog.startDate, prog.endDate, prog.durationDays, prog.fullFee, prog.groupCount, prog.groups, prog.status, prog.notes, prog.createdAt]
-    }).catch(console.error);
+    sbInsert(TB.PROGRAMS, prog).catch(console.error);
     toast('تم إضافة البرنامج ✅');
   }
 
@@ -1825,7 +1811,7 @@ async function saveExtend() {
     _progs[i].endDate      = newEnd;
     _progs[i].durationDays = calcDays(_progs[i].startDate, newEnd);
     cache.set('progs', _progs);
-    callScript('updateRow', { sheet: 'PROGRAMS', id: pid, data: _progs[i] }).catch(console.error);
+    sbUpdate(TB.PROGRAMS, pid, _progs[i]).catch(console.error);
     toast('تم تمديد البرنامج ✅'); closeM('m-extend'); renderProgs();
   }
 }
@@ -1836,7 +1822,7 @@ async function pauseProg(id) {
   if (i !== -1) {
     _progs[i].status = 'موقوف';
     cache.set('progs', _progs);
-    callScript('updateRow', { sheet: 'PROGRAMS', id, data: _progs[i] }).catch(console.error);
+    sbUpdate(TB.PROGRAMS, id, _progs[i]).catch(console.error);
     toast('تم إيقاف البرنامج مؤقتاً'); renderProgs();
   }
 }
@@ -1846,7 +1832,7 @@ async function pauseProg(id) {
 ══════════════════════════════════════════ */
 async function loadPayments() {
   try {
-    const rows = await readSheet('PAYMENTS');
+    const rows = await sbRead(TB.PAYMENTS);
     _payments = rows.map(r => ({
       id:             r.id || String(Date.now()),
       studentId:      parseInt(r.studentId) || 0,
@@ -2026,10 +2012,13 @@ async function savePayment() {
     method, notes, date, createdAt: today() };
   _payments.push(entry);
   cache.set('payments', _payments);
-  callScript('appendRow', { sheet: 'PAYMENTS',
-    values: [entry.id, entry.studentId, entry.studentName, entry.subscriptionId, entry.required,
-             entry.paid, entry.remaining, entry.paymentStatus, entry.method, entry.notes,
-             entry.date, 0, '', '', '', entry.createdAt] }).catch(console.error);
+  sbInsert(TB.PAYMENTS, {
+    id: entry.id, studentId: entry.studentId, studentName: entry.studentName,
+    subscriptionId: entry.subscriptionId, required: entry.required, paid: entry.paid,
+    remaining: entry.remaining, paymentStatus: entry.paymentStatus, method: entry.method,
+    notes: entry.notes, date: entry.date, installmentNum: 0,
+    startDate: '', endDate: '', extraNotes: '', createdAt: entry.createdAt
+  }).catch(console.error);
   toast('تم تسجيل الدفعة ✅');
   closeM('m-payment'); renderFees();
 }
@@ -2330,9 +2319,12 @@ async function saveAttendance() {
   const subsMap = buildSubsMap();
   Promise.all(entries.map(([sid, status]) => {
     const student = subsMap.find(s => s.studentId === parseInt(sid));
-    return callScript('appendRow', { sheet: 'ATTENDANCE',
-      values: [Date.now() + Math.random(), date, progId, prog?.name || '',
-               sid, student?.fullName || '', status, '', today()] }).catch(e => e);
+    return sbInsert(TB.ATTENDANCE, {
+      id: Math.floor(Date.now() + Math.random() * 1000),
+      date, programId: progId, programName: prog?.name || '',
+      studentId: parseInt(sid), studentName: student?.fullName || '',
+      status, notes: '', createdAt: today()
+    }).catch(e => e);
   })).then(() => toast(`تم حفظ تحضير ${entries.length} طالب ✅`));
 }
 
