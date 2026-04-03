@@ -147,6 +147,24 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .btn-bulk:disabled { opacity: .4; cursor: not-allowed; }
 .bulk-name-item { padding: 5px 8px; border-radius: 6px; background: #fff; margin-bottom: 4px; font-size: .85rem; border: 1px solid var(--border); }
 
+/* ── IMPORT ── */
+.btn-import { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; font-weight: 600; }
+.btn-import:hover { background: #ddd6fe; }
+.drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; color: var(--muted); }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: #f0f4ff; color: var(--primary); }
+.drop-zone input[type=file] { display: none; }
+.import-preview { margin-top: 14px; max-height: 260px; overflow-y: auto; }
+.import-preview table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.import-preview th { background: var(--primary); color: #fff; padding: 6px 8px; text-align: right; position: sticky; top: 0; }
+.import-preview td { padding: 5px 8px; border-bottom: 1px solid var(--border); }
+.import-preview tr:nth-child(even) td { background: var(--bg); }
+.import-stats { display: flex; gap: 12px; margin-top: 10px; font-size: .85rem; }
+.import-stat { padding: 4px 10px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); }
+.col-map { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; font-size: .85rem; }
+.col-map-row { display: contents; }
+.col-map label { align-self: center; color: var(--muted); }
+.col-map select { border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-family: inherit; font-size: .83rem; background: var(--bg); }
+
 /* ── BUTTONS ── */
 .btn { border: none; border-radius: 8px; padding: 8px 16px; font-family: inherit; font-size: .88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity .18s; }
 .btn-primary { background: var(--primary); color: #fff; }
@@ -328,6 +346,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
   .topbar-right .user-label { display: none; }
 }
 </style>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -438,6 +457,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       <div class="page-title">سجل المشتركين <span class="page-sub">الكلي</span></div>
       <div class="hdr-actions">
         <button class="btn btn-refresh" onclick="loadSubscriptions()">🔄 تحديث</button>
+        <button class="btn btn-import" onclick="openImportSubs()">📥 استيراد</button>
         <button class="btn btn-primary" onclick="openDirectAddSub()">➕ مشترك جديد</button>
       </div>
     </div>
@@ -714,6 +734,49 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeM('m-reg')">إلغاء</button>
       <button class="btn btn-primary" onclick="saveReg()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Import Subscribers -->
+<div class="overlay" id="m-import-sub">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title">📥 استيراد مشتركين من Excel</div>
+      <button class="modal-close" onclick="closeImport()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Upload -->
+      <div id="import-step-1">
+        <div class="drop-zone" id="drop-zone" onclick="document.getElementById('import-file').click()"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="this.classList.remove('drag-over')"
+             ondrop="handleImportDrop(event)">
+          <input type="file" id="import-file" accept=".xlsx,.xls,.csv" onchange="handleImportFile(this.files[0])">
+          <div style="font-size:2rem;margin-bottom:8px">📂</div>
+          <div style="font-weight:600;margin-bottom:4px">اسحب الملف هنا أو اضغط للاختيار</div>
+          <div style="font-size:.82rem">يدعم: Excel (.xlsx, .xls) أو CSV</div>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:.82rem;color:var(--muted);line-height:1.8">
+          <strong>الأعمدة المتوقعة (يمكن أن تكون بالعربي أو الإنجليزي):</strong><br>
+          الاسم / الجوال / الفئة / البرنامج / تاريخ البداية / تاريخ النهاية / نوع الاشتراك
+        </div>
+      </div>
+
+      <!-- Step 2: Map + Preview -->
+      <div id="import-step-2" style="display:none">
+        <div style="font-weight:600;margin-bottom:10px;color:var(--primary)">🔗 ربط الأعمدة</div>
+        <div class="col-map" id="col-map-grid"></div>
+        <div id="import-preview-wrap"></div>
+        <div class="import-stats" id="import-stats"></div>
+      </div>
+
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeImport()">إلغاء</button>
+      <button class="btn btn-secondary" id="import-back-btn" style="display:none" onclick="importGoBack()">↩ رجوع</button>
+      <button class="btn btn-gold" id="import-confirm-btn" style="display:none" onclick="confirmImport()">✅ استيراد</button>
     </div>
   </div>
 </div>
@@ -2367,6 +2430,213 @@ function toggleSidebar() {
     sb.classList.toggle('hidden', !_sidebarOpen);
     mn.classList.toggle('full', !_sidebarOpen);
   }
+}
+
+/* ══════════════════════════════════════════
+   ── IMPORT SUBSCRIBERS ──
+══════════════════════════════════════════ */
+let _importRows = [];   // raw parsed rows
+let _importHeaders = []; // column headers from file
+
+const IMPORT_FIELDS = [
+  { key: 'studentName', label: 'الاسم',           required: true,  aliases: ['الاسم','الاسم الثلاثي','الاسم الكامل','name','fullname','studentname'] },
+  { key: 'phone',       label: 'الجوال',          required: true,  aliases: ['الجوال','رقم الجوال','الهاتف','phone','mobile'] },
+  { key: 'category',    label: 'الفئة',           required: false, aliases: ['الفئة','category'] },
+  { key: 'programName', label: 'البرنامج',        required: false, aliases: ['البرنامج','اسم البرنامج','program','programname'] },
+  { key: 'startDate',   label: 'تاريخ البداية',   required: false, aliases: ['تاريخ البداية','البداية','startdate','start'] },
+  { key: 'endDate',     label: 'تاريخ النهاية',   required: false, aliases: ['تاريخ النهاية','النهاية','enddate','end'] },
+  { key: 'paymentType', label: 'نوع الاشتراك',    required: false, aliases: ['نوع الاشتراك','نوع','paymenttype','type'] },
+];
+
+function openImportSubs() {
+  _importRows = []; _importHeaders = [];
+  document.getElementById('import-step-1').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-back-btn').style.display = 'none';
+  document.getElementById('import-file').value = '';
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  openM('m-import-sub');
+}
+
+function closeImport() { closeM('m-import-sub'); }
+
+function importGoBack() {
+  document.getElementById('import-step-1').style.display = '';
+  document.getElementById('import-step-2').style.display = 'none';
+  document.getElementById('import-confirm-btn').style.display = 'none';
+  document.getElementById('import-back-btn').style.display = 'none';
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleImportFile(f);
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (raw.length < 2) { toast('الملف فارغ أو لا يحتوي على بيانات', 'error'); return; }
+
+      _importHeaders = raw[0].map(h => String(h).trim());
+      _importRows    = raw.slice(1).filter(r => r.some(c => String(c).trim() !== ''));
+
+      renderImportStep2();
+    } catch(err) {
+      toast('تعذر قراءة الملف: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function _autoDetect(headers) {
+  const map = {};
+  IMPORT_FIELDS.forEach(f => {
+    const idx = headers.findIndex(h =>
+      f.aliases.some(a => h.toLowerCase().replace(/\s/g,'') === a.replace(/\s/g,''))
+    );
+    map[f.key] = idx >= 0 ? idx : -1;
+  });
+  return map;
+}
+
+function renderImportStep2() {
+  document.getElementById('import-step-1').style.display = 'none';
+  document.getElementById('import-step-2').style.display = '';
+  document.getElementById('import-confirm-btn').style.display = '';
+  document.getElementById('import-back-btn').style.display = '';
+
+  const autoMap = _autoDetect(_importHeaders);
+
+  // Build column mapping selectors
+  const opts = `<option value="-1">— لا يوجد —</option>` +
+    _importHeaders.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+
+  document.getElementById('col-map-grid').innerHTML = IMPORT_FIELDS.map(f => `
+    <label>${f.label}${f.required ? ' <span style="color:var(--danger)">*</span>' : ''}</label>
+    <select id="cm-${f.key}" onchange="refreshImportPreview()">
+      ${opts.replace(`value="${autoMap[f.key]}"`, `value="${autoMap[f.key]}" selected`)}
+    </select>`).join('');
+
+  refreshImportPreview();
+}
+
+function _getMapping() {
+  const m = {};
+  IMPORT_FIELDS.forEach(f => {
+    m[f.key] = parseInt(document.getElementById(`cm-${f.key}`)?.value ?? -1);
+  });
+  return m;
+}
+
+function _fmtDate(v) {
+  if (!v) return '';
+  if (v instanceof Date) return v.toISOString().split('T')[0];
+  const s = String(v).trim();
+  // try to normalize date formats
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  return isNaN(d) ? s : d.toISOString().split('T')[0];
+}
+
+function _mapRow(row, m) {
+  const g = i => i >= 0 ? String(row[i] ?? '').trim() : '';
+  return {
+    studentName: g(m.studentName),
+    phone:       g(m.phone),
+    category:    g(m.category)    || '',
+    programName: g(m.programName) || '',
+    startDate:   _fmtDate(m.startDate >= 0 ? row[m.startDate] : ''),
+    endDate:     _fmtDate(m.endDate   >= 0 ? row[m.endDate]   : ''),
+    paymentType: g(m.paymentType) || 'كامل',
+  };
+}
+
+function refreshImportPreview() {
+  const m = _getMapping();
+  const mapped = _importRows.map(r => _mapRow(r, m));
+  const valid   = mapped.filter(r => r.studentName && r.phone);
+  const invalid = mapped.length - valid.length;
+
+  document.getElementById('import-stats').innerHTML = `
+    <div class="import-stat">📋 إجمالي: <strong>${mapped.length}</strong></div>
+    <div class="import-stat" style="color:var(--success)">✅ صالح: <strong>${valid.length}</strong></div>
+    ${invalid ? `<div class="import-stat" style="color:var(--danger)">⚠️ مفقود اسم/جوال: <strong>${invalid}</strong></div>` : ''}`;
+
+  const preview = valid.slice(0, 8);
+  document.getElementById('import-preview-wrap').innerHTML = valid.length ? `
+    <div class="import-preview">
+      <table>
+        <thead><tr>
+          <th>الاسم</th><th>الجوال</th><th>الفئة</th>
+          <th>البرنامج</th><th>البداية</th><th>النهاية</th>
+        </tr></thead>
+        <tbody>${preview.map(r => `<tr>
+          <td>${esc(r.studentName)}</td>
+          <td dir="ltr">${r.phone}</td>
+          <td>${r.category||'—'}</td>
+          <td>${r.programName||'—'}</td>
+          <td>${r.startDate||'—'}</td>
+          <td>${r.endDate||'—'}</td>
+        </tr>`).join('')}
+        ${valid.length > 8 ? `<tr><td colspan="6" style="text-align:center;color:var(--muted)">… و ${valid.length - 8} صف آخر</td></tr>` : ''}
+        </tbody>
+      </table>
+    </div>` : `<div class="empty" style="padding:20px"><p>لا توجد صفوف صالحة — تأكد من ربط عمود الاسم والجوال</p></div>`;
+}
+
+async function confirmImport() {
+  const m      = _getMapping();
+  const mapped = _importRows.map(r => _mapRow(r, m)).filter(r => r.studentName && r.phone);
+  if (!mapped.length) { toast('لا توجد بيانات صالحة للاستيراد', 'error'); return; }
+
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true; btn.textContent = '⏳ جاري الاستيراد…';
+
+  let maxSubId     = _subs.length ? Math.max(..._subs.map(s => s.id)) : 0;
+  let maxStudentId = _subs.length ? Math.max(..._subs.map(s => s.studentId)) : 0;
+  let ok = 0, fail = 0;
+
+  for (const r of mapped) {
+    const existing  = _subs.find(s => s.phone === r.phone);
+    const studentId = existing ? existing.studentId : ++maxStudentId;
+    const newId     = ++maxSubId;
+    const prog      = _progs.find(p => p.name === r.programName);
+    const sub = {
+      id: newId, studentId,
+      studentName: r.studentName,
+      phone:       r.phone,
+      category:    r.category,
+      programId:   prog ? prog.id : 0,
+      programName: r.programName,
+      paymentType: r.paymentType,
+      startDate:   r.startDate,
+      endDate:     r.endDate,
+      status:      r.endDate ? subStatus(r.endDate) : 'نشط',
+      createdAt:   today()
+    };
+    try {
+      await sbInsert(TB.SUBSCRIPTIONS, sub);
+      _subs.push(sub);
+      ok++;
+    } catch(e) {
+      console.error('[IMPORT]', e.message, r);
+      fail++;
+    }
+  }
+
+  cache.set('subs', _subs);
+  btn.disabled = false; btn.textContent = '✅ استيراد';
+  closeImport();
+  renderSubs(); updateBadges(); fillProgFilter();
+  toast(fail ? `تم استيراد ${ok} ✅ — فشل ${fail} ⚠️` : `تم استيراد ${ok} مشترك بنجاح ✅`);
 }
 
 function updateBadges() { /* badges removed from sidebar */ }
