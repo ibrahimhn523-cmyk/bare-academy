@@ -148,8 +148,10 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .bulk-name-item { padding: 5px 8px; border-radius: 6px; background: #fff; margin-bottom: 4px; font-size: .85rem; border: 1px solid var(--border); }
 
 /* ── IMPORT ── */
-.btn-import { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; font-weight: 600; }
-.btn-import:hover { background: #ddd6fe; }
+.btn-import   { background: #ede9fe; color: #6d28d9; border: 1px solid #c4b5fd; font-weight: 600; }
+.btn-import:hover   { background: #ddd6fe; }
+.btn-template { background: #f0fdf4; color: #16a34a; border: 1px solid #86efac; font-weight: 600; }
+.btn-template:hover { background: #dcfce7; }
 .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 30px; text-align: center; cursor: pointer; transition: border-color .2s, background .2s; color: var(--muted); }
 .drop-zone:hover, .drop-zone.drag-over { border-color: var(--primary); background: #f0f4ff; color: var(--primary); }
 .drop-zone input[type=file] { display: none; }
@@ -421,9 +423,11 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
     <div class="page-hdr">
       <div class="page-title">التسجيل الأولي <span class="page-sub">سجل المتقدمين</span></div>
       <div class="hdr-actions">
-        <button class="btn btn-refresh" onclick="loadRegistrations()">🔄 تحديث</button>
+        <button class="btn btn-refresh"   onclick="loadRegistrations()">🔄 تحديث</button>
+        <button class="btn btn-template"  onclick="downloadTemplate('regs')">📄 تنزيل القالب</button>
+        <button class="btn btn-import"    onclick="openImportRegs()">📥 استيراد</button>
         <button class="btn btn-bulk" id="btn-bulk-convert" onclick="openBulkConvert()" disabled>🔄 تحويل المحددين <span id="bulk-count"></span></button>
-        <button class="btn btn-primary" onclick="openAddReg()">➕ إضافة</button>
+        <button class="btn btn-primary"   onclick="openAddReg()">➕ إضافة</button>
       </div>
     </div>
 
@@ -456,9 +460,10 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
     <div class="page-hdr">
       <div class="page-title">سجل المشتركين <span class="page-sub">الكلي</span></div>
       <div class="hdr-actions">
-        <button class="btn btn-refresh" onclick="loadSubscriptions()">🔄 تحديث</button>
-        <button class="btn btn-import" onclick="openImportSubs()">📥 استيراد</button>
-        <button class="btn btn-primary" onclick="openDirectAddSub()">➕ مشترك جديد</button>
+        <button class="btn btn-refresh"  onclick="loadSubscriptions()">🔄 تحديث</button>
+        <button class="btn btn-template" onclick="downloadTemplate('subs')">📄 تنزيل القالب</button>
+        <button class="btn btn-import"   onclick="openImportSubs()">📥 استيراد</button>
+        <button class="btn btn-primary"  onclick="openDirectAddSub()">➕ مشترك جديد</button>
       </div>
     </div>
 
@@ -2435,10 +2440,11 @@ function toggleSidebar() {
 /* ══════════════════════════════════════════
    ── IMPORT SUBSCRIBERS ──
 ══════════════════════════════════════════ */
-let _importRows = [];   // raw parsed rows
-let _importHeaders = []; // column headers from file
+let _importRows    = [];
+let _importHeaders = [];
+let _importMode    = 'subs'; // 'subs' | 'regs'
 
-const IMPORT_FIELDS = [
+const IMPORT_FIELDS_SUBS = [
   { key: 'studentName', label: 'الاسم',           required: true,  aliases: ['الاسم','الاسم الثلاثي','الاسم الكامل','name','fullname','studentname'] },
   { key: 'phone',       label: 'الجوال',          required: true,  aliases: ['الجوال','رقم الجوال','الهاتف','phone','mobile'] },
   { key: 'category',    label: 'الفئة',           required: false, aliases: ['الفئة','category'] },
@@ -2448,7 +2454,19 @@ const IMPORT_FIELDS = [
   { key: 'paymentType', label: 'نوع الاشتراك',    required: false, aliases: ['نوع الاشتراك','نوع','paymenttype','type'] },
 ];
 
-function openImportSubs() {
+const IMPORT_FIELDS_REGS = [
+  { key: 'fullName',  label: 'الاسم',    required: true,  aliases: ['الاسم','الاسم الثلاثي','الاسم الكامل','name','fullname'] },
+  { key: 'phone',     label: 'الجوال',   required: true,  aliases: ['الجوال','رقم الجوال','الهاتف','phone','mobile'] },
+  { key: 'category',  label: 'الفئة',   required: false, aliases: ['الفئة','category'] },
+  { key: 'notes',     label: 'ملاحظات', required: false, aliases: ['ملاحظات','notes','note'] },
+];
+
+function _importFields() {
+  return _importMode === 'regs' ? IMPORT_FIELDS_REGS : IMPORT_FIELDS_SUBS;
+}
+
+function _openImport(mode) {
+  _importMode = mode;
   _importRows = []; _importHeaders = [];
   document.getElementById('import-step-1').style.display = '';
   document.getElementById('import-step-2').style.display = 'none';
@@ -2456,8 +2474,13 @@ function openImportSubs() {
   document.getElementById('import-back-btn').style.display = 'none';
   document.getElementById('import-file').value = '';
   document.getElementById('drop-zone').classList.remove('drag-over');
+  document.querySelector('#m-import-sub .modal-title').textContent =
+    mode === 'regs' ? '📥 استيراد تسجيلات أولية من Excel' : '📥 استيراد مشتركين من Excel';
   openM('m-import-sub');
 }
+
+function openImportSubs() { _openImport('subs'); }
+function openImportRegs()  { _openImport('regs'); }
 
 function closeImport() { closeM('m-import-sub'); }
 
@@ -2498,7 +2521,7 @@ function handleImportFile(file) {
 
 function _autoDetect(headers) {
   const map = {};
-  IMPORT_FIELDS.forEach(f => {
+  _importFields().forEach(f => {
     const idx = headers.findIndex(h =>
       f.aliases.some(a => h.toLowerCase().replace(/\s/g,'') === a.replace(/\s/g,''))
     );
@@ -2519,7 +2542,7 @@ function renderImportStep2() {
   const opts = `<option value="-1">— لا يوجد —</option>` +
     _importHeaders.map((h,i) => `<option value="${i}">${h}</option>`).join('');
 
-  document.getElementById('col-map-grid').innerHTML = IMPORT_FIELDS.map(f => `
+  document.getElementById('col-map-grid').innerHTML = _importFields().map(f => `
     <label>${f.label}${f.required ? ' <span style="color:var(--danger)">*</span>' : ''}</label>
     <select id="cm-${f.key}" onchange="refreshImportPreview()">
       ${opts.replace(`value="${autoMap[f.key]}"`, `value="${autoMap[f.key]}" selected`)}
@@ -2530,7 +2553,7 @@ function renderImportStep2() {
 
 function _getMapping() {
   const m = {};
-  IMPORT_FIELDS.forEach(f => {
+  _importFields().forEach(f => {
     m[f.key] = parseInt(document.getElementById(`cm-${f.key}`)?.value ?? -1);
   });
   return m;
@@ -2548,6 +2571,14 @@ function _fmtDate(v) {
 
 function _mapRow(row, m) {
   const g = i => i >= 0 ? String(row[i] ?? '').trim() : '';
+  if (_importMode === 'regs') {
+    return {
+      fullName: g(m.fullName),
+      phone:    g(m.phone),
+      category: g(m.category) || '',
+      notes:    g(m.notes)    || '',
+    };
+  }
   return {
     studentName: g(m.studentName),
     phone:       g(m.phone),
@@ -2561,8 +2592,9 @@ function _mapRow(row, m) {
 
 function refreshImportPreview() {
   const m = _getMapping();
-  const mapped = _importRows.map(r => _mapRow(r, m));
-  const valid   = mapped.filter(r => r.studentName && r.phone);
+  const mapped  = _importRows.map(r => _mapRow(r, m));
+  const nameKey = _importMode === 'regs' ? 'fullName' : 'studentName';
+  const valid   = mapped.filter(r => r[nameKey] && r.phone);
   const invalid = mapped.length - valid.length;
 
   document.getElementById('import-stats').innerHTML = `
@@ -2571,72 +2603,106 @@ function refreshImportPreview() {
     ${invalid ? `<div class="import-stat" style="color:var(--danger)">⚠️ مفقود اسم/جوال: <strong>${invalid}</strong></div>` : ''}`;
 
   const preview = valid.slice(0, 8);
+  const isRegs  = _importMode === 'regs';
   document.getElementById('import-preview-wrap').innerHTML = valid.length ? `
     <div class="import-preview">
       <table>
         <thead><tr>
           <th>الاسم</th><th>الجوال</th><th>الفئة</th>
-          <th>البرنامج</th><th>البداية</th><th>النهاية</th>
+          ${isRegs ? '<th>ملاحظات</th>' : '<th>البرنامج</th><th>البداية</th><th>النهاية</th>'}
         </tr></thead>
         <tbody>${preview.map(r => `<tr>
-          <td>${esc(r.studentName)}</td>
+          <td>${esc(r[nameKey])}</td>
           <td dir="ltr">${r.phone}</td>
           <td>${r.category||'—'}</td>
-          <td>${r.programName||'—'}</td>
-          <td>${r.startDate||'—'}</td>
-          <td>${r.endDate||'—'}</td>
+          ${isRegs
+            ? `<td>${r.notes||'—'}</td>`
+            : `<td>${r.programName||'—'}</td><td>${r.startDate||'—'}</td><td>${r.endDate||'—'}</td>`}
         </tr>`).join('')}
-        ${valid.length > 8 ? `<tr><td colspan="6" style="text-align:center;color:var(--muted)">… و ${valid.length - 8} صف آخر</td></tr>` : ''}
+        ${valid.length > 8 ? `<tr><td colspan="${isRegs?4:6}" style="text-align:center;color:var(--muted)">… و ${valid.length - 8} صف آخر</td></tr>` : ''}
         </tbody>
       </table>
     </div>` : `<div class="empty" style="padding:20px"><p>لا توجد صفوف صالحة — تأكد من ربط عمود الاسم والجوال</p></div>`;
 }
 
 async function confirmImport() {
-  const m      = _getMapping();
-  const mapped = _importRows.map(r => _mapRow(r, m)).filter(r => r.studentName && r.phone);
+  const m       = _getMapping();
+  const nameKey = _importMode === 'regs' ? 'fullName' : 'studentName';
+  const mapped  = _importRows.map(r => _mapRow(r, m)).filter(r => r[nameKey] && r.phone);
   if (!mapped.length) { toast('لا توجد بيانات صالحة للاستيراد', 'error'); return; }
 
   const btn = document.getElementById('import-confirm-btn');
   btn.disabled = true; btn.textContent = '⏳ جاري الاستيراد…';
 
-  let maxSubId     = _subs.length ? Math.max(..._subs.map(s => s.id)) : 0;
-  let maxStudentId = _subs.length ? Math.max(..._subs.map(s => s.studentId)) : 0;
   let ok = 0, fail = 0;
 
-  for (const r of mapped) {
-    const existing  = _subs.find(s => s.phone === r.phone);
-    const studentId = existing ? existing.studentId : ++maxStudentId;
-    const newId     = ++maxSubId;
-    const prog      = _progs.find(p => p.name === r.programName);
-    const sub = {
-      id: newId, studentId,
-      studentName: r.studentName,
-      phone:       r.phone,
-      category:    r.category,
-      programId:   prog ? prog.id : 0,
-      programName: r.programName,
-      paymentType: r.paymentType,
-      startDate:   r.startDate,
-      endDate:     r.endDate,
-      status:      r.endDate ? subStatus(r.endDate) : 'نشط',
-      createdAt:   today()
-    };
-    try {
-      await sbInsert(TB.SUBSCRIPTIONS, sub);
-      _subs.push(sub);
-      ok++;
-    } catch(e) {
-      console.error('[IMPORT]', e.message, r);
-      fail++;
+  if (_importMode === 'regs') {
+    let maxId = _regs.length ? Math.max(..._regs.map(r => r.id)) : 0;
+    for (const r of mapped) {
+      const entry = { id: ++maxId, fullName: r.fullName, phone: r.phone, category: r.category, notes: r.notes, createdAt: today() };
+      try {
+        await sbInsert(TB.REGISTRATIONS, entry);
+        _regs.push(entry);
+        ok++;
+      } catch(e) { console.error('[IMPORT REG]', e.message, r); fail++; }
     }
-  }
+    cache.set('regs', _regs);
+    btn.disabled = false; btn.textContent = '✅ استيراد';
+    closeImport(); renderRegs(); updateBadges();
+    toast(fail ? `تم استيراد ${ok} ✅ — فشل ${fail} ⚠️` : `تم استيراد ${ok} تسجيل بنجاح ✅`);
 
-  cache.set('subs', _subs);
-  btn.disabled = false; btn.textContent = '✅ استيراد';
-  closeImport();
-  renderSubs(); updateBadges(); fillProgFilter();
-  toast(fail ? `تم استيراد ${ok} ✅ — فشل ${fail} ⚠️` : `تم استيراد ${ok} مشترك بنجاح ✅`);
+  } else {
+    let maxSubId     = _subs.length ? Math.max(..._subs.map(s => s.id)) : 0;
+    let maxStudentId = _subs.length ? Math.max(..._subs.map(s => s.studentId)) : 0;
+    for (const r of mapped) {
+      const existing  = _subs.find(s => s.phone === r.phone);
+      const studentId = existing ? existing.studentId : ++maxStudentId;
+      const prog      = _progs.find(p => p.name === r.programName);
+      const sub = {
+        id: ++maxSubId, studentId,
+        studentName: r.studentName, phone: r.phone, category: r.category,
+        programId: prog ? prog.id : 0, programName: r.programName,
+        paymentType: r.paymentType, startDate: r.startDate, endDate: r.endDate,
+        status: r.endDate ? subStatus(r.endDate) : 'نشط', createdAt: today()
+      };
+      try {
+        await sbInsert(TB.SUBSCRIPTIONS, sub);
+        _subs.push(sub);
+        ok++;
+      } catch(e) { console.error('[IMPORT SUB]', e.message, r); fail++; }
+    }
+    cache.set('subs', _subs);
+    btn.disabled = false; btn.textContent = '✅ استيراد';
+    closeImport(); renderSubs(); updateBadges(); fillProgFilter();
+    toast(fail ? `تم استيراد ${ok} ✅ — فشل ${fail} ⚠️` : `تم استيراد ${ok} مشترك بنجاح ✅`);
+  }
+}
+
+/* ── Download Template ── */
+function downloadTemplate(type) {
+  const templates = {
+    regs: {
+      filename: 'قالب_التسجيل_الاولي.xlsx',
+      headers:  ['الاسم الثلاثي', 'رقم الجوال', 'الفئة', 'ملاحظات'],
+      sample:   [['محمد أحمد العمري', '0501234567', 'رجال', ''],
+                 ['نورة خالد السالم', '0551234567', 'نساء', 'ملاحظة اختيارية']]
+    },
+    subs: {
+      filename: 'قالب_المشتركين.xlsx',
+      headers:  ['الاسم الثلاثي', 'رقم الجوال', 'الفئة', 'البرنامج', 'تاريخ البداية', 'تاريخ النهاية', 'نوع الاشتراك'],
+      sample:   [['محمد أحمد العمري', '0501234567', 'رجال', 'برنامج بارع', '2025-01-01', '2025-06-30', 'كامل'],
+                 ['نورة خالد السالم', '0551234567', 'نساء', 'برنامج بارع', '2025-01-01', '2025-06-30', 'جزئي']]
+    }
+  };
+  const t  = templates[type];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([t.headers, ...t.sample]);
+
+  // Style header row width
+  ws['!cols'] = t.headers.map(() => ({ wch: 20 }));
+
+  XLSX.utils.book_append_sheet(wb, ws, 'البيانات');
+  XLSX.writeFile(wb, t.filename);
 }
 
 function updateBadges() { /* badges removed from sidebar */ }
