@@ -441,7 +441,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
             <tr>
               <th><input type="checkbox" id="reg-check-all" onchange="toggleAllRegs(this)"></th>
               <th>#</th><th>الاسم الثلاثي</th><th>رقم الجوال</th>
-              <th>الفئة</th><th>تاريخ التسجيل</th>
+              <th>المرحلة</th><th>تاريخ التسجيل</th>
               <th>ملاحظات</th><th>إجراءات</th>
             </tr>
           </thead>
@@ -680,6 +680,14 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
         <button class="btn btn-gold" onclick="saveAttendance()">💾 حفظ التحضير</button>
       </div>
     </div>
+
+    <!-- كلمة مرور صفحة التحضير -->
+    <div class="filter-bar" style="margin-bottom:18px;align-items:center;gap:12px;">
+      <span style="font-size:.88rem;color:var(--muted);white-space:nowrap;">🔑 كلمة مرور صفحة التحضير:</span>
+      <input type="text" id="att-pwd-input" placeholder="كلمة المرور الحالية" style="flex:1;min-width:160px;max-width:280px;">
+      <button class="btn btn-primary" onclick="saveAttPwd()" style="white-space:nowrap;">💾 حفظ كلمة المرور</button>
+      <a href="./attendance.html" target="_blank" class="btn btn-gold" style="text-decoration:none;white-space:nowrap;">🔗 فتح صفحة التحضير</a>
+    </div>
     <div class="att-controls">
       <select id="att-prog" onchange="loadAttendanceStudents()">
         <option value="">اختر البرنامج</option>
@@ -715,7 +723,7 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       <input type="hidden" id="r-status" value="زائر">
       <div class="frow single">
         <div class="fg">
-          <label>الفئة الدراسية <span class="req">*</span></label>
+          <label>المرحلة الدراسية <span class="req">*</span></label>
           <select id="r-cat">
             <option value="">اختر الفئة</option>
             <option>أولى ابتدائي</option>
@@ -850,11 +858,16 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
         <div class="fg"><label>الجوال <span class="req">*</span></label><input id="sub-phone" placeholder="05xxxxxxxx"></div>
       </div>
       <div class="frow">
-        <div class="fg"><label>الفئة</label><input id="sub-cat" placeholder="الفئة"></div>
         <div class="fg">
           <label>البرنامج <span class="req">*</span></label>
           <select id="sub-prog" onchange="onProgSelect()">
             <option value="">اختر البرنامج</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label>المجموعة</label>
+          <select id="sub-group" disabled>
+            <option value="">اختر المجموعة</option>
           </select>
         </div>
       </div>
@@ -1071,7 +1084,8 @@ const TB = {
   PAYMENTS      : 'payments',
   PROGRAMS      : 'programs',
   ATTENDANCE    : 'attendance',
-  LOGS          : 'logs'
+  LOGS          : 'logs',
+  SETTINGS      : 'settings'
 };
 
 function _sbHeaders(extra = {}) {
@@ -1107,6 +1121,22 @@ async function sbUpdate(table, id, data) {
 async function sbDelete(table, id) {
   const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, {
     method: 'DELETE', headers: _sbHeaders()
+  });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbReadKey(table, key, val) {
+  const r = await fetch(`${SB_URL}/${table}?${key}=eq.${encodeURIComponent(val)}&select=*`, { headers: _sbHeaders() });
+  if (!r.ok) return null;
+  const arr = await r.json();
+  return arr[0] || null;
+}
+
+async function sbUpsert(table, data) {
+  const r = await fetch(`${SB_URL}/${table}`, {
+    method: 'POST',
+    headers: { ..._sbHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }) },
+    body: JSON.stringify(data)
   });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
@@ -1458,7 +1488,6 @@ function openConvert(regId) {
   document.getElementById('sub-reg-id').value   = regId;
   document.getElementById('sub-name').value     = r.fullName;
   document.getElementById('sub-phone').value    = r.phone;
-  document.getElementById('sub-cat').value      = r.category;
   document.getElementById('sub-start').value    = today().split('T')[0];
   document.getElementById('sub-end').value      = '';
   document.getElementById('sub-required').value = '';
@@ -1472,7 +1501,6 @@ function openDirectAddSub() {
   document.getElementById('sub-reg-id').value   = '';
   document.getElementById('sub-name').value     = '';
   document.getElementById('sub-phone').value    = '';
-  document.getElementById('sub-cat').value      = '';
   document.getElementById('sub-start').value    = today().split('T')[0];
   document.getElementById('sub-end').value      = '';
   document.getElementById('sub-required').value = '';
@@ -1482,7 +1510,7 @@ function openDirectAddSub() {
 }
 
 function _setSubFieldsReadonly(ro) {
-  ['sub-name','sub-phone','sub-cat'].forEach(id => {
+  ['sub-name','sub-phone'].forEach(id => {
     const el = document.getElementById(id);
     el.readOnly = ro;
     el.classList.toggle('readonly-field', ro);
@@ -1493,7 +1521,10 @@ function _fillSubPrograms() {
   const active = _progs.filter(p => p.status === 'نشط');
   document.getElementById('sub-prog').innerHTML =
     '<option value="">اختر البرنامج</option>' +
-    active.map(p => `<option value="${p.id}" data-fee="${p.fullFee}" data-end="${p.endDate}">${p.name}</option>`).join('');
+    active.map(p => `<option value="${p.id}" data-fee="${p.fullFee||''}" data-end="${p.endDate||''}" data-groups="${p.groups||''}">${p.name}</option>`).join('');
+  const grpSel = document.getElementById('sub-group');
+  grpSel.innerHTML = '<option value="">اختر المجموعة</option>';
+  grpSel.disabled = true;
 }
 
 /* Bulk convert helpers */
@@ -1600,13 +1631,19 @@ function onProgSelect() {
     document.getElementById('sub-required').value = opt.dataset.fee;
     document.getElementById('sub-end').value = opt.dataset.end || '';
   }
+  const groupsStr = opt?.dataset?.groups || '';
+  const groups = groupsStr ? groupsStr.split('،').map(s => s.trim()).filter(Boolean) : [];
+  const grpSel = document.getElementById('sub-group');
+  grpSel.innerHTML = '<option value="">اختر المجموعة</option>' +
+    groups.map(g => `<option value="${g}">${g}</option>`).join('');
+  grpSel.disabled = groups.length === 0;
 }
 
 async function saveSub() {
   const regId      = parseInt(document.getElementById('sub-reg-id').value) || 0;
   const fullName   = document.getElementById('sub-name').value;
   const phone      = document.getElementById('sub-phone').value;
-  const category   = document.getElementById('sub-cat').value;
+  const groupName  = document.getElementById('sub-group').value;
   const progId     = parseInt(document.getElementById('sub-prog').value) || 0;
   const startDate  = document.getElementById('sub-start').value;
   const endDate    = document.getElementById('sub-end').value;
@@ -1626,7 +1663,7 @@ async function saveSub() {
   const newId = _subs.length ? Math.max(..._subs.map(s => s.id)) + 1 : 1;
 
   const sub = {
-    id: newId, studentId, studentName: fullName, phone, category,
+    id: newId, studentId, studentName: fullName, phone, category: groupName, groupName,
     programId: progId, programName: progName, paymentType: payType,
     startDate, endDate, status: subStatus(endDate), createdAt: today()
   };
@@ -2302,6 +2339,23 @@ function renderStats() {
 /* ══════════════════════════════════════════
    ── SECTION 7: ATTENDANCE ──
 ══════════════════════════════════════════ */
+
+async function loadAttPwd() {
+  try {
+    const row = await sbReadKey(TB.SETTINGS, 'key', 'attendance_password');
+    if (row) document.getElementById('att-pwd-input').value = row.value;
+  } catch(e) { console.warn('loadAttPwd:', e.message); }
+}
+
+async function saveAttPwd() {
+  const pwd = document.getElementById('att-pwd-input').value.trim();
+  if (!pwd) { toast('يرجى إدخال كلمة المرور', 'error'); return; }
+  try {
+    await sbUpsert(TB.SETTINGS, { key: 'attendance_password', value: pwd });
+    toast('تم حفظ كلمة مرور صفحة التحضير ✅');
+  } catch(e) { toast('خطأ في الحفظ: ' + e.message, 'error'); }
+}
+
 function loadAttendance() {
   const sel = document.getElementById('att-prog');
   if (!sel) return;
@@ -2409,7 +2463,7 @@ function switchSection(name) {
   if (name === 'fees')       { fillFeesProgFilter(); renderFees(); }
   if (name === 'messaging')  { initMessaging(); }
   if (name === 'stats')      { renderStats(); }
-  if (name === 'attendance') { loadAttendance(); }
+  if (name === 'attendance') { loadAttendance(); loadAttPwd(); }
   if (window.innerWidth <= 760) { document.getElementById('sidebar').classList.remove('open'); }
 }
 
