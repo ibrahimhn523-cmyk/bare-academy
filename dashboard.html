@@ -424,7 +424,6 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
       <div class="page-title">التسجيل الأولي <span class="page-sub">سجل المتقدمين</span></div>
       <div class="hdr-actions">
         <button class="btn btn-refresh"   onclick="loadRegistrations()">🔄 تحديث</button>
-        <button class="btn btn-template"  onclick="downloadTemplate('regs')">📄 تنزيل القالب</button>
         <button class="btn btn-import"    onclick="openImportRegs()">📥 استيراد</button>
         <button class="btn btn-bulk" id="btn-bulk-convert" onclick="openBulkConvert()" disabled>🔄 تحويل المحددين <span id="bulk-count"></span></button>
         <button class="btn btn-primary"   onclick="openAddReg()">➕ إضافة</button>
@@ -763,9 +762,12 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
           <div style="font-weight:600;margin-bottom:4px">اسحب الملف هنا أو اضغط للاختيار</div>
           <div style="font-size:.82rem">يدعم: Excel (.xlsx, .xls) أو CSV</div>
         </div>
-        <div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:.82rem;color:var(--muted);line-height:1.8">
-          <strong>الأعمدة المتوقعة (يمكن أن تكون بالعربي أو الإنجليزي):</strong><br>
-          الاسم / الجوال / الفئة / البرنامج / تاريخ البداية / تاريخ النهاية / نوع الاشتراك
+        <div style="margin-top:12px;padding:10px 12px;background:var(--bg);border-radius:8px;font-size:.82rem;color:var(--muted);line-height:1.9;display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+          <div>
+            <strong>الأعمدة المتوقعة (يمكن أن تكون بالعربي أو الإنجليزي):</strong><br>
+            <span id="import-hint-text"></span>
+          </div>
+          <button id="import-tpl-btn" class="btn btn-template" style="white-space:nowrap;flex-shrink:0" onclick="downloadTemplate(_importMode)">📄 تنزيل القالب</button>
         </div>
       </div>
 
@@ -2455,10 +2457,11 @@ const IMPORT_FIELDS_SUBS = [
 ];
 
 const IMPORT_FIELDS_REGS = [
-  { key: 'fullName',  label: 'الاسم',    required: true,  aliases: ['الاسم','الاسم الثلاثي','الاسم الكامل','name','fullname'] },
-  { key: 'phone',     label: 'الجوال',   required: true,  aliases: ['الجوال','رقم الجوال','الهاتف','phone','mobile'] },
-  { key: 'category',  label: 'الفئة',   required: false, aliases: ['الفئة','category'] },
-  { key: 'notes',     label: 'ملاحظات', required: false, aliases: ['ملاحظات','notes','note'] },
+  { key: 'fullName',  label: 'الاسم',            required: true,  aliases: ['الاسم','الاسم الثلاثي','الاسم الكامل','name','fullname'] },
+  { key: 'phone',     label: 'الجوال',           required: true,  aliases: ['الجوال','رقم الجوال','الهاتف','phone','mobile'] },
+  { key: 'category',  label: 'الفئة',            required: false, aliases: ['الفئة','category'] },
+  { key: 'createdAt', label: 'تاريخ التسجيل',    required: false, aliases: ['تاريخ التسجيل','التسجيل','تاريخ','createdat','date'] },
+  { key: 'notes',     label: 'ملاحظات',          required: false, aliases: ['ملاحظات','notes','note'] },
 ];
 
 function _importFields() {
@@ -2476,6 +2479,10 @@ function _openImport(mode) {
   document.getElementById('drop-zone').classList.remove('drag-over');
   document.querySelector('#m-import-sub .modal-title').textContent =
     mode === 'regs' ? '📥 استيراد تسجيلات أولية من Excel' : '📥 استيراد مشتركين من Excel';
+  document.getElementById('import-hint-text').textContent =
+    mode === 'regs'
+      ? 'الاسم الثلاثي / رقم الجوال / الفئة / تاريخ التسجيل / ملاحظات'
+      : 'الاسم الثلاثي / رقم الجوال / الفئة / البرنامج / تاريخ البداية / تاريخ النهاية / نوع الاشتراك';
   openM('m-import-sub');
 }
 
@@ -2573,10 +2580,11 @@ function _mapRow(row, m) {
   const g = i => i >= 0 ? String(row[i] ?? '').trim() : '';
   if (_importMode === 'regs') {
     return {
-      fullName: g(m.fullName),
-      phone:    g(m.phone),
-      category: g(m.category) || '',
-      notes:    g(m.notes)    || '',
+      fullName:  g(m.fullName),
+      phone:     g(m.phone),
+      category:  g(m.category)  || '',
+      createdAt: _fmtDate(m.createdAt >= 0 ? row[m.createdAt] : '') || '',
+      notes:     g(m.notes)     || '',
     };
   }
   return {
@@ -2639,7 +2647,7 @@ async function confirmImport() {
   if (_importMode === 'regs') {
     let maxId = _regs.length ? Math.max(..._regs.map(r => r.id)) : 0;
     for (const r of mapped) {
-      const entry = { id: ++maxId, fullName: r.fullName, phone: r.phone, category: r.category, notes: r.notes, createdAt: today() };
+      const entry = { id: ++maxId, fullName: r.fullName, phone: r.phone, category: r.category, notes: r.notes, createdAt: r.createdAt || today() };
       try {
         await sbInsert(TB.REGISTRATIONS, entry);
         _regs.push(entry);
@@ -2683,9 +2691,8 @@ function downloadTemplate(type) {
   const templates = {
     regs: {
       filename: 'قالب_التسجيل_الاولي.xlsx',
-      headers:  ['الاسم الثلاثي', 'رقم الجوال', 'الفئة', 'ملاحظات'],
-      sample:   [['محمد أحمد العمري', '0501234567', 'رجال', ''],
-                 ['نورة خالد السالم', '0551234567', 'نساء', 'ملاحظة اختيارية']]
+      headers:  ['الاسم الثلاثي', 'رقم الجوال', 'الفئة', 'تاريخ التسجيل', 'ملاحظات'],
+      sample:   []
     },
     subs: {
       filename: 'قالب_المشتركين.xlsx',
