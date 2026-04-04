@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>اختبار النموذج الجديد — أكاديمية بارع</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family: 'Bare'; src: url('./fonts/TheYearofHandicrafts-Regular.otf'); font-weight: 400; }
+@font-face { font-family: 'Bare'; src: url('./fonts/TheYearofHandicrafts-Bold.otf'); font-weight: 700; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary : #2D3651;
+  --gold    : #c19d2e;
+  --bg      : #f8fafc;
+  --white   : #fff;
+  --text    : #1e293b;
+  --muted   : #64748b;
+  --border  : #e2e8f0;
+  --success : #10b981;
+  --warning : #f59e0b;
+  --danger  : #ef4444;
+}
+
+body { font-family: 'Bare', 'Tajawal', 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+.topbar {
+  position: fixed; top: 0; right: 0; left: 0; height: 58px;
+  background: var(--primary); display: flex; align-items: center;
+  justify-content: space-between; padding: 0 18px; z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.topbar-left { display: flex; align-items: center; gap: 10px; }
+.burger { background: none; border: none; color: #fff; font-size: 1.35rem; cursor: pointer; padding: 4px 6px; border-radius: 5px; }
+.topbar-logo { height: 34px; }
+.topbar-title { color: #fff; font-size: 1rem; font-weight: 700; }
+
+.sidebar {
+  position: fixed; top: 58px; right: 0; width: 250px;
+  height: calc(100vh - 58px); background: var(--primary);
+  overflow-y: auto; z-index: 150; transition: transform .28s ease;
+}
+.sidebar.hidden { transform: translateX(100%); }
+.nav-section { padding: 8px 0 4px; }
+.nav-label { font-size: .68rem; color: rgba(255,255,255,.4); padding: 8px 16px 4px; letter-spacing: .05em; text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; color: rgba(255,255,255,.72); cursor: pointer;
+  border-right: 3px solid transparent; transition: all .18s; font-size: .9rem;
+}
+.nav-item:hover { background: rgba(255,255,255,.07); color: #fff; }
+.nav-item.active { background: rgba(193,157,46,.18); color: var(--gold); border-right-color: var(--gold); }
+.nav-icon { font-size: 1.1rem; min-width: 22px; text-align: center; }
+
+.main {
+  margin-right: 250px; margin-top: 58px;
+  padding: 22px; min-height: calc(100vh - 58px);
+}
+.main.full { margin-right: 0; }
+
+.page-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+.page-title { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
+.page-sub { font-size: .8rem; color: var(--muted); font-weight: 400; margin-right: 6px; }
+
+.info-box {
+  background: var(--white); border-radius: 10px; padding: 16px;
+  margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  border-left: 4px solid var(--gold);
+}
+.info-box p { margin-bottom: 8px; font-size: .9rem; }
+.info-box strong { color: var(--primary); }
+.count-badge { background: var(--gold); color: #fff; padding: 1px 7px; border-radius: 4px; font-weight: 700; font-size: .75rem; }
+
+.table-card {
+  background: var(--white); border-radius: 10px; margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden;
+}
+.table-title { padding: 14px 16px; background: rgba(45,54,81,.06); border-bottom: 1.5px solid var(--border); font-weight: 700; font-size: .95rem; color: var(--primary); }
+
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  background: var(--primary); color: #fff; padding: 10px 12px;
+  font-size: .78rem; font-weight: 700; text-align: right;
+}
+td { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: .85rem; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(45,54,81,.025); }
+.empty-msg { text-align: center; padding: 28px; color: var(--muted); }
+
+.warning-row td { background: #fffbeb !important; }
+.success-row td { background: #f0fdf4 !important; }
+
+.badge { display: inline-block; padding: 3px 9px; border-radius: 6px; font-size: .75rem; font-weight: 600; }
+.badge-success { background: #d1fae5; color: #065f46; }
+.badge-warning { background: #fef3c7; color: #92400e; }
+.badge-danger { background: #fee2e2; color: #991b1b; }
+.badge-muted { background: #f1f5f9; color: #475569; }
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: inherit; font-size: .85rem; font-weight: 600; transition: all .15s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: #1e2740; }
+.btn-gold { background: var(--gold); color: #fff; }
+.btn-gold:hover { background: #a8861d; }
+.btn-secondary { background: var(--bg); color: var(--text); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: var(--border); }
+
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(45,54,81,.2); border-top-color: var(--primary); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--white); border-radius: 12px; padding: 24px; max-width: 600px; max-height: 80vh; overflow-y: auto; z-index: 300; box-shadow: 0 20px 60px rgba(0,0,0,.3); display: none; }
+.modal.show { display: block; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 250; display: none; }
+.modal-overlay.show { display: block; }
+.modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); }
+.modal-title { font-size: 1.1rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+.modal-body { color: var(--muted); font-size: .85rem; line-height: 1.5; }
+.modal-body pre { background: var(--bg); padding: 12px; border-radius: 6px; overflow-x: auto; font-size: .8rem; margin-top: 12px; }
+
+.loader { text-align: center; padding: 28px; }
+
+@media (max-width: 760px) {
+  .sidebar { transform: translateX(100%); }
+  .main { margin-right: 0; }
+  table { font-size: .75rem; }
+  th, td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="topbar-left">
+    <button class="burger" onclick="toggleSidebar()">☰</button>
+    <img src="./image/bare-logo.png" alt="بارع" class="topbar-logo" onerror="this.style.display='none'">
+    <span class="topbar-title">اختبار النموذج الجديد</span>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="nav-section">
+    <div class="nav-label">الاختبار</div>
+    <div class="nav-item active" onclick="scrollTo('students')">
+      <span class="nav-icon">👤</span>
+      <span>Students</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('groups')">
+      <span class="nav-icon">👥</span>
+      <span>Groups</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('subscriptions')">
+      <span class="nav-icon">📋</span>
+      <span>Subscriptions</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('payments')">
+      <span class="nav-icon">💰</span>
+      <span>Payments</span>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main" id="main">
+
+  <!-- INFO BOX -->
+  <div class="info-box">
+    <p><strong>🔍 اختبار النموذج الجديد</strong></p>
+    <p>هذه الصفحة تستخرج البيانات من Supabase وتحولها إلى النموذج المقترح لـ Students و Groups</p>
+    <p style="margin-top: 12px; font-size:.8rem; color:var(--muted)">
+      ✅ Students: <span class="count-badge" id="count-students">—</span> |
+      ✅ Groups: <span class="count-badge" id="count-groups">—</span> |
+      ✅ Subscriptions: <span class="count-badge" id="count-subs">—</span> |
+      ✅ Payments: <span class="count-badge" id="count-payments">—</span>
+    </p>
+  </div>
+
+  <!-- ACTIONS -->
+  <div style="margin-bottom: 18px; display: flex; gap: 10px; flex-wrap: wrap;">
+    <button class="btn btn-primary" onclick="loadAndTransform()">🔄 تحميل وتحويل البيانات</button>
+    <button class="btn btn-gold" onclick="showSQLScript()">🔧 عرض سكريبت SQL</button>
+    <button class="btn btn-gold" onclick="exportToJSON()">📥 تصدير JSON</button>
+    <button class="btn btn-secondary" onclick="validateModel()">✓ تحقق من النموذج</button>
+  </div>
+
+  <!-- STUDENTS SECTION -->
+  <div id="students" class="table-card" style="margin-top: 24px;">
+    <div class="table-title">📋 جدول Students (المقترح)</div>
+    <div class="tbl-wrap">
+      <table id="table-students">
+        <thead><tr><th>ID</th><th>الاسم الثلاثي</th><th>الجوال</th><th>عدد البرامج</th><th>الحالة</th></tr></thead>
+        <tbody id="tbody-students"><tr><td colspan="5" class="empty-msg"><span class="spinner"></span> جاري التحميل…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- GROUPS SECTION -->
+  <div id="groups" class="table-card">
+    <div class="table-title">👥 جدول Groups (المقترح)</div>
+    <div class="tbl-wrap">
+      <table id="table-groups">
+        <thead><tr><th>ID</th><th>البرنامج</th><th>المجموعة</th><th>السعة</th><th>عدد الطلاب</th><th>الحالة</th></tr></thead>
+        <tbody id="tbody-groups"><tr><td colspan="6" class="empty-msg"><span class="spinner"></span> جاري التحميل…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUBSCRIPTIONS SECTION -->
+  <div id="subscriptions" class="table-card">
+    <div class="table-title">📌 جدول Subscriptions (محسّن مع FKs)</div>
+    <div class="tbl-wrap">
+      <table id="table-subscriptions">
+        <thead><tr><th>#</th><th>Student</th><th>Program</th><th>Group</th><th>startDate</th><th>endDate</th><th>Status</th></tr></thead>
+        <tbody id="tbody-subscriptions"><tr><td colspan="7" class="empty-msg"><span class="spinner"></span> جاري التحميل…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAYMENTS SECTION -->
+  <div id="payments" class="table-card">
+    <div class="table-title">💰 جدول Payments (مع GENERATED columns)</div>
+    <div class="tbl-wrap">
+      <table id="table-payments">
+        <thead><tr><th>#</th><th>Student</th><th>Subscription</th><th>المبلغ المدفوع</th><th>المتبقي</th><th>الحالة المالية</th><th>الطريقة</th></tr></thead>
+        <tbody id="tbody-payments"><tr><td colspan="7" class="empty-msg"><span class="spinner"></span> جاري التحميل…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal()"></div>
+<div class="modal" id="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <div class="modal-title" id="modal-title"></div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+
+<script>
+/* Supabase Config */
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+const TB = { PROGRAMS: 'programs', SUBSCRIPTIONS: 'subscriptions', PAYMENTS: 'payments', REGISTRATIONS: 'registrations' };
+
+function _h() { return { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' }; }
+async function sbRead(table) { const r = await fetch(`${SB_URL}/${table}?select=*`, { headers: _h() }); return r.ok ? r.json() : []; }
+
+/* State */
+let _subs = [], _progs = [], _pays = [];
+let _students = [], _groups = [], _newSubs = [], _newPays = [];
+
+/* MAIN FUNCTIONS */
+async function loadAndTransform() {
+  try {
+    // 1. Load data
+    _subs = await sbRead(TB.SUBSCRIPTIONS);
+    _progs = await sbRead(TB.PROGRAMS);
+    _pays = await sbRead(TB.PAYMENTS);
+
+    if (!_subs.length) {
+      alert('لا توجد اشتراكات في قاعدة البيانات');
+      return;
+    }
+
+    // 2. Transform
+    _students = extractStudents();
+    _groups = extractGroups();
+    _newSubs = transformSubscriptions(_students, _groups);
+    _newPays = enhancePayments(_newSubs);
+
+    // 3. Render
+    renderStudents();
+    renderGroups();
+    renderSubscriptions();
+    renderPayments();
+    updateCounts();
+
+  } catch(e) {
+    alert('❌ خطأ: ' + e.message);
+    console.error(e);
+  }
+}
+
+/* EXTRACTION */
+function extractStudents() {
+  const map = {};
+  let id = 1;
+  _subs.forEach(sub => {
+    const key = sub.phone;
+    if (!map[key]) {
+      map[key] = {
+        id: id++,
+        fullName: sub.studentName || sub.fullName || 'بدون اسم',
+        phone: sub.phone,
+        status: 'active',
+        createdAt: sub.createdAt,
+        programs: []
+      };
+    }
+    map[key].programs.push(sub.programId);
+  });
+  return Object.values(map).map(s => ({
+    ...s,
+    programs: [...new Set(s.programs)]
+  }));
+}
+
+function extractGroups() {
+  const map = {};
+  let id = 1;
+  _progs.forEach(prog => {
+    const groupNames = (prog.groups || '')
+      .split('،')
+      .map(s => s.trim())
+      .filter(Boolean);
+    groupNames.forEach(name => {
+      const key = `${prog.id}_${name}`;
+      map[key] = {
+        id: id++,
+        programId: prog.id,
+        programName: prog.name,
+        name,
+        capacity: null,
+        instructor: null,
+        status: 'active',
+        studentCount: 0
+      };
+    });
+  });
+  return Object.values(map);
+}
+
+function transformSubscriptions(students, groups) {
+  return _subs.map(sub => {
+    const student = students.find(s => s.phone === sub.phone);
+    const group = groups.find(g =>
+      g.programId === sub.programId &&
+      (g.name === (sub.groupName || sub.category))
+    );
+    return {
+      id: sub.id,
+      studentId: student?.id || null,
+      programId: sub.programId,
+      groupId: group?.id || null,
+      paymentType: sub.paymentType,
+      startDate: sub.startDate,
+      endDate: sub.endDate,
+      status: sub.status,
+      createdAt: sub.createdAt,
+      warnings: []
+    };
+  });
+}
+
+function enhancePayments(newSubs) {
+  return _pays.map(pay => {
+    const sub = newSubs.find(s => s.id === pay.subscriptionId);
+    const totalPaid = _pays
+      .filter(p => p.subscriptionId === pay.subscriptionId)
+      .reduce((sum, p) => sum + (p.paid || 0), 0);
+    const required = pay.required || 0;
+
+    return {
+      id: pay.id,
+      subscriptionId: pay.subscriptionId,
+      studentId: sub?.studentId || null,
+      amount: pay.paid || 0,
+      date: pay.date,
+      method: pay.method,
+      notes: pay.notes,
+      remaining: Math.max(0, required - totalPaid),
+      paymentStatus: totalPaid >= required ? 'مسدد بالكامل' :
+                     totalPaid > 0 ? 'مسدد جزئياً' : 'لم يدفع',
+      createdAt: pay.createdAt
+    };
+  });
+}
+
+/* RENDERING */
+function renderStudents() {
+  const tbody = document.getElementById('tbody-students');
+  if (!_students.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-msg">لا توجد طلاب</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _students.map((s, i) => `<tr>
+    <td>${s.id}</td>
+    <td><strong>${esc(s.fullName)}</strong></td>
+    <td dir="ltr">${s.phone}</td>
+    <td>${s.programs.length}</td>
+    <td><span class="badge badge-success">${s.status}</span></td>
+  </tr>`).join('');
+}
+
+function renderGroups() {
+  const tbody = document.getElementById('tbody-groups');
+  // Count students per group
+  _groups.forEach(g => {
+    g.studentCount = _newSubs.filter(s => s.groupId === g.id).length;
+  });
+  if (!_groups.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">لا توجد مجموعات</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _groups.map((g, i) => `<tr>
+    <td>${g.id}</td>
+    <td>${esc(g.programName)}</td>
+    <td>${esc(g.name)}</td>
+    <td>${g.capacity || '—'}</td>
+    <td>${g.studentCount}</td>
+    <td><span class="badge badge-success">${g.status}</span></td>
+  </tr>`).join('');
+}
+
+function renderSubscriptions() {
+  const tbody = document.getElementById('tbody-subscriptions');
+  if (!_newSubs.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">لا توجد اشتراكات</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _newSubs.map((s, i) => {
+    const student = _students.find(st => st.id === s.studentId);
+    const prog = _progs.find(p => p.id === s.programId);
+    const group = _groups.find(g => g.id === s.groupId);
+    const row = s.studentId === null || s.groupId === null ? 'warning-row' : '';
+    return `<tr class="${row}">
+      <td>${i+1}</td>
+      <td>${student?.fullName || '⚠️ orphan'}</td>
+      <td>${prog?.name || '—'}</td>
+      <td>${group?.name || '—'}</td>
+      <td>${s.startDate || '—'}</td>
+      <td>${s.endDate || '—'}</td>
+      <td><span class="badge ${s.status === 'نشط' ? 'badge-success' : 'badge-muted'}">${s.status}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPayments() {
+  const tbody = document.getElementById('tbody-payments');
+  if (!_newPays.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">لا توجد دفعات</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _newPays.map((p, i) => {
+    const student = _students.find(st => st.id === p.studentId);
+    const badgeClass = p.paymentStatus === 'مسدد بالكامل' ? 'badge-success' :
+                      p.paymentStatus === 'مسدد جزئياً' ? 'badge-warning' : 'badge-danger';
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${student?.fullName || '—'}</td>
+      <td>${p.subscriptionId}</td>
+      <td>${p.amount} ر.س</td>
+      <td>${p.remaining} ر.س</td>
+      <td><span class="badge ${badgeClass}">${p.paymentStatus}</span></td>
+      <td>${p.method || '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateCounts() {
+  document.getElementById('count-students').textContent = _students.length;
+  document.getElementById('count-groups').textContent = _groups.length;
+  document.getElementById('count-subs').textContent = _newSubs.length;
+  document.getElementById('count-payments').textContent = _newPays.length;
+}
+
+/* UTILITIES */
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function scrollTo(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('hidden');
+}
+
+function showModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-overlay').classList.add('show');
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  document.getElementById('modal').classList.remove('show');
+}
+
+/* BUTTONS */
+function showSQLScript() {
+  const sql = `
+-- ===== Create Students Table =====
+CREATE TABLE students (
+  id SERIAL PRIMARY KEY,
+  fullName TEXT NOT NULL,
+  phone TEXT UNIQUE NOT NULL,
+  nationalId TEXT UNIQUE,
+  dateOfBirth DATE,
+  email TEXT,
+  guardianName TEXT,
+  guardianPhone TEXT,
+  status TEXT DEFAULT 'active',
+  createdAt TIMESTAMP DEFAULT NOW(),
+  updatedAt TIMESTAMP DEFAULT NOW()
+);
+
+-- ===== Create Groups Table =====
+CREATE TABLE groups (
+  id SERIAL PRIMARY KEY,
+  programId INT NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  capacity INT,
+  instructor TEXT,
+  startTime TIME,
+  endTime TIME,
+  days TEXT,
+  status TEXT DEFAULT 'active',
+  createdAt TIMESTAMP DEFAULT NOW(),
+  UNIQUE(programId, name)
+);
+
+-- ===== Alter Subscriptions Table =====
+ALTER TABLE subscriptions
+ADD COLUMN studentId INT REFERENCES students(id) ON DELETE CASCADE,
+ADD COLUMN groupId INT REFERENCES groups(id),
+ADD UNIQUE(studentId, programId);
+
+-- Remove denormalized columns (optional)
+-- ALTER TABLE subscriptions DROP COLUMN studentName;
+-- ALTER TABLE subscriptions DROP COLUMN programName;
+
+-- ===== Alter Payments Table =====
+ALTER TABLE payments
+ADD COLUMN remaining NUMERIC GENERATED ALWAYS AS (required - paid) STORED,
+ADD COLUMN paymentStatus TEXT GENERATED ALWAYS AS (
+  CASE
+    WHEN paid >= required THEN 'مسدد بالكامل'
+    WHEN paid > 0 THEN 'مسدد جزئياً'
+    ELSE 'لم يدفع'
+  END
+) STORED;
+
+-- ===== Data Migration Script =====
+-- 1. Insert Students from SUBSCRIPTIONS (distinct by phone)
+INSERT INTO students (fullName, phone, status, createdAt)
+SELECT DISTINCT studentName, phone, 'active', createdAt
+FROM subscriptions
+ON CONFLICT (phone) DO NOTHING;
+
+-- 2. Insert Groups from PROGRAMS
+-- You'll need to manually extract groups from programs.groups
+-- Example:
+INSERT INTO groups (programId, name, status, createdAt)
+VALUES (1, 'مجموعة أ', 'active', NOW());
+
+-- 3. Update SUBSCRIPTIONS with studentId and groupId
+UPDATE subscriptions s
+SET studentId = st.id
+FROM students st
+WHERE s.phone = st.phone;
+
+-- Similarly for groupId (requires manual group IDs)
+
+-- ===== Create View =====
+CREATE VIEW student_subscription_summary AS
+SELECT
+  s.id as studentId,
+  s.fullName,
+  s.phone,
+  COUNT(DISTINCT sub.programId) as totalPrograms,
+  COUNT(sub.id) as totalSubscriptions,
+  SUM(COALESCE(p.required, 0)) as totalRequired,
+  SUM(COALESCE(p.paid, 0)) as totalPaid,
+  SUM(COALESCE(p.required, 0)) - SUM(COALESCE(p.paid, 0)) as totalRemaining
+FROM students s
+LEFT JOIN subscriptions sub ON s.id = sub.studentId
+LEFT JOIN payments p ON sub.id = p.subscriptionId
+GROUP BY s.id, s.fullName, s.phone;
+  `;
+  showModal('🔧 SQL Migration Script', `<pre>${esc(sql)}</pre>`);
+}
+
+function exportToJSON() {
+  const data = {
+    students: _students,
+    groups: _groups,
+    subscriptions: _newSubs,
+    payments: _newPays,
+    summary: {
+      totalStudents: _students.length,
+      totalGroups: _groups.length,
+      totalSubscriptions: _newSubs.length,
+      totalPayments: _newPays.length
+    }
+  };
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `test-model-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function validateModel() {
+  const warnings = [];
+
+  // Check for orphan records
+  const orphanSubs = _newSubs.filter(s => s.studentId === null || s.groupId === null);
+  if (orphanSubs.length) {
+    warnings.push(`⚠️ ${orphanSubs.length} اشتراك بدون student أو group صحيح`);
+  }
+
+  // Check for mismatched programs
+  const mismatchedGroups = _newSubs.filter(s => {
+    const group = _groups.find(g => g.id === s.groupId);
+    return group && group.programId !== s.programId;
+  });
+  if (mismatchedGroups.length) {
+    warnings.push(`⚠️ ${mismatchedGroups.length} اشتراك مع برنامج ومجموعة غير متطابقة`);
+  }
+
+  // Check for duplicate students
+  const phoneMap = {};
+  _students.forEach(s => {
+    phoneMap[s.phone] = (phoneMap[s.phone] || 0) + 1;
+  });
+  const duplicates = Object.entries(phoneMap).filter(([_, count]) => count > 1);
+  if (duplicates.length) {
+    warnings.push(`⚠️ ${duplicates.length} رقم جوال مكرر`);
+  }
+
+  const validMsg = warnings.length
+    ? `⚠️ تنبيهات:\n${warnings.join('\n')}`
+    : `✅ النموذج صحيح! جميع العلاقات متسقة.`;
+
+  showModal('✓ التحقق من النموذج', `<div style="padding:12px;background:var(--bg);border-radius:6px;white-space:pre-wrap;">${esc(validMsg)}</div>`);
+}
+
+// Load on start
+document.addEventListener('DOMContentLoaded', () => {
+  loadAndTransform();
+});
+</script>
+</body>
+</html>
