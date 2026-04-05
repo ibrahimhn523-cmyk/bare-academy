@@ -1,0 +1,1380 @@
+/* ══════════════════════════════════════════
+   CONFIG — Supabase
+══════════════════════════════════════════ */
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+
+const TB = {
+  STUDENTS      : 'students',
+  SUBSCRIPTIONS : 'subscriptions',
+  PAYMENTS      : 'payments',
+  PROGRAMS      : 'programs',
+  ATTENDANCE    : 'attendance',
+  SETTINGS      : 'settings'
+};
+
+/* ── Supabase Helpers ── */
+function _h(extra = {}) {
+  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', ...extra };
+}
+
+async function sbRead(table, qs = '') {
+  const r = await fetch(`${SB_URL}/${table}?select=*&order=id.asc${qs ? '&' + qs : ''}`, { headers: _h() });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+  return r.json();
+}
+
+async function sbInsert(table, data) {
+  const r = await fetch(`${SB_URL}/${table}`, { method: 'POST', headers: _h(), body: JSON.stringify(data) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbInsertReturn(table, data) {
+  const r = await fetch(`${SB_URL}/${table}`, { method: 'POST', headers: _h({ 'Prefer': 'return=representation' }), body: JSON.stringify(data) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+  const arr = await r.json(); return arr[0] || null;
+}
+
+async function sbUpdate(table, id, data) {
+  const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, { method: 'PATCH', headers: _h(), body: JSON.stringify(data) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbDelete(table, id) {
+  const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, { method: 'DELETE', headers: _h() });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+async function sbReadKey(table, key, val) {
+  const r = await fetch(`${SB_URL}/${table}?${key}=eq.${encodeURIComponent(val)}&select=*`, { headers: _h() });
+  if (!r.ok) return null;
+  const arr = await r.json(); return arr[0] || null;
+}
+
+async function sbUpsert(table, data) {
+  const r = await fetch(`${SB_URL}/${table}`, { method: 'POST', headers: _h({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify(data) });
+  if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
+}
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let _students    = [];
+let _progs       = [];
+let _allSubs     = [];   // all subscriptions (for student card + sub counts on programs page)
+let _allPayments = [];   // all payments (for student card)
+let _progSubs    = [];   // subscriptions for current program
+let _progPays    = [];   // payments for current program
+let _context     = 'academy';
+let _currentProg = null;
+let _currentView = 'cards';
+let _sidebarOpen = true;
+let _activeSection = 'students';
+let _subStudentId  = null; // selected student in m-sub modal
+
+/* ══════════════════════════════════════════
+   NAVIGATION
+══════════════════════════════════════════ */
+function renderSidebar() {
+  const el = document.getElementById('sidebar-content');
+  if (_context === 'academy') {
+    el.innerHTML = `
+      <div class="nav-section">
+        <div class="nav-label">الأكاديمية</div>
+        <div class="nav-item ${_activeSection === 'students' ? 'active' : ''}" onclick="switchSection('students')">
+          <span class="nav-icon">👥</span><span>سجل الطلاب</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'programs' ? 'active' : ''}" onclick="switchSection('programs')">
+          <span class="nav-icon">📋</span><span>البرامج</span>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-item" onclick="handleLogout()">
+          <span class="nav-icon">🚪</span><span>خروج</span>
+        </div>
+      </div>`;
+  } else {
+    const pname = _currentProg ? esc(_currentProg.name) : '';
+    el.innerHTML = `
+      <div class="nav-section">
+        <div class="nav-back" onclick="exitProgram()">← رجوع للأكاديمية</div>
+        <div class="prog-context-label">📋 ${pname}</div>
+        <div class="nav-item ${_activeSection === 'subscribers' ? 'active' : ''}" onclick="switchSection('subscribers')">
+          <span class="nav-icon">👥</span><span>المشتركون</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'groups' ? 'active' : ''}" onclick="switchSection('groups')">
+          <span class="nav-icon">👪</span><span>المجموعات</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'fees' ? 'active' : ''}" onclick="switchSection('fees')">
+          <span class="nav-icon">💰</span><span>الرسوم</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'attendance' ? 'active' : ''}" onclick="switchSection('attendance')">
+          <span class="nav-icon">✅</span><span>التحضير</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'prog-stats' ? 'active' : ''}" onclick="switchSection('prog-stats')">
+          <span class="nav-icon">📊</span><span>الإحصائيات</span>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-item" onclick="handleLogout()">
+          <span class="nav-icon">🚪</span><span>خروج</span>
+        </div>
+      </div>`;
+  }
+}
+
+function switchSection(name) {
+  _activeSection = name;
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const sec = document.getElementById('section-' + name);
+  if (sec) sec.classList.add('active');
+  renderSidebar();
+  if (name === 'students')    renderStudents();
+  if (name === 'programs')    renderProgs();
+  if (name === 'subscribers') renderSubscribers();
+  if (name === 'groups')      renderGroups();
+  if (name === 'fees')        renderFees();
+  if (name === 'attendance')  loadAttStats();
+  if (name === 'prog-stats')  renderProgStats();
+  if (window.innerWidth <= 760) document.getElementById('sidebar').classList.remove('open');
+}
+
+async function enterProgram(prog) {
+  _currentProg = prog;
+  _context = 'program';
+  // Topbar
+  const tp = document.getElementById('topbar-prog');
+  tp.style.display = '';
+  tp.textContent = `← ${prog.name}`;
+  // Update title
+  document.getElementById('subs-title').textContent = `المشتركون — ${prog.name}`;
+  await reloadProgramData();
+  switchSection('subscribers');
+}
+
+function exitProgram() {
+  _context = 'academy';
+  _currentProg = null;
+  _progSubs = [];
+  _progPays = [];
+  document.getElementById('topbar-prog').style.display = 'none';
+  renderSidebar();
+  switchSection('students');
+}
+
+async function reloadProgramData() {
+  if (!_currentProg) return;
+  try {
+    const rows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${_currentProg.id}`);
+    _progSubs = rows.map(mapSub);
+  } catch(e) { console.error(e); _progSubs = []; }
+
+  if (_progSubs.length) {
+    const ids = _progSubs.map(s => s.id);
+    try {
+      const rows = await sbRead(TB.PAYMENTS, `subscriptionId=in.(${ids.join(',')})`);
+      _progPays = rows.map(mapPay);
+    } catch(e) { _progPays = []; }
+  } else { _progPays = []; }
+}
+
+function mapSub(r) {
+  return {
+    id:           parseInt(r.id) || 0,
+    studentId:    parseInt(r.studentId) || 0,
+    studentName:  r.studentName || '',
+    phone:        r.phone || '',
+    category:     r.category || '',
+    programId:    parseInt(r.programId) || 0,
+    programName:  r.programName || '',
+    groupName:    r.groupName || '',
+    subType:      r.subType || r.paymentType || 'كامل',
+    startDate:    r.startDate || '',
+    endDate:      r.endDate || '',
+    sessionCount: parseInt(r.sessionCount) || 0,
+    amountDue:    parseFloat(r.amountDue) || 0,
+    notes:        r.notes || '',
+    status:       subStatus(r.endDate)
+  };
+}
+
+function mapPay(r) {
+  return {
+    id:             r.id,
+    subscriptionId: parseInt(r.subscriptionId) || 0,
+    studentId:      parseInt(r.studentId) || 0,
+    amount:         parseFloat(r.amount) || parseFloat(r.paid) || 0,
+    paidAt:         r.paidAt || r.date || '',
+    method:         r.method || 'نقداً',
+    note:           r.note || r.notes || ''
+  };
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+async function init() {
+  renderSidebar();
+  try { await Promise.all([loadStudents(), loadPrograms()]); } catch(e) { console.error(e); }
+  // Load all subs and payments for student card / program sub-counts
+  try {
+    const rows = await sbRead(TB.SUBSCRIPTIONS);
+    _allSubs = rows.map(mapSub);
+  } catch(e) { _allSubs = []; }
+  try {
+    const rows = await sbRead(TB.PAYMENTS);
+    _allPayments = rows.map(mapPay);
+  } catch(e) { _allPayments = []; }
+  renderStudents();
+}
+
+/* ══════════════════════════════════════════
+   STUDENTS
+══════════════════════════════════════════ */
+async function loadStudents() {
+  try {
+    const rows = await sbRead(TB.STUDENTS);
+    _students = rows.map(r => ({
+      id:               parseInt(r.id) || 0,
+      fullName:         r.fullName || '',
+      phone:            r.phone || '',
+      phone2:           r.phone2 || '',
+      category:         r.category || '',
+      source:           r.source || 'مباشر',
+      firstContactDate: r.firstContactDate || '',
+      notes:            r.notes || '',
+      isArchived:       !!r.isArchived,
+      createdAt:        r.createdAt || ''
+    })).filter(s => s.id > 0);
+  } catch(e) { console.error('[STUDENTS]', e); toast('تعذر تحميل الطلاب', 'error'); }
+  renderStudents();
+  renderStudentStats();
+}
+
+function renderStudentStats() {
+  const active  = _students.filter(s => !s.isArchived);
+  const arch    = _students.filter(s => s.isArchived).length;
+  const subscribed = active.filter(s => _allSubs.some(sub => sub.studentId === s.id && subStatus(sub.endDate) === 'نشط')).length;
+  document.getElementById('st-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">إجمالي الطلاب</div><div class="stat-val">${active.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">مشترك حالياً</div><div class="stat-val">${subscribed}</div></div>
+    <div class="stat-card"><div class="stat-lbl">غير مشترك</div><div class="stat-val">${active.length - subscribed}</div></div>
+    <div class="stat-card"><div class="stat-lbl">مؤرشف</div><div class="stat-val">${arch}</div></div>`;
+}
+
+function renderStudents() {
+  const q   = (document.getElementById('st-search')?.value || '').toLowerCase();
+  const src = document.getElementById('st-source-filter')?.value || '';
+  const st  = document.getElementById('st-status-filter')?.value || '';
+
+  let d = st === 'مؤرشف' ? [..._students.filter(s => s.isArchived)]
+                          : [..._students.filter(s => !s.isArchived)];
+
+  if (st === 'مشترك')    d = d.filter(s => _allSubs.some(sub => sub.studentId === s.id && subStatus(sub.endDate) === 'نشط'));
+  if (st === 'غير مشترك') d = d.filter(s => !_allSubs.some(sub => sub.studentId === s.id && subStatus(sub.endDate) === 'نشط'));
+  if (src) d = d.filter(s => s.source === src);
+  if (q)   d = d.filter(s => s.fullName.toLowerCase().includes(q) || s.phone.includes(q));
+
+  const tbody = document.getElementById('students-tbody');
+  document.getElementById('st-count').textContent = `${d.length} طالب`;
+
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = d.map((s, i) => {
+    const subs    = _allSubs.filter(sub => sub.studentId === s.id);
+    const progs   = [...new Set(subs.map(sub => sub.programName).filter(Boolean))].join('، ') || '—';
+    const isActive = subs.some(sub => subStatus(sub.endDate) === 'نشط');
+    const badge   = s.isArchived ? `<span class="badge b-archived">مؤرشف</span>`
+                  : isActive    ? `<span class="badge b-active">مشترك</span>`
+                  :               `<span class="badge b-visitor">غير مشترك</span>`;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(s.fullName)}</strong></td>
+      <td dir="ltr">${s.phone}</td>
+      <td dir="ltr">${s.phone2 || '—'}</td>
+      <td>${s.category || '—'}</td>
+      <td>${s.source}</td>
+      <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${progs}">${progs}</td>
+      <td>${fmtDate(s.firstContactDate) || '—'}</td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-view"    title="بطاقة الطالب"  onclick="openStudentCard(${s.id})">👁️</button>
+          <button class="abt abt-edit"    title="تعديل"          onclick="openEditStudent(${s.id})">✏️</button>
+          <button class="abt abt-archive" title="${s.isArchived ? 'إلغاء الأرشفة' : 'أرشفة'}" onclick="archiveStudent(${s.id},${s.isArchived})">🗃️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openAddStudent() {
+  document.getElementById('m-student-title').textContent = 'إضافة طالب';
+  ['st-id','st-name','st-phone','st-phone2','st-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('st-cat').value          = '';
+  document.getElementById('st-source').value       = 'مباشر';
+  document.getElementById('st-contact-date').value = today();
+  openM('m-student');
+}
+
+function openEditStudent(id) {
+  const s = _students.find(x => x.id === id); if (!s) return;
+  document.getElementById('m-student-title').textContent = '✏️ تعديل بيانات الطالب';
+  document.getElementById('st-id').value           = s.id;
+  document.getElementById('st-name').value         = s.fullName;
+  document.getElementById('st-phone').value        = s.phone;
+  document.getElementById('st-phone2').value       = s.phone2;
+  document.getElementById('st-cat').value          = s.category;
+  document.getElementById('st-source').value       = s.source;
+  document.getElementById('st-contact-date').value = s.firstContactDate;
+  document.getElementById('st-notes').value        = s.notes;
+  openM('m-student');
+}
+
+async function saveStudent() {
+  const id       = parseInt(document.getElementById('st-id').value) || 0;
+  const fullName = document.getElementById('st-name').value.trim();
+  const phone    = document.getElementById('st-phone').value.trim();
+  if (!fullName || !phone) { toast('يرجى إدخال الاسم ورقم الجوال', 'error'); return; }
+
+  const data = {
+    fullName, phone,
+    phone2:           document.getElementById('st-phone2').value.trim(),
+    category:         document.getElementById('st-cat').value,
+    source:           document.getElementById('st-source').value,
+    firstContactDate: document.getElementById('st-contact-date').value,
+    notes:            document.getElementById('st-notes').value.trim()
+  };
+
+  try {
+    if (id) {
+      const i = _students.findIndex(s => s.id === id);
+      if (i !== -1) Object.assign(_students[i], data);
+      await sbUpdate(TB.STUDENTS, id, data);
+      toast('تم تعديل بيانات الطالب ✅');
+    } else {
+      const created = await sbInsertReturn(TB.STUDENTS, { ...data, isArchived: false });
+      if (created) _students.push({ id: parseInt(created.id), ...data, isArchived: false, createdAt: created.createdAt || '' });
+      toast('تم إضافة الطالب ✅');
+    }
+    closeM('m-student');
+    renderStudents();
+    renderStudentStats();
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+async function archiveStudent(id, isArchived) {
+  if (!confirm(isArchived ? 'إلغاء أرشفة هذا الطالب؟' : 'أرشفة هذا الطالب؟')) return;
+  const i = _students.findIndex(s => s.id === id); if (i === -1) return;
+  _students[i].isArchived = !isArchived;
+  sbUpdate(TB.STUDENTS, id, { isArchived: !isArchived }).catch(console.error);
+  toast(isArchived ? 'تم إلغاء الأرشفة ✅' : 'تم الأرشفة ✅');
+  renderStudents(); renderStudentStats();
+}
+
+function openStudentCard(id) {
+  const s = _students.find(x => x.id === id); if (!s) return;
+  const subs = _allSubs.filter(sub => sub.studentId === id);
+
+  const subsHtml = subs.length ? subs.map(sub => {
+    const pays  = _allPayments.filter(p => p.subscriptionId === sub.id);
+    const paid  = pays.reduce((a, p) => a + p.amount, 0);
+    const prog  = _progs.find(p => p.id === sub.programId);
+    const due   = sub.amountDue || prog?.fullFee || 0;
+    const rem   = Math.max(0, due - paid);
+    return `<div class="sub-entry">
+      <div class="sub-entry-hdr">
+        <strong>${esc(sub.programName || '—')}</strong>
+        ${sub.groupName ? `<span style="font-size:.78rem;color:var(--muted)">${esc(sub.groupName)}</span>` : ''}
+        <span class="badge b-${sub.status === 'نشط' ? 'active' : 'expired'}">${sub.status}</span>
+      </div>
+      <div class="sub-entry-meta">
+        <span>النوع: ${sub.subType}</span>
+        <span>البداية: ${fmtDate(sub.startDate)}</span>
+        <span>النهاية: ${fmtDate(sub.endDate)}</span>
+        <span>المدفوع: ${paid.toLocaleString()} ر.س | المتبقي: <strong style="color:${rem > 0 ? 'var(--danger)' : 'var(--success)'}">${rem.toLocaleString()} ر.س</strong></span>
+      </div>
+    </div>`;
+  }).join('') : `<div style="color:var(--muted);text-align:center;padding:16px">لا توجد اشتراكات مسجلة</div>`;
+
+  document.getElementById('m-sc-title').textContent = `بطاقة: ${s.fullName}`;
+  document.getElementById('m-sc-body').innerHTML = `
+    <div class="sc-grid">
+      <div class="sc-item"><b>الاسم:</b> ${esc(s.fullName)}</div>
+      <div class="sc-item"><b>الجوال:</b> <span dir="ltr">${s.phone}</span></div>
+      ${s.phone2 ? `<div class="sc-item"><b>جوال 2:</b> <span dir="ltr">${s.phone2}</span></div>` : ''}
+      <div class="sc-item"><b>المرحلة:</b> ${s.category || '—'}</div>
+      <div class="sc-item"><b>المصدر:</b> ${s.source}</div>
+      <div class="sc-item"><b>أول تواصل:</b> ${fmtDate(s.firstContactDate) || '—'}</div>
+      ${s.notes ? `<div class="sc-item" style="grid-column:1/-1"><b>ملاحظات:</b> ${esc(s.notes)}</div>` : ''}
+    </div>
+    <h4 style="color:var(--primary);margin-bottom:10px;font-size:.9rem">الاشتراكات (${subs.length})</h4>
+    ${subsHtml}`;
+  openM('m-sc');
+}
+
+/* ══════════════════════════════════════════
+   PROGRAMS
+══════════════════════════════════════════ */
+async function loadPrograms() {
+  try {
+    const rows = await sbRead(TB.PROGRAMS);
+    _progs = rows.map(r => ({
+      id:         parseInt(r.id) || 0,
+      name:       r.name || '',
+      startDate:  r.startDate || '',
+      endDate:    r.endDate || '',
+      fullFee:    parseFloat(r.fullFee) || 0,
+      groupCount: parseInt(r.groupCount) || 2,
+      groups:     r.groups || '',
+      days:       parseDays(r.days),
+      status:     r.status || 'نشط',
+      notes:      r.notes || ''
+    })).filter(p => p.id > 0);
+  } catch(e) { console.error('[PROGS]', e); toast('تعذر تحميل البرامج', 'error'); }
+  renderProgs();
+}
+
+function parseDays(raw) {
+  if (!raw) return ['الأحد','الاثنين','الثلاثاء','الأربعاء'];
+  try { const d = typeof raw === 'string' ? JSON.parse(raw) : raw; return Array.isArray(d) && d.length ? d : ['الأحد','الاثنين','الثلاثاء','الأربعاء']; }
+  catch { return ['الأحد','الاثنين','الثلاثاء','الأربعاء']; }
+}
+
+function progSubCount(progId) {
+  return new Set(_allSubs.filter(s => s.programId === progId).map(s => s.studentId)).size;
+}
+
+function renderProgs() {
+  const q  = (document.getElementById('prog-search')?.value || '').toLowerCase();
+  const st = document.getElementById('prog-status-filter')?.value || '';
+  let d = [..._progs];
+  if (st) d = d.filter(p => p.status === st);
+  if (q)  d = d.filter(p => p.name.toLowerCase().includes(q));
+  d.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+  if (_currentView === 'cards') renderProgCards(d);
+  else renderProgTable(d);
+}
+
+function renderProgCards(d) {
+  const el = document.getElementById('prog-cards');
+  if (!d.length) {
+    el.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="ei">📊</div><p>لا توجد برامج</p></div>`;
+    return;
+  }
+  el.innerHTML = d.map(p => {
+    const days = calcDaysBetween(p.startDate, p.endDate);
+    const cnt  = progSubCount(p.id);
+    const cls  = p.status === 'نشط' ? 'pc-active' : p.status === 'موقوف' ? 'pc-paused' : 'pc-expired';
+    const daysLabel = p.days.length ? p.days.join(' · ') : '—';
+    return `<div class="prog-card ${cls}">
+      <div class="prog-card-hdr">
+        <div>
+          <div class="prog-name">${esc(p.name)}</div>
+          <div class="prog-dates">📅 ${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
+          <div class="prog-dates" style="margin-top:2px">🗓️ ${daysLabel}</div>
+        </div>
+        <span class="badge b-${p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired'}">${p.status}</span>
+      </div>
+      <div class="prog-stats">
+        <div class="ps"><div class="v">${days}</div><div class="l">يوم</div></div>
+        <div class="ps"><div class="v">${p.fullFee.toLocaleString()}</div><div class="l">ر.س</div></div>
+        <div class="ps"><div class="v">${p.groupCount}</div><div class="l">مجموعات</div></div>
+        <div class="ps"><div class="v">${cnt}</div><div class="l">مشترك</div></div>
+      </div>
+      ${p.notes ? `<div style="font-size:.78rem;color:var(--muted);margin:4px 0">${esc(p.notes)}</div>` : ''}
+      <div class="prog-actions">
+        <button class="prog-btn" style="background:#dbeafe;color:#1d4ed8" onclick="openEditProg(${p.id})">✏️ تعديل</button>
+        <button class="prog-btn" style="background:#f1f5f9;color:var(--text)" onclick="openExtend(${p.id})">📅 تمديد</button>
+        <button class="prog-btn" style="background:var(--gold);color:var(--primary);font-weight:700" onclick="enterProg(${p.id})">🎯 دخول البرنامج</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderProgTable(d) {
+  const tbody = document.getElementById('prog-tbody');
+  if (!d.length) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">📊</div><p>لا توجد برامج</p></div></td></tr>`; return; }
+  tbody.innerHTML = d.map(p => `<tr>
+    <td>${p.id}</td>
+    <td><strong>${esc(p.name)}</strong></td>
+    <td>${fmtDate(p.startDate)}</td>
+    <td>${fmtDate(p.endDate)}</td>
+    <td style="font-size:.78rem">${p.days.join('، ')}</td>
+    <td>${p.fullFee.toLocaleString()} ر.س</td>
+    <td>${p.groupCount}</td>
+    <td>${progSubCount(p.id)}</td>
+    <td><span class="badge b-${p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired'}">${p.status}</span></td>
+    <td>
+      <div class="actions">
+        <button class="abt abt-edit"  onclick="openEditProg(${p.id})">✏️</button>
+        <button class="abt abt-view"  onclick="enterProg(${p.id})" title="دخول البرنامج">🎯</button>
+      </div>
+    </td>
+  </tr>`).join('');
+}
+
+function enterProg(id) {
+  const p = _progs.find(x => x.id === id); if (!p) return;
+  enterProgram(p);
+}
+
+function setView(v) {
+  _currentView = v;
+  document.getElementById('vbtn-cards').classList.toggle('active', v === 'cards');
+  document.getElementById('vbtn-table').classList.toggle('active', v === 'table');
+  document.getElementById('view-cards').style.display = v === 'cards' ? '' : 'none';
+  document.getElementById('view-table').style.display = v === 'table' ? '' : 'none';
+  renderProgs();
+}
+
+function renderGroupInputs() {
+  const n = parseInt(document.getElementById('p-group-count').value) || 2;
+  let html = '<div class="fg" style="margin-bottom:12px"><label>أسماء المجموعات</label><div style="display:flex;flex-direction:column;gap:6px">';
+  for (let i = 1; i <= n; i++)
+    html += `<input type="text" id="g-${i}" placeholder="اسم المجموعة ${i}" style="border:1px solid var(--border);border-radius:7px;padding:8px 11px;font-family:inherit;font-size:.88rem;background:var(--bg)">`;
+  html += '</div></div>';
+  document.getElementById('p-groups-wrap').innerHTML = html;
+}
+
+function openAddProg() {
+  document.getElementById('m-prog-title').textContent = '➕ برنامج جديد';
+  ['p-id','p-name','p-start','p-end','p-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('p-fee').value         = '600';
+  document.getElementById('p-group-count').value = '2';
+  document.getElementById('p-status').value      = 'نشط';
+  // Default days: Sun-Wed
+  document.querySelectorAll('input[name="prog-day"]').forEach(cb => {
+    cb.checked = ['الأحد','الاثنين','الثلاثاء','الأربعاء'].includes(cb.value);
+  });
+  renderGroupInputs();
+  openM('m-prog');
+}
+
+function openEditProg(id) {
+  const p = _progs.find(x => x.id === id); if (!p) return;
+  document.getElementById('m-prog-title').textContent = '✏️ تعديل البرنامج';
+  document.getElementById('p-id').value          = p.id;
+  document.getElementById('p-name').value        = p.name;
+  document.getElementById('p-start').value       = p.startDate;
+  document.getElementById('p-end').value         = p.endDate;
+  document.getElementById('p-fee').value         = p.fullFee;
+  document.getElementById('p-group-count').value = p.groupCount;
+  document.getElementById('p-status').value      = p.status;
+  document.getElementById('p-notes').value       = p.notes;
+  document.querySelectorAll('input[name="prog-day"]').forEach(cb => { cb.checked = p.days.includes(cb.value); });
+  renderGroupInputs();
+  if (p.groups) {
+    p.groups.split('،').map(s => s.trim()).forEach((name, i) => {
+      const el = document.getElementById(`g-${i + 1}`); if (el) el.value = name;
+    });
+  }
+  openM('m-prog');
+}
+
+async function saveProg() {
+  const id      = parseInt(document.getElementById('p-id').value) || 0;
+  const name    = document.getElementById('p-name').value.trim();
+  const startDate = document.getElementById('p-start').value;
+  const endDate   = document.getElementById('p-end').value;
+  const fullFee   = parseFloat(document.getElementById('p-fee').value) || 0;
+  const groupCnt  = parseInt(document.getElementById('p-group-count').value) || 2;
+  const status    = document.getElementById('p-status').value;
+  const notes     = document.getElementById('p-notes').value.trim();
+  if (!name || !startDate || !endDate) { toast('يرجى ملء الحقول الإجبارية', 'error'); return; }
+
+  const days = [...document.querySelectorAll('input[name="prog-day"]:checked')].map(cb => cb.value);
+  const groupNames = [];
+  for (let i = 1; i <= groupCnt; i++) {
+    const el = document.getElementById(`g-${i}`); if (el?.value.trim()) groupNames.push(el.value.trim());
+  }
+  const groups = groupNames.join('، ');
+
+  const data = { name, startDate, endDate, fullFee, groupCount: groupCnt, groups, days: JSON.stringify(days), status, notes };
+
+  try {
+    if (id) {
+      const i = _progs.findIndex(p => p.id === id);
+      if (i !== -1) Object.assign(_progs[i], { ...data, days });
+      await sbUpdate(TB.PROGRAMS, id, data);
+      toast('تم تعديل البرنامج ✅');
+    } else {
+      const created = await sbInsertReturn(TB.PROGRAMS, data);
+      if (created) _progs.push({ id: parseInt(created.id), ...data, days });
+      toast('تم إضافة البرنامج ✅');
+    }
+    closeM('m-prog'); renderProgs();
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+function openExtend(id) {
+  const p = _progs.find(x => x.id === id); if (!p) return;
+  document.getElementById('ext-id').value  = p.id;
+  document.getElementById('ext-name').value = p.name;
+  document.getElementById('ext-cur').value  = fmtDate(p.endDate);
+  document.getElementById('ext-days').value = '';
+  document.getElementById('ext-new').value  = p.endDate;
+  openM('m-extend');
+}
+
+function calcExtend() {
+  const pid  = parseInt(document.getElementById('ext-id').value);
+  const p    = _progs.find(x => x.id === pid); if (!p) return;
+  const days = parseInt(document.getElementById('ext-days').value) || 0;
+  if (!days) return;
+  const d = new Date(p.endDate + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  document.getElementById('ext-new').value = d.toISOString().split('T')[0];
+}
+
+async function saveExtend() {
+  const pid    = parseInt(document.getElementById('ext-id').value);
+  const newEnd = document.getElementById('ext-new').value;
+  if (!newEnd) { toast('يرجى تحديد تاريخ النهاية', 'error'); return; }
+  const i = _progs.findIndex(p => p.id === pid); if (i === -1) return;
+  _progs[i].endDate = newEnd;
+  await sbUpdate(TB.PROGRAMS, pid, { endDate: newEnd }).catch(console.error);
+  toast('تم تمديد البرنامج ✅'); closeM('m-extend'); renderProgs();
+}
+
+/* ══════════════════════════════════════════
+   SUBSCRIBERS (Program Level)
+══════════════════════════════════════════ */
+function getSubPayInfo(sub) {
+  const pays = _progPays.filter(p => p.subscriptionId === sub.id);
+  const paid = pays.reduce((a, p) => a + p.amount, 0);
+  const due  = sub.amountDue || _currentProg?.fullFee || 0;
+  const rem  = Math.max(0, due - paid);
+  let payStatus = 'لم يدفع';
+  if (due > 0 && paid >= due) payStatus = 'مسدد';
+  else if (paid > 0) payStatus = 'جزئي';
+  return { paid, due, rem, payStatus };
+}
+
+function renderSubscriberStats() {
+  const totalDue  = _progSubs.reduce((a, s) => a + (s.amountDue || _currentProg?.fullFee || 0), 0);
+  const totalPaid = _progSubs.reduce((a, s) => a + getSubPayInfo(s).paid, 0);
+  document.getElementById('subs-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">عدد المشتركين</div><div class="stat-val">${_progSubs.length}</div></div>
+    <div class="stat-card"><div class="stat-lbl">إجمالي المستحق</div><div class="stat-val">${totalDue.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-lbl">إجمالي المدفوع</div><div class="stat-val">${totalPaid.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-lbl">المتبقي</div><div class="stat-val">${Math.max(0, totalDue - totalPaid).toLocaleString()}</div></div>`;
+}
+
+function renderSubscribers() {
+  if (!_currentProg) return;
+  renderSubscriberStats();
+
+  const q    = (document.getElementById('subs-search')?.value || '').toLowerCase();
+  const pst  = document.getElementById('subs-pay-filter')?.value || '';
+  const durF = document.getElementById('subs-dur-filter')?.value || '';
+  const sort = document.getElementById('subs-sort')?.value || 'alpha';
+  const now  = new Date(); now.setHours(0, 0, 0, 0);
+
+  let d = [..._progSubs];
+
+  if (pst) d = d.filter(s => getSubPayInfo(s).payStatus === pst);
+  if (durF) {
+    d = d.filter(s => {
+      if (!s.endDate) return false;
+      const diff = Math.ceil((new Date(s.endDate + 'T00:00:00') - now) / 86400000);
+      if (durF === 'منتهي') return diff < 0;
+      return diff >= 0 && diff <= parseInt(durF);
+    });
+  }
+  if (q) d = d.filter(s => s.studentName.toLowerCase().includes(q) || s.phone.includes(q));
+  if (sort === 'alpha') d.sort((a, b) => a.studentName.localeCompare(b.studentName));
+  if (sort === 'group') d.sort((a, b) => (a.groupName || '').localeCompare(b.groupName || ''));
+
+  document.getElementById('subs-count').textContent = `${d.length} مشترك`;
+  const tbody = document.getElementById('subs-tbody');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">👥</div><p>لا يوجد مشتركون</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = d.map((s, i) => {
+    const { paid, rem, payStatus } = getSubPayInfo(s);
+    const payIcon = payStatus === 'مسدد' ? '🟢' : payStatus === 'جزئي' ? '🟡' : '🔴';
+    const statusBadge = `<span class="badge b-${s.status === 'نشط' ? 'active' : 'expired'}">${s.status}</span>`;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td>
+        <strong>${esc(s.studentName)}</strong><br>
+        <small style="color:var(--muted)" dir="ltr">${s.phone}</small>
+      </td>
+      <td>${s.groupName || '—'}</td>
+      <td>${s.subType}</td>
+      <td>${fmtDate(s.startDate)}</td>
+      <td>${fmtDate(s.endDate)} ${statusBadge}</td>
+      <td style="text-align:center">${s.sessionCount || '—'}</td>
+      <td>${paid.toLocaleString()} ر.س</td>
+      <td>${rem > 0 ? `<strong style="color:var(--danger)">${rem.toLocaleString()} ر.س</strong>` : '<span style="color:var(--success)">✅</span>'}</td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-pay"   title="الدفعات"  onclick="openSubPayments(${s.id})">💰</button>
+          <button class="abt abt-edit"  title="تعديل"    onclick="openEditSub(${s.id})">✏️</button>
+          <button class="abt abt-delete" title="حذف"     onclick="deleteProgSub(${s.id})">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── Add Subscriber Modal ── */
+function openAddSub() {
+  if (!_currentProg) return;
+  _subStudentId = null;
+  document.getElementById('sub-edit-id').value      = '';
+  document.getElementById('sub-student-id').value   = '';
+  document.getElementById('sub-student-search').value = '';
+  document.getElementById('sub-student-results').style.display = 'none';
+  document.getElementById('sub-selected-student').style.display = 'none';
+  document.getElementById('sub-new-wrap').style.display = 'none';
+  document.getElementById('sub-new-btn').textContent = '➕ طالب جديد غير موجود؟';
+
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  document.getElementById('sub-group').innerHTML =
+    '<option value="">اختر المجموعة</option>' + groups.map(g => `<option>${g}</option>`).join('');
+
+  document.getElementById('sub-type').value        = 'كامل';
+  document.getElementById('sub-start').value       = todayDate();
+  document.getElementById('sub-end').value         = _currentProg.endDate || '';
+  document.getElementById('sub-amount-due').value  = _currentProg.fullFee || '';
+  document.getElementById('sub-pay-date').value    = todayDate();
+  document.getElementById('sub-pay-amount').value  = '';
+  document.getElementById('sub-pay-note').value    = '';
+  document.getElementById('sub-notes').value       = '';
+
+  const sessions = calcSessions(todayDate(), _currentProg.endDate || '', _currentProg.days);
+  document.getElementById('sub-sessions').value = sessions || '';
+
+  document.getElementById('m-sub-title').textContent = '➕ إضافة مشترك';
+  openM('m-sub');
+}
+
+function searchStudentsForSub() {
+  const q   = document.getElementById('sub-student-search').value.toLowerCase();
+  const res = document.getElementById('sub-student-results');
+  if (!q || q.length < 2) { res.style.display = 'none'; return; }
+  const matches = _students.filter(s => !s.isArchived && (s.fullName.toLowerCase().includes(q) || s.phone.includes(q))).slice(0, 8);
+  if (!matches.length) {
+    res.innerHTML = '<div class="search-item" style="color:var(--muted)">لا نتائج</div>';
+  } else {
+    res.innerHTML = matches.map(s =>
+      `<div class="search-item" onclick="selectStudentForSub(${s.id})">
+        <span><strong>${esc(s.fullName)}</strong></span>
+        <span dir="ltr" style="color:var(--muted);font-size:.8rem">${s.phone}</span>
+      </div>`
+    ).join('');
+  }
+  res.style.display = '';
+}
+
+function selectStudentForSub(id) {
+  const s = _students.find(x => x.id === id); if (!s) return;
+  _subStudentId = id;
+  document.getElementById('sub-student-id').value     = id;
+  document.getElementById('sub-student-search').value = '';
+  document.getElementById('sub-student-results').style.display = 'none';
+  document.getElementById('sub-selected-student').style.display = '';
+  document.getElementById('sub-selected-student').innerHTML = `
+    <div class="selected-student">
+      <span>👤 <strong>${esc(s.fullName)}</strong> — <span dir="ltr">${s.phone}</span></span>
+      <button onclick="clearSelectedStudent()" title="إلغاء">✕</button>
+    </div>`;
+  document.getElementById('sub-new-wrap').style.display   = 'none';
+  document.getElementById('sub-new-btn').style.display    = 'none';
+}
+
+function clearSelectedStudent() {
+  _subStudentId = null;
+  document.getElementById('sub-student-id').value = '';
+  document.getElementById('sub-selected-student').style.display = 'none';
+  document.getElementById('sub-new-btn').style.display = '';
+}
+
+function toggleNewStudent() {
+  const wrap = document.getElementById('sub-new-wrap');
+  const btn  = document.getElementById('sub-new-btn');
+  if (wrap.style.display === 'none') {
+    wrap.style.display = '';
+    btn.textContent = '✕ إلغاء';
+    clearSelectedStudent();
+    document.getElementById('sub-selected-student').style.display = 'none';
+  } else {
+    wrap.style.display = 'none';
+    btn.textContent = '➕ طالب جديد غير موجود؟';
+  }
+}
+
+function onSubTypeChange() {
+  if (document.getElementById('sub-type').value === 'كامل' && _currentProg?.endDate) {
+    document.getElementById('sub-end').value = _currentProg.endDate;
+    onSubDatesChange();
+  }
+}
+
+function onSubDatesChange() {
+  const start = document.getElementById('sub-start').value;
+  const end   = document.getElementById('sub-end').value;
+  if (start && end && _currentProg) {
+    const sessions = calcSessions(start, end, _currentProg.days);
+    document.getElementById('sub-sessions').value = sessions || '';
+  }
+}
+
+function onSessionsChange() {
+  const start    = document.getElementById('sub-start').value;
+  const sessions = parseInt(document.getElementById('sub-sessions').value) || 0;
+  if (start && sessions > 0 && _currentProg) {
+    const endDate = calcEndFromSessions(start, sessions, _currentProg.days);
+    if (endDate) document.getElementById('sub-end').value = endDate;
+  }
+}
+
+async function saveSub() {
+  if (!_currentProg) return;
+
+  // Resolve student
+  let studentId = parseInt(document.getElementById('sub-student-id').value) || 0;
+  let studentName = '', studentPhone = '', studentCat = '';
+
+  const newWrap = document.getElementById('sub-new-wrap');
+  if (newWrap.style.display !== 'none' && !studentId) {
+    const nsName  = document.getElementById('ns-name').value.trim();
+    const nsPhone = document.getElementById('ns-phone').value.trim();
+    const nsCat   = document.getElementById('ns-cat').value;
+    const nsSrc   = document.getElementById('ns-source').value;
+    if (!nsName || !nsPhone) { toast('يرجى إدخال اسم وجوال الطالب', 'error'); return; }
+    try {
+      const created = await sbInsertReturn(TB.STUDENTS, { fullName: nsName, phone: nsPhone, phone2: '', category: nsCat, source: nsSrc, firstContactDate: todayDate(), notes: '', isArchived: false });
+      if (created) {
+        studentId   = parseInt(created.id);
+        const newSt = { id: studentId, fullName: nsName, phone: nsPhone, phone2: '', category: nsCat, source: nsSrc, firstContactDate: todayDate(), notes: '', isArchived: false, createdAt: created.createdAt || '' };
+        _students.push(newSt);
+        studentName = nsName; studentPhone = nsPhone; studentCat = nsCat;
+      }
+    } catch(e) { toast('خطأ في إنشاء الطالب: ' + e.message, 'error'); return; }
+  } else if (studentId) {
+    const st = _students.find(s => s.id === studentId);
+    studentName = st?.fullName || ''; studentPhone = st?.phone || ''; studentCat = st?.category || '';
+  }
+
+  if (!studentId) { toast('يرجى اختيار طالب أو إضافة طالب جديد', 'error'); return; }
+
+  const editId     = parseInt(document.getElementById('sub-edit-id').value) || 0;
+  const subType    = document.getElementById('sub-type').value;
+  const groupName  = document.getElementById('sub-group').value;
+  const startDate  = document.getElementById('sub-start').value;
+  const endDate    = document.getElementById('sub-end').value;
+  const sessions   = parseInt(document.getElementById('sub-sessions').value) || 0;
+  const amountDue  = parseFloat(document.getElementById('sub-amount-due').value) || 0;
+  const notes      = document.getElementById('sub-notes').value.trim();
+
+  if (!startDate || !endDate) { toast('يرجى تحديد تواريخ الاشتراك', 'error'); return; }
+
+  try {
+    let subId = editId;
+    if (!editId) {
+      const subData = {
+        studentId, studentName, phone: studentPhone, category: studentCat,
+        programId: _currentProg.id, programName: _currentProg.name,
+        groupName, subType, paymentType: subType,
+        startDate, endDate, sessionCount: sessions, amountDue,
+        status: subStatus(endDate), notes
+      };
+      const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
+      subId = created ? parseInt(created.id) : Date.now();
+      _progSubs.push({ id: subId, ...subData });
+      _allSubs.push({ id: subId, ...subData });
+    } else {
+      const upd = { groupName, subType, paymentType: subType, startDate, endDate, sessionCount: sessions, amountDue, notes };
+      const i = _progSubs.findIndex(s => s.id === editId);
+      if (i !== -1) Object.assign(_progSubs[i], upd);
+      const ai = _allSubs.findIndex(s => s.id === editId);
+      if (ai !== -1) Object.assign(_allSubs[ai], upd);
+      await sbUpdate(TB.SUBSCRIPTIONS, editId, upd);
+    }
+
+    // First payment
+    const payAmt = parseFloat(document.getElementById('sub-pay-amount').value) || 0;
+    if (!editId && payAmt > 0) {
+      const payData = {
+        subscriptionId: subId, studentId, studentName,
+        amount: payAmt, paid: payAmt,
+        paidAt: document.getElementById('sub-pay-date').value,
+        date:   document.getElementById('sub-pay-date').value,
+        method: document.getElementById('sub-pay-method').value,
+        note:   document.getElementById('sub-pay-note').value,
+        notes:  document.getElementById('sub-pay-note').value,
+        required: amountDue, remaining: Math.max(0, amountDue - payAmt),
+        paymentStatus: payAmt >= amountDue ? 'مسدد بالكامل' : 'مسدد جزئياً',
+        installmentNum: 1, startDate, endDate
+      };
+      await sbInsert(TB.PAYMENTS, payData);
+      _progPays.push({ id: Date.now(), subscriptionId: subId, studentId, amount: payAmt, paidAt: payData.date, method: payData.method, note: payData.note });
+      _allPayments.push({ id: Date.now() + 1, subscriptionId: subId, studentId, amount: payAmt, paidAt: payData.date, method: payData.method, note: payData.note });
+    }
+
+    toast(editId ? 'تم تعديل الاشتراك ✅' : 'تم إضافة الاشتراك ✅');
+    closeM('m-sub');
+    renderSubscribers();
+    renderStudentStats();
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+function openEditSub(subId) {
+  const s = _progSubs.find(x => x.id === subId); if (!s) return;
+  document.getElementById('m-sub-title').textContent  = '✏️ تعديل الاشتراك';
+  document.getElementById('sub-edit-id').value        = s.id;
+  document.getElementById('sub-student-id').value     = s.studentId;
+  _subStudentId = s.studentId;
+  document.getElementById('sub-selected-student').style.display = '';
+  document.getElementById('sub-selected-student').innerHTML = `
+    <div class="selected-student">
+      <span>👤 <strong>${esc(s.studentName)}</strong> — <span dir="ltr">${s.phone}</span></span>
+    </div>`;
+  document.getElementById('sub-student-search').value = '';
+  document.getElementById('sub-new-wrap').style.display  = 'none';
+  document.getElementById('sub-new-btn').style.display   = 'none';
+
+  const groups = (_currentProg?.groups || '').split('،').map(g => g.trim()).filter(Boolean);
+  document.getElementById('sub-group').innerHTML =
+    '<option value="">اختر المجموعة</option>' + groups.map(g => `<option ${g === s.groupName ? 'selected' : ''}>${g}</option>`).join('');
+  document.getElementById('sub-type').value       = s.subType || 'كامل';
+  document.getElementById('sub-start').value      = s.startDate;
+  document.getElementById('sub-end').value        = s.endDate;
+  document.getElementById('sub-sessions').value   = s.sessionCount || '';
+  document.getElementById('sub-amount-due').value = s.amountDue || '';
+  document.getElementById('sub-notes').value      = s.notes || '';
+  openM('m-sub');
+}
+
+async function deleteProgSub(subId) {
+  if (!confirm('حذف هذا الاشتراك؟')) return;
+  const i = _progSubs.findIndex(s => s.id === subId); if (i === -1) return;
+  _progSubs.splice(i, 1);
+  const ai = _allSubs.findIndex(s => s.id === subId);
+  if (ai !== -1) _allSubs.splice(ai, 1);
+  sbDelete(TB.SUBSCRIPTIONS, subId).catch(console.error);
+  toast('تم حذف الاشتراك ✅');
+  renderSubscribers();
+}
+
+/* ── Payment History ── */
+function openSubPayments(subId) {
+  const sub = _progSubs.find(s => s.id === subId); if (!sub) return;
+  document.getElementById('m-pay-sub-id').value = subId;
+  document.getElementById('m-payments-title').textContent = `دفعات: ${sub.studentName}`;
+  document.getElementById('new-pay-date').value   = todayDate();
+  document.getElementById('new-pay-amount').value = '';
+  document.getElementById('new-pay-note').value   = '';
+  renderPaymentsList(subId);
+  openM('m-payments');
+}
+
+function renderPaymentsList(subId) {
+  const sub  = _progSubs.find(s => s.id === subId); if (!sub) return;
+  const pays = _progPays.filter(p => p.subscriptionId === subId);
+  const paid = pays.reduce((a, p) => a + p.amount, 0);
+  const due  = sub.amountDue || _currentProg?.fullFee || 0;
+  const rem  = Math.max(0, due - paid);
+
+  const body = document.getElementById('m-payments-body');
+  body.innerHTML = `
+    <div class="pay-summary">
+      <span>المستحق: <b>${due.toLocaleString()} ر.س</b></span>
+      <span>المدفوع: <b style="color:var(--success)">${paid.toLocaleString()} ر.س</b></span>
+      <span>المتبقي: <b style="color:${rem > 0 ? 'var(--danger)' : 'var(--success)'}">${rem.toLocaleString()} ر.س</b></span>
+    </div>
+    ${pays.length ? pays.map((p, i) => `
+      <div class="pay-entry">
+        <div>
+          <span class="pay-entry-amount">${p.amount.toLocaleString()} ر.س</span>
+          <span class="pay-entry-meta" style="margin-right:8px">${p.method}</span>
+          ${p.note ? `<span class="pay-entry-meta">— ${p.note}</span>` : ''}
+        </div>
+        <div class="pay-entry-meta">${fmtDate(p.paidAt)}</div>
+      </div>`).join('')
+    : `<div style="color:var(--muted);text-align:center;padding:12px;font-size:.85rem">لا توجد دفعات مسجلة بعد</div>`}`;
+}
+
+async function saveNewPayment() {
+  const subId  = parseInt(document.getElementById('m-pay-sub-id').value) || 0;
+  const amount = parseFloat(document.getElementById('new-pay-amount').value) || 0;
+  const paidAt = document.getElementById('new-pay-date').value;
+  const method = document.getElementById('new-pay-method').value;
+  const note   = document.getElementById('new-pay-note').value.trim();
+  if (!subId)    { toast('خطأ: لا يوجد اشتراك', 'error'); return; }
+  if (amount <= 0) { toast('يرجى إدخال مبلغ صحيح', 'error'); return; }
+
+  const sub = _progSubs.find(s => s.id === subId);
+  try {
+    await sbInsert(TB.PAYMENTS, {
+      subscriptionId: subId, studentId: sub?.studentId || 0, studentName: sub?.studentName || '',
+      amount, paid: amount, paidAt, date: paidAt,
+      method, note, notes: note,
+      required: sub?.amountDue || 0, remaining: 0,
+      paymentStatus: '', installmentNum: 0,
+      startDate: sub?.startDate || '', endDate: sub?.endDate || ''
+    });
+    const newPay = { id: Date.now(), subscriptionId: subId, studentId: sub?.studentId || 0, amount, paidAt, method, note };
+    _progPays.push(newPay);
+    _allPayments.push({ ...newPay });
+    toast('تم تسجيل الدفعة ✅');
+    document.getElementById('new-pay-amount').value = '';
+    document.getElementById('new-pay-note').value   = '';
+    renderPaymentsList(subId);
+    renderSubscribers();
+    renderFees();
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════
+   GROUPS (Program Level)
+══════════════════════════════════════════ */
+function renderGroups() {
+  if (!_currentProg) return;
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  const tbody = document.getElementById('groups-tbody');
+  if (!groups.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty"><div class="ei">👪</div><p>لا توجد مجموعات — أضف مجموعة للبدء</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = groups.map((g, i) => {
+    const cnt = _progSubs.filter(s => s.groupName === g).length;
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(g)}</strong></td>
+      <td>${cnt}</td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-edit"   onclick="editGroupName(${i},'${esc(g)}')" title="تعديل">✏️</button>
+          <button class="abt abt-delete" onclick="deleteGroup(${i})"               title="حذف">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveGroupsToDb() {
+  if (!_currentProg) return;
+  await sbUpdate(TB.PROGRAMS, _currentProg.id, { groups: _currentProg.groups }).catch(console.error);
+  const i = _progs.findIndex(p => p.id === _currentProg.id);
+  if (i !== -1) _progs[i].groups = _currentProg.groups;
+}
+
+async function addGroup() {
+  const name = prompt('اسم المجموعة الجديدة:'); if (!name?.trim()) return;
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  groups.push(name.trim());
+  _currentProg.groups = groups.join('، ');
+  await saveGroupsToDb();
+  toast('تم إضافة المجموعة ✅'); renderGroups();
+}
+
+async function editGroupName(idx, oldName) {
+  const newName = prompt('الاسم الجديد:', oldName);
+  if (!newName?.trim() || newName.trim() === oldName) return;
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  groups[idx] = newName.trim();
+  _currentProg.groups = groups.join('، ');
+  // Update subscriptions that have old group name
+  const toUpdate = _progSubs.filter(s => s.groupName === oldName);
+  toUpdate.forEach(s => {
+    s.groupName = newName.trim();
+    sbUpdate(TB.SUBSCRIPTIONS, s.id, { groupName: newName.trim() }).catch(console.error);
+    const ai = _allSubs.findIndex(x => x.id === s.id);
+    if (ai !== -1) _allSubs[ai].groupName = newName.trim();
+  });
+  await saveGroupsToDb();
+  toast('تم تعديل اسم المجموعة ✅'); renderGroups();
+}
+
+async function deleteGroup(idx) {
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  if (!confirm(`حذف المجموعة "${groups[idx]}"؟`)) return;
+  groups.splice(idx, 1);
+  _currentProg.groups = groups.join('، ');
+  await saveGroupsToDb();
+  toast('تم حذف المجموعة ✅'); renderGroups();
+}
+
+/* ══════════════════════════════════════════
+   FEES (Program Level)
+══════════════════════════════════════════ */
+function renderFees() {
+  if (!_currentProg) return;
+  const q  = (document.getElementById('fees-search')?.value || '').toLowerCase();
+  const st = document.getElementById('fees-status-filter')?.value || '';
+
+  let d = _progSubs.map(s => {
+    const { paid, due, rem, payStatus } = getSubPayInfo(s);
+    return { ...s, paid, due, rem, payStatus };
+  });
+  if (st) d = d.filter(x => x.payStatus === st);
+  if (q)  d = d.filter(x => x.studentName.toLowerCase().includes(q));
+
+  const req  = d.reduce((a, x) => a + x.due, 0);
+  const paid = d.reduce((a, x) => a + x.paid, 0);
+  const rem  = d.reduce((a, x) => a + x.rem, 0);
+  const rate = req > 0 ? Math.round(paid / req * 100) : 0;
+
+  document.getElementById('fees-kpi').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-lbl">إجمالي المستحق</div><div class="kpi-val">${req.toLocaleString()}</div><div class="kpi-sub">ريال</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-lbl">إجمالي المحصّل</div><div class="kpi-val">${paid.toLocaleString()}</div><div class="kpi-sub">ريال</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-lbl">إجمالي المتبقي</div><div class="kpi-val">${rem.toLocaleString()}</div><div class="kpi-sub">ريال</div></div>
+    <div class="kpi-card kpi-gold"><div class="kpi-lbl">نسبة التحصيل</div><div class="kpi-val">${rate}%</div></div>`;
+
+  const tbody = document.getElementById('fees-tbody');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="ei">💰</div><p>لا توجد بيانات</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = d.map((x, i) => {
+    const icon = x.payStatus === 'مسدد' ? '🟢' : x.payStatus === 'جزئي' ? '🟡' : '🔴';
+    const bc   = x.payStatus === 'مسدد' ? 'b-paid' : x.payStatus === 'جزئي' ? 'b-part-pay' : 'b-unpaid';
+    return `<tr>
+      <td>${i + 1}</td>
+      <td><strong>${esc(x.studentName)}</strong><br><small dir="ltr" style="color:var(--muted)">${x.phone}</small></td>
+      <td>${x.due.toLocaleString()} ر.س</td>
+      <td>${x.paid.toLocaleString()} ر.س</td>
+      <td>${x.rem > 0 ? `<strong style="color:var(--danger)">${x.rem.toLocaleString()} ر.س</strong>` : '<span style="color:var(--success)">—</span>'}</td>
+      <td>${icon} <span class="badge ${bc}">${x.payStatus}</span></td>
+      <td>
+        <div class="actions">
+          <button class="abt abt-pay"  title="إضافة دفعة"  onclick="openSubPayments(${x.id})">💰</button>
+          <button class="abt abt-view" title="سجل الدفعات" onclick="openSubPayments(${x.id})">📋</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   ATTENDANCE STATS (Program Level - Read Only)
+══════════════════════════════════════════ */
+async function loadAttStats() {
+  if (!_currentProg) {
+    document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>ادخل برنامجاً لعرض إحصائيات التحضير</p></div>`;
+    return;
+  }
+  document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
+  try {
+    const allAtt = await sbRead(TB.ATTENDANCE, `programId=eq.${_currentProg.id}`);
+    if (!allAtt.length) {
+      document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>لا توجد بيانات تحضير بعد لهذا البرنامج</p></div>`;
+      return;
+    }
+    const total   = new Set(_progSubs.map(s => s.studentId)).size || 1;
+    const present = allAtt.filter(a => a.status === 'حاضر').length;
+    const absent  = allAtt.filter(a => a.status === 'غائب').length;
+    const late    = allAtt.filter(a => a.status === 'متأخر').length;
+    const sessions = [...new Set(allAtt.map(a => a.date))].length || 1;
+    const avgPct  = Math.round((present + late) / (sessions * total) * 100) || 0;
+    const dates   = [...new Set(allAtt.map(a => a.date))].sort().slice(-4).reverse();
+
+    document.getElementById('att-stats-body').innerHTML = `
+      <div class="att-stat-row">
+        <div class="att-stat-card"><div class="asv">${avgPct}%</div><div class="asl">متوسط الحضور</div></div>
+        <div class="att-stat-card"><div class="asv">${sessions}</div><div class="asl">جلسات مسجلة</div></div>
+        <div class="att-stat-card"><div class="asv">${present}</div><div class="asl">حاضر</div></div>
+        <div class="att-stat-card"><div class="asv">${absent}</div><div class="asl">غائب</div></div>
+        <div class="att-stat-card"><div class="asv">${late}</div><div class="asl">متأخر</div></div>
+      </div>
+      ${dates.length ? `
+      <div class="table-card"><div class="tbl-wrap"><table>
+        <thead><tr><th>التاريخ</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>نسبة الحضور</th></tr></thead>
+        <tbody>${dates.map(date => {
+          const da = allAtt.filter(a => a.date === date);
+          const dp = da.filter(a => a.status === 'حاضر').length;
+          const dab= da.filter(a => a.status === 'غائب').length;
+          const dl = da.filter(a => a.status === 'متأخر').length;
+          const pct= total > 0 ? Math.round((dp + dl) / total * 100) : 0;
+          return `<tr>
+            <td>${fmtDate(date)}</td><td>${dp}</td><td>${dab}</td><td>${dl}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div class="bar-track" style="width:80px;height:10px">
+                  <div class="bar-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}"></div>
+                </div>
+                <span style="font-size:.8rem">${pct}%</span>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div></div>` : ''}`;
+  } catch(e) {
+    document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر تحميل بيانات التحضير</p></div>`;
+  }
+}
+
+async function saveAttPwd() {
+  const pwd = document.getElementById('att-pwd-input').value.trim();
+  if (!pwd) { toast('يرجى إدخال كلمة المرور', 'error'); return; }
+  try {
+    await sbUpsert(TB.SETTINGS, { key: 'attendance_password', value: pwd });
+    toast('تم حفظ كلمة مرور التحضير ✅');
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════
+   PROGRAM STATISTICS
+══════════════════════════════════════════ */
+function renderProgStats() {
+  if (!_currentProg) return;
+  const subs   = _progSubs;
+  const active = subs.filter(s => s.status === 'نشط').length;
+  const expired= subs.filter(s => s.status === 'منتهي').length;
+  const totalDue = subs.reduce((a, s) => a + (s.amountDue || _currentProg.fullFee || 0), 0);
+  const totalPaid= subs.reduce((a, s) => a + getSubPayInfo(s).paid, 0);
+  const rate   = totalDue > 0 ? Math.round(totalPaid / totalDue * 100) : 0;
+
+  document.getElementById('prog-stats-kpi').innerHTML = `
+    <div class="kpi-card kpi-blue"><div class="kpi-lbl">إجمالي المشتركين</div><div class="kpi-val">${subs.length}</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-lbl">نشط</div><div class="kpi-val">${active}</div></div>
+    <div class="kpi-card kpi-purple"><div class="kpi-lbl">منتهي</div><div class="kpi-val">${expired}</div></div>
+    <div class="kpi-card kpi-gold"><div class="kpi-lbl">المستحق</div><div class="kpi-val">${totalDue.toLocaleString()}</div><div class="kpi-sub">ريال</div></div>
+    <div class="kpi-card kpi-green"><div class="kpi-lbl">المحصّل</div><div class="kpi-val">${totalPaid.toLocaleString()}</div><div class="kpi-sub">ريال</div></div>
+    <div class="kpi-card kpi-red"><div class="kpi-lbl">نسبة التحصيل</div><div class="kpi-val">${rate}%</div></div>`;
+
+  // Chart: by group
+  const grpMap = {};
+  subs.forEach(s => { const g = s.groupName || 'غير محدد'; grpMap[g] = (grpMap[g] || 0) + 1; });
+  const grpItems = Object.entries(grpMap).sort((a, b) => b[1] - a[1]);
+  const maxG = grpItems[0]?.[1] || 1;
+  document.getElementById('chart-groups').innerHTML = grpItems.length
+    ? grpItems.map(([g, n]) => `<div class="bar-item"><span class="bar-lbl" title="${esc(g)}">${esc(g)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxG*100)}%"></div></div><span class="bar-num">${n}</span></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:16px">لا بيانات</p>';
+
+  // Chart: payment status
+  const paidC   = subs.filter(s => getSubPayInfo(s).payStatus === 'مسدد').length;
+  const partC   = subs.filter(s => getSubPayInfo(s).payStatus === 'جزئي').length;
+  const unpaidC = subs.filter(s => getSubPayInfo(s).payStatus === 'لم يدفع').length;
+  document.getElementById('chart-payment').innerHTML = `
+    <div class="legend-row"><span class="l-dot" style="background:#10b981"></span><span class="l-lbl">مسدد بالكامل</span><span class="l-val">${paidC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#f59e0b"></span><span class="l-lbl">جزئي</span><span class="l-val">${partC}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#ef4444"></span><span class="l-lbl">لم يدفع</span><span class="l-val">${unpaidC}</span></div>`;
+  document.getElementById('chart-collection-bar').innerHTML = `
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:4px">نسبة التحصيل الكلية</div>
+    <div class="progress-bar-full"><div class="bar-fill" style="width:${rate}%;background:${rate>=80?'var(--success)':rate>=50?'var(--warning)':'var(--danger)'}"></div></div>
+    <div style="text-align:center;font-weight:700;color:var(--primary);margin-top:4px">${rate}%</div>`;
+
+  // Chart: sub status
+  document.getElementById('chart-sub-status').innerHTML = `
+    <div class="legend-row"><span class="l-dot" style="background:#10b981"></span><span class="l-lbl">نشط</span><span class="l-val">${active}</span></div>
+    <div class="legend-row"><span class="l-dot" style="background:#94a3b8"></span><span class="l-lbl">منتهي</span><span class="l-val">${expired}</span></div>`;
+
+  // Chart: by category
+  const catMap = {};
+  subs.forEach(s => {
+    const st = _students.find(x => x.id === s.studentId);
+    const c  = st?.category || s.category || 'غير محدد';
+    catMap[c] = (catMap[c] || 0) + 1;
+  });
+  const catItems  = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+  const maxC      = catItems[0]?.[1] || 1;
+  const catColors = ['var(--gold)','#3b82f6','#10b981','#ef4444','#8b5cf6','#f59e0b'];
+  document.getElementById('chart-category').innerHTML = catItems.length
+    ? catItems.map(([n, c], i) => `<div class="bar-item"><span class="bar-lbl" title="${esc(n)}">${esc(n)}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(c/maxC*100)}%;background:${catColors[i%catColors.length]}"></div></div><span class="bar-num">${c}</span></div>`).join('')
+    : '<p style="color:var(--muted);font-size:.85rem;text-align:center;padding:16px">لا بيانات</p>';
+}
+
+/* ══════════════════════════════════════════
+   SESSION CALCULATORS
+══════════════════════════════════════════ */
+const DAY_NUM = { 'الأحد':0,'الاثنين':1,'الثلاثاء':2,'الأربعاء':3,'الخميس':4,'الجمعة':5,'السبت':6 };
+
+function calcSessions(startDate, endDate, progDays) {
+  if (!startDate || !endDate || !progDays?.length) return 0;
+  const dayNums = progDays.map(d => DAY_NUM[d]).filter(n => n !== undefined);
+  let count = 0, d = new Date(startDate + 'T00:00:00');
+  const end = new Date(endDate + 'T00:00:00');
+  while (d <= end) { if (dayNums.includes(d.getDay())) count++; d.setDate(d.getDate() + 1); }
+  return count;
+}
+
+function calcEndFromSessions(startDate, sessionCount, progDays) {
+  if (!startDate || !sessionCount || !progDays?.length) return '';
+  const dayNums = progDays.map(d => DAY_NUM[d]).filter(n => n !== undefined);
+  let count = 0, d = new Date(startDate + 'T00:00:00');
+  while (count < sessionCount) {
+    if (dayNums.includes(d.getDay())) count++;
+    if (count < sessionCount) d.setDate(d.getDate() + 1);
+  }
+  return d.toISOString().split('T')[0];
+}
+
+/* ══════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════ */
+function today()     { return new Date().toISOString(); }
+function todayDate() { return new Date().toISOString().split('T')[0]; }
+
+function fmtDate(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
+    if (isNaN(dt)) return d;
+    return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+  } catch { return d; }
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function subStatus(endDate) {
+  if (!endDate) return 'نشط';
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return new Date(endDate + 'T00:00:00') < t ? 'منتهي' : 'نشط';
+}
+
+function calcDaysBetween(s, e) {
+  if (!s || !e) return 0;
+  return Math.max(0, Math.ceil((new Date(e + 'T00:00:00') - new Date(s + 'T00:00:00')) / 86400000));
+}
+
+let _toastTimer;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show t-${type}`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 3400);
+}
+
+function openM(id)  { document.getElementById(id).classList.add('open'); }
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  const mn = document.getElementById('main');
+  if (window.innerWidth <= 760) {
+    sb.classList.toggle('open');
+  } else {
+    _sidebarOpen = !_sidebarOpen;
+    sb.classList.toggle('hidden', !_sidebarOpen);
+    mn.classList.toggle('full', !_sidebarOpen);
+  }
+}
+
+function handleLogout() {
+  if (confirm('تسجيل الخروج؟')) window.location.reload();
+}
+
+// Close modal on overlay click
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('overlay')) e.target.classList.remove('open');
+});
+
+// Close student search dropdown on outside click
+document.addEventListener('click', e => {
+  const res = document.getElementById('sub-student-results');
+  const inp = document.getElementById('sub-student-search');
+  if (res && !res.contains(e.target) && e.target !== inp) res.style.display = 'none';
+});
+
+/* ── Start ── */
+document.addEventListener('DOMContentLoaded', init);
