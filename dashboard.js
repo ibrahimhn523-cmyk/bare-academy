@@ -10,7 +10,8 @@ const TB = {
   PAYMENTS      : 'payments',
   PROGRAMS      : 'programs',
   ATTENDANCE    : 'attendance',
-  SETTINGS      : 'settings'
+  SETTINGS      : 'settings',
+  LOGS          : 'logs'
 };
 
 /* ── Supabase Helpers ── */
@@ -56,6 +57,23 @@ async function sbUpsert(table, data) {
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
 
+/* ── Activity Log ── */
+async function addLog(action, label) {
+  try {
+    await fetch(`${SB_URL}/logs`, {
+      method: 'POST',
+      headers: _h(),
+      body: JSON.stringify({ action, label })
+    });
+    // Keep only last 150 — delete anything beyond
+    const r = await fetch(`${SB_URL}/logs?select=id&order=id.desc&offset=150&limit=1`, { headers: _h() });
+    const old = await r.json().catch(() => []);
+    if (old?.length) {
+      await fetch(`${SB_URL}/logs?id=lte.${old[0].id}`, { method: 'DELETE', headers: _h() });
+    }
+  } catch(e) { /* silent — don't break main flow */ }
+}
+
 /* ══════════════════════════════════════════
    STATE
 ══════════════════════════════════════════ */
@@ -86,6 +104,9 @@ function renderSidebar() {
         </div>
         <div class="nav-item ${_activeSection === 'programs' ? 'active' : ''}" onclick="switchSection('programs')">
           <span class="nav-icon">📋</span><span>البرامج</span>
+        </div>
+        <div class="nav-item ${_activeSection === 'logs' ? 'active' : ''}" onclick="switchSection('logs')">
+          <span class="nav-icon">🕑</span><span>سجل العمليات</span>
         </div>
         <div class="nav-divider"></div>
         <div class="nav-item" onclick="handleLogout()">
@@ -134,6 +155,7 @@ function switchSection(name) {
   if (name === 'fees')        renderFees();
   if (name === 'attendance')  loadAttStats();
   if (name === 'prog-stats')  renderProgStats();
+  if (name === 'logs')        loadLogs();
   if (window.innerWidth <= 760) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -352,10 +374,12 @@ async function saveStudent() {
       if (i !== -1) Object.assign(_students[i], data);
       await sbUpdate(TB.STUDENTS, id, data);
       toast('تم تعديل بيانات الطالب ✅');
+      addLog('edit_student', `عدّل بيانات الطالب: ${data.fullName}`);
     } else {
       const created = await sbInsertReturn(TB.STUDENTS, { ...data, isArchived: false });
       if (created) _students.push({ id: parseInt(created.id), ...data, isArchived: false, createdAt: created.createdAt || '' });
       toast('تم إضافة الطالب ✅');
+      addLog('add_student', `أضاف طالباً جديداً: ${data.fullName}`);
     }
     closeM('m-student');
     renderStudents();
@@ -368,6 +392,8 @@ async function archiveStudent(id, isArchived) {
   const i = _students.findIndex(s => s.id === id); if (i === -1) return;
   _students[i].isArchived = !isArchived;
   sbUpdate(TB.STUDENTS, id, { isArchived: !isArchived }).catch(console.error);
+  const stName = _students.find(s => s.id === id)?.fullName || '';
+  addLog(isArchived ? 'unarchive_student' : 'archive_student', `${isArchived ? 'أعاد' : 'أرشف'} الطالب: ${stName}`);
   toast(isArchived ? 'تم إلغاء الأرشفة ✅' : 'تم الأرشفة ✅');
   renderStudents(); renderStudentStats();
 }
@@ -598,10 +624,12 @@ async function saveProg() {
       if (i !== -1) Object.assign(_progs[i], { ...data, days });
       await sbUpdate(TB.PROGRAMS, id, data);
       toast('تم تعديل البرنامج ✅');
+      addLog('edit_program', `عدّل البرنامج: ${name}`);
     } else {
       const created = await sbInsertReturn(TB.PROGRAMS, data);
       if (created) _progs.push({ id: parseInt(created.id), ...data, days });
       toast('تم إضافة البرنامج ✅');
+      addLog('add_program', `أضاف برنامجاً جديداً: ${name}`);
     }
     closeM('m-prog'); renderProgs();
   } catch(e) { toast('خطأ: ' + e.message, 'error'); }
@@ -634,6 +662,7 @@ async function saveExtend() {
   const i = _progs.findIndex(p => p.id === pid); if (i === -1) return;
   _progs[i].endDate = newEnd;
   await sbUpdate(TB.PROGRAMS, pid, { endDate: newEnd }).catch(console.error);
+  addLog('extend_program', `مدّد البرنامج: ${_progs[i].name} حتى ${fmtDate(newEnd)}`);
   toast('تم تمديد البرنامج ✅'); closeM('m-extend'); renderProgs();
 }
 
@@ -917,6 +946,12 @@ async function saveSub() {
       _allPayments.push({ id: Date.now() + 1, subscriptionId: subId, studentId, amount: payAmt, paidAt: payData.date, method: payData.method, note: payData.note });
     }
 
+    const subStName = _students.find(s => s.id === studentId)?.fullName || studentName;
+    if (editId) {
+      addLog('edit_sub', `عدّل اشتراك ${subStName} في ${_currentProg?.name || ''}`);
+    } else {
+      addLog('add_sub', `أضاف اشتراكاً: ${subStName} ← ${_currentProg?.name || ''}`);
+    }
     toast(editId ? 'تم تعديل الاشتراك ✅' : 'تم إضافة الاشتراك ✅');
     closeM('m-sub');
     renderSubscribers();
@@ -957,7 +992,9 @@ async function deleteProgSub(subId) {
   _progSubs.splice(i, 1);
   const ai = _allSubs.findIndex(s => s.id === subId);
   if (ai !== -1) _allSubs.splice(ai, 1);
+  const delSubName = _progSubs.find(s => s.id === subId)?.studentName || '';
   sbDelete(TB.SUBSCRIPTIONS, subId).catch(console.error);
+  addLog('delete_sub', `حذف اشتراك ${delSubName} من ${_currentProg?.name || ''}`);
   toast('تم حذف الاشتراك ✅');
   renderSubscribers();
 }
@@ -1022,6 +1059,7 @@ async function saveNewPayment() {
     const newPay = { id: Date.now(), subscriptionId: subId, studentId: sub?.studentId || 0, amount, paidAt, method, note };
     _progPays.push(newPay);
     _allPayments.push({ ...newPay });
+    addLog('add_payment', `دفعة ${amount.toLocaleString()} ر.س — ${sub?.studentName || ''} (${_currentProg?.name || ''})`);
     toast('تم تسجيل الدفعة ✅');
     document.getElementById('new-pay-amount').value = '';
     document.getElementById('new-pay-note').value   = '';
@@ -1375,6 +1413,66 @@ document.addEventListener('click', e => {
   const inp = document.getElementById('sub-student-search');
   if (res && !res.contains(e.target) && e.target !== inp) res.style.display = 'none';
 });
+
+/* ══════════════════════════════════════════
+   ACTIVITY LOGS
+══════════════════════════════════════════ */
+const LOG_ICONS = {
+  add_student      : '👤➕',
+  edit_student     : '👤✏️',
+  archive_student  : '📦',
+  unarchive_student: '📤',
+  add_program      : '📋➕',
+  edit_program     : '📋✏️',
+  extend_program   : '📅',
+  add_sub          : '🔗➕',
+  edit_sub         : '🔗✏️',
+  delete_sub       : '🗑️',
+  add_payment      : '💰',
+};
+
+async function loadLogs() {
+  const el = document.getElementById('logs-body');
+  if (!el) return;
+  el.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
+  try {
+    const r = await fetch(`${SB_URL}/logs?select=*&order=id.desc&limit=150`, { headers: _h() });
+    if (!r.ok) throw new Error();
+    const rows = await r.json();
+    renderLogs(rows);
+  } catch(e) {
+    el.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر تحميل السجل</p></div>`;
+  }
+}
+
+function renderLogs(rows) {
+  const el = document.getElementById('logs-body');
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty"><div class="ei">🕑</div><p>لا توجد عمليات مسجلة بعد</p></div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>العملية</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
+          <tbody>
+            ${rows.map((row, i) => {
+              const icon = LOG_ICONS[row.action] || '📌';
+              const dt   = row.createdAt ? new Date(row.createdAt) : null;
+              const time = dt ? dt.toLocaleString('ar-SA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '—';
+              return `<tr>
+                <td style="color:var(--muted);font-size:.8rem">${i + 1}</td>
+                <td style="font-size:1.1rem">${icon}</td>
+                <td style="font-size:.88rem">${esc(row.label || '')}</td>
+                <td style="font-size:.78rem;color:var(--muted);white-space:nowrap">${time}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
 
 /* ── Start ── */
 document.addEventListener('DOMContentLoaded', init);
