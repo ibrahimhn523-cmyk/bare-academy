@@ -288,6 +288,26 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 #toast.t-success { background: var(--success); }
 #toast.t-error   { background: var(--danger); }
 
+/* ── BULK SUBSCRIBE MODAL ── */
+.modal-bulk { max-width: 920px; }
+.bulk-panels { display: grid; grid-template-columns: 1fr 1fr; min-height: 440px; }
+.bulk-panel-students { border-left: 1px solid var(--border); padding: 14px; overflow: hidden; display: flex; flex-direction: column; }
+.bulk-panel-form { padding: 14px; overflow-y: auto; }
+.bulk-search-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.bulk-search-row input { flex: 1; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: inherit; font-size: .85rem; }
+.bulk-select-all-row { display: flex; align-items: center; gap: 6px; font-size: .83rem; color: var(--muted); margin-bottom: 8px; padding: 0 2px; }
+.bulk-select-all-row input { accent-color: var(--primary); cursor: pointer; }
+.bulk-student-list { flex: 1; overflow-y: auto; border-radius: 8px; border: 1px solid var(--border); }
+.bulk-student-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .15s; }
+.bulk-student-item:last-child { border-bottom: none; }
+.bulk-student-item:hover { background: #f1f5f9; }
+.bulk-student-item.selected { background: #e8f4fd; }
+.bulk-student-item input[type=checkbox] { accent-color: var(--primary); cursor: pointer; flex-shrink: 0; width: 15px; height: 15px; }
+.bulk-st-name { font-size: .87rem; font-weight: 600; flex: 1; }
+.bulk-st-meta { font-size: .76rem; color: var(--muted); white-space: nowrap; }
+.bulk-empty { text-align: center; padding: 30px; color: var(--muted); font-size: .86rem; }
+.bulk-footer-count { font-size: .85rem; color: var(--primary); font-weight: 600; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 760px) {
   .sidebar { transform: translateX(100%); }
@@ -298,4 +318,6 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
   .stats { grid-template-columns: 1fr 1fr; }
   .topbar-right .user-label { display: none; }
   .prog-grid { grid-template-columns: 1fr; }
+  .bulk-panels { grid-template-columns: 1fr; }
+  .bulk-panel-students { border-left: none; border-bottom: 1px solid var(--border); }
 }

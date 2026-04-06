@@ -111,6 +111,7 @@
       <div class="page-title" id="subs-title">المشتركون</div>
       <div class="hdr-actions">
         <button class="btn btn-refresh" onclick="reloadProgramData()">🔄 تحديث</button>
+        <button class="btn btn-outline" onclick="openBulkSubModal()">📋 اختيار من سجل الطلاب</button>
         <button class="btn btn-primary" onclick="openAddSub()">➕ إضافة مشترك</button>
       </div>
     </div>
@@ -465,6 +466,70 @@
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeM('m-sub')">إلغاء</button>
       <button class="btn btn-gold" onclick="saveSub()">✅ حفظ الاشتراك</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bulk Subscribe from Students Registry -->
+<div class="overlay" id="m-bulk-sub">
+  <div class="modal modal-bulk">
+    <div class="modal-hdr">
+      <div class="modal-title">📋 اشتراك جماعي من سجل الطلاب</div>
+      <button class="modal-close" onclick="closeM('m-bulk-sub')">✕</button>
+    </div>
+    <div class="bulk-panels">
+      <!-- لوحة الطلاب (يمين) -->
+      <div class="bulk-panel-students">
+        <div class="bulk-search-row">
+          <input type="text" id="bulk-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderBulkStudentList()">
+        </div>
+        <div class="bulk-select-all-row">
+          <input type="checkbox" id="bulk-select-all" onchange="toggleBulkSelectAll(this)">
+          <label for="bulk-select-all">تحديد الكل</label>
+          <span id="bulk-filtered-count" style="margin-right:auto"></span>
+        </div>
+        <div class="bulk-student-list" id="bulk-student-list">
+          <div class="bulk-empty">جاري التحميل…</div>
+        </div>
+      </div>
+      <!-- لوحة نموذج الاشتراك (يسار) -->
+      <div class="bulk-panel-form">
+        <div class="form-divider">📋 تفاصيل الاشتراك</div>
+        <div class="frow">
+          <div class="fg">
+            <label>نوع الاشتراك</label>
+            <select id="bulk-type">
+              <option value="كامل">كامل</option>
+              <option value="جزئي">جزئي</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>المجموعة</label>
+            <select id="bulk-group"><option value="">اختر المجموعة</option></select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="bulk-start" oninput="onBulkDatesChange()"></div>
+          <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="bulk-end" oninput="onBulkDatesChange()"></div>
+        </div>
+        <div class="frow">
+          <div class="fg">
+            <label>عدد الحصص</label>
+            <input type="number" id="bulk-sessions" placeholder="يُحسب تلقائياً" min="1">
+          </div>
+          <div class="fg"><label>المبلغ المستحق (ر.س)</label><input type="number" id="bulk-amount-due" placeholder="0" min="0"></div>
+        </div>
+        <div class="frow single">
+          <div class="fg"><label>ملاحظات (تُطبّق على الجميع)</label><textarea id="bulk-notes" placeholder="اختياري"></textarea></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr" style="justify-content:space-between">
+      <span class="bulk-footer-count" id="bulk-selected-count">لم يتم اختيار أي طالب</span>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-secondary" onclick="closeM('m-bulk-sub')">إلغاء</button>
+        <button class="btn btn-gold" onclick="saveBulkSub()">✅ اشتراك الجميع</button>
+      </div>
     </div>
   </div>
 </div>

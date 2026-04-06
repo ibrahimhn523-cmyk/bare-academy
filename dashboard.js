@@ -89,6 +89,8 @@ let _currentView = 'cards';
 let _sidebarOpen = true;
 let _activeSection = 'students';
 let _subStudentId  = null; // selected student in m-sub modal
+let _bulkSelected         = new Set();  // IDs المحددة في الاشتراك الجماعي
+let _bulkFilteredStudents = [];         // الطلاب المعروضون بعد الفلتر
 
 /* ══════════════════════════════════════════
    NAVIGATION
@@ -1607,6 +1609,7 @@ const LOG_ICONS = {
   edit_sub         : '🔗✏️',
   delete_sub       : '🗑️',
   add_payment      : '💰',
+  bulk_subscribe   : '📋✅',
 };
 
 async function loadLogs() {
@@ -1650,6 +1653,182 @@ function renderLogs(rows) {
         </table>
       </div>
     </div>`;
+}
+
+/* ══════════════════════════════════════════
+   BULK SUBSCRIBE FROM STUDENTS REGISTRY
+══════════════════════════════════════════ */
+
+function openBulkSubModal() {
+  if (!_currentProg) return;
+
+  // مسح التحديد السابق
+  _bulkSelected.clear();
+
+  // تعبئة قائمة المجموعات
+  const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
+  document.getElementById('bulk-group').innerHTML =
+    '<option value="">اختر المجموعة</option>' + groups.map(g => `<option>${g}</option>`).join('');
+
+  // القيم الافتراضية
+  document.getElementById('bulk-type').value       = 'كامل';
+  document.getElementById('bulk-start').value      = todayDate();
+  document.getElementById('bulk-end').value        = _currentProg.endDate || '';
+  document.getElementById('bulk-amount-due').value = _currentProg.fullFee || '';
+  document.getElementById('bulk-notes').value      = '';
+  document.getElementById('bulk-search').value     = '';
+
+  const sessions = calcSessions(todayDate(), _currentProg.endDate || '', _currentProg.days);
+  document.getElementById('bulk-sessions').value = sessions || '';
+
+  renderBulkStudentList();
+  openM('m-bulk-sub');
+}
+
+function renderBulkStudentList() {
+  const q = (document.getElementById('bulk-search').value || '').toLowerCase().trim();
+  const alreadySubIds = new Set(_progSubs.map(s => s.studentId));
+
+  _bulkFilteredStudents = _students.filter(s => {
+    if (s.isArchived) return false;
+    if (alreadySubIds.has(s.id)) return false;
+    if (q) {
+      const matchName  = (s.fullName || '').toLowerCase().includes(q);
+      const matchPhone = (s.phone || '').includes(q);
+      if (!matchName && !matchPhone) return false;
+    }
+    return true;
+  });
+
+  const list = document.getElementById('bulk-student-list');
+  const count = document.getElementById('bulk-filtered-count');
+  count.textContent = `(${_bulkFilteredStudents.length} طالب)`;
+
+  if (!_bulkFilteredStudents.length) {
+    list.innerHTML = `<div class="bulk-empty">${q ? 'لا نتائج للبحث' : 'جميع الطلاب مشتركون بالفعل في هذا البرنامج'}</div>`;
+    updateBulkSelectedCount();
+    return;
+  }
+
+  list.innerHTML = _bulkFilteredStudents.map(s => {
+    const checked = _bulkSelected.has(s.id) ? 'checked' : '';
+    const selCls  = _bulkSelected.has(s.id) ? ' selected' : '';
+    return `<div class="bulk-student-item${selCls}" onclick="toggleBulkStudent(${s.id})">
+      <input type="checkbox" ${checked} onclick="event.stopPropagation();toggleBulkStudent(${s.id})">
+      <span class="bulk-st-name">${esc(s.fullName)}</span>
+      <span class="bulk-st-meta" dir="ltr">${esc(s.phone)}</span>
+      ${s.category ? `<span class="bulk-st-meta" style="margin-right:4px">${esc(s.category)}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  updateBulkSelectedCount();
+}
+
+function toggleBulkStudent(id) {
+  if (_bulkSelected.has(id)) {
+    _bulkSelected.delete(id);
+  } else {
+    _bulkSelected.add(id);
+  }
+  renderBulkStudentList();
+}
+
+function toggleBulkSelectAll(cb) {
+  if (cb.checked) {
+    _bulkFilteredStudents.forEach(s => _bulkSelected.add(s.id));
+  } else {
+    _bulkFilteredStudents.forEach(s => _bulkSelected.delete(s.id));
+  }
+  renderBulkStudentList();
+}
+
+function updateBulkSelectedCount() {
+  const n = _bulkSelected.size;
+  const countEl = document.getElementById('bulk-selected-count');
+  if (countEl) {
+    countEl.textContent = n > 0 ? `✅ تم اختيار ${n} طالب` : 'لم يتم اختيار أي طالب';
+  }
+  // ضبط حالة checkbox "تحديد الكل"
+  const allCb = document.getElementById('bulk-select-all');
+  if (allCb && _bulkFilteredStudents.length > 0) {
+    const allSelected = _bulkFilteredStudents.every(s => _bulkSelected.has(s.id));
+    const someSelected = _bulkFilteredStudents.some(s => _bulkSelected.has(s.id));
+    allCb.checked       = allSelected;
+    allCb.indeterminate = !allSelected && someSelected;
+  }
+}
+
+function onBulkDatesChange() {
+  const start = document.getElementById('bulk-start').value;
+  const end   = document.getElementById('bulk-end').value;
+  if (start && end && _currentProg) {
+    const sessions = calcSessions(start, end, _currentProg.days);
+    document.getElementById('bulk-sessions').value = sessions || '';
+  }
+}
+
+async function saveBulkSub() {
+  if (!_currentProg) return;
+
+  if (_bulkSelected.size === 0) {
+    toast('يرجى اختيار طالب واحد على الأقل', 'error'); return;
+  }
+
+  const startDate = document.getElementById('bulk-start').value;
+  const endDate   = document.getElementById('bulk-end').value;
+  if (!startDate || !endDate) {
+    toast('يرجى تحديد تاريخي البداية والنهاية', 'error'); return;
+  }
+
+  const subType   = document.getElementById('bulk-type').value;
+  const groupName = document.getElementById('bulk-group').value;
+  const sessions  = parseInt(document.getElementById('bulk-sessions').value) || 0;
+  const amountDue = parseFloat(document.getElementById('bulk-amount-due').value) || 0;
+  const notes     = document.getElementById('bulk-notes').value.trim();
+
+  const selectedIds = [..._bulkSelected];
+  let successCount = 0;
+  const errors = [];
+
+  for (const studentId of selectedIds) {
+    const st = _students.find(s => s.id === studentId);
+    if (!st) continue;
+    try {
+      const subData = {
+        studentId,
+        studentName: st.fullName,
+        phone: st.phone,
+        category: st.category || '',
+        programId: _currentProg.id,
+        programName: _currentProg.name,
+        groupName, subType, paymentType: subType,
+        startDate, endDate,
+        sessionCount: sessions,
+        amountDue,
+        status: subStatus(endDate),
+        notes
+      };
+      const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
+      const newId   = created ? parseInt(created.id) : Date.now() + successCount;
+      _progSubs.push({ id: newId, ...subData });
+      _allSubs.push({ id: newId, ...subData });
+      successCount++;
+    } catch(e) {
+      errors.push(st.fullName);
+    }
+  }
+
+  addLog('bulk_subscribe', `اشتراك جماعي في ${_currentProg.name}: ${successCount} طالب`);
+
+  if (errors.length) {
+    toast(`تم اشتراك ${successCount} طالب — فشل ${errors.length}`, 'warning');
+  } else {
+    toast(`تم اشتراك ${successCount} طالب بنجاح ✅`);
+  }
+
+  closeM('m-bulk-sub');
+  renderSubscribers();
+  renderSubscriberStats();
 }
 
 /* ── Start ── */
