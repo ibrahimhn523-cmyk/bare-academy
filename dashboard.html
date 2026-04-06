@@ -616,6 +616,32 @@
   </div>
 </div>
 
+<!-- Modal: Confirm Delete Program -->
+<div class="overlay" id="m-delete-prog">
+  <div class="modal modal-confirm">
+    <div class="modal-hdr">
+      <div class="modal-title">🗑️ تأكيد الحذف النهائي</div>
+      <button class="modal-close" onclick="closeM('m-delete-prog')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:24px 20px">
+      <div class="confirm-icon">⚠️</div>
+      <div class="confirm-title" id="del-prog-name">اسم البرنامج</div>
+      <p class="confirm-msg">سيتم حذف البرنامج وجميع بياناته بشكل نهائي ولا يمكن التراجع عن هذا الإجراء.</p>
+      <div class="confirm-stats">
+        <div class="confirm-stat">👥 <span id="del-prog-subs">0</span> مشترك</div>
+        <div class="confirm-stat">💰 <span id="del-prog-pays">0</span> دفعة</div>
+      </div>
+      <p class="confirm-msg" style="color:var(--danger);font-weight:600;font-size:.82rem">
+        تحذير: سيتم حذف جميع الاشتراكات والدفعات المرتبطة بهذا البرنامج.
+      </p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-delete-prog')">إلغاء</button>
+      <button class="btn-danger" onclick="confirmDeleteProg()">🗑️ حذف نهائي</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Extend Program -->
 <div class="overlay" id="m-extend">
   <div class="modal">

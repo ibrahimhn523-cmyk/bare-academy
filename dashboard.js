@@ -89,6 +89,7 @@ let _currentView = 'cards';
 let _sidebarOpen = true;
 let _activeSection = 'students';
 let _subStudentId  = null; // selected student in m-sub modal
+let _deleteProgId         = null;        // ID البرنامج المراد حذفه
 let _bulkSelected         = new Set();  // IDs المحددة في الاشتراك الجماعي
 let _bulkFilteredStudents = [];         // الطلاب المعروضون بعد الفلتر
 
@@ -514,6 +515,7 @@ function renderProgCards(d) {
       <div class="prog-actions">
         <button class="prog-btn" style="background:#dbeafe;color:#1d4ed8" onclick="openEditProg(${p.id})">✏️ تعديل</button>
         <button class="prog-btn" style="background:#f1f5f9;color:var(--text)" onclick="openExtend(${p.id})">📅 تمديد</button>
+        <button class="prog-btn" style="background:#fee2e2;color:var(--danger)" onclick="openDeleteProg(${p.id})" title="حذف نهائي">🗑️ حذف</button>
         <button class="prog-btn" style="background:var(--gold);color:var(--primary);font-weight:700" onclick="enterProg(${p.id})">🎯 دخول البرنامج</button>
       </div>
     </div>`;
@@ -535,8 +537,9 @@ function renderProgTable(d) {
     <td><span class="badge b-${p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired'}">${p.status}</span></td>
     <td>
       <div class="actions">
-        <button class="abt abt-edit"  onclick="openEditProg(${p.id})">✏️</button>
-        <button class="abt abt-view"  onclick="enterProg(${p.id})" title="دخول البرنامج">🎯</button>
+        <button class="abt abt-edit"   onclick="openEditProg(${p.id})">✏️</button>
+        <button class="abt abt-view"   onclick="enterProg(${p.id})" title="دخول البرنامج">🎯</button>
+        <button class="abt abt-delete" onclick="openDeleteProg(${p.id})" title="حذف نهائي">🗑️</button>
       </div>
     </td>
   </tr>`).join('');
@@ -1610,6 +1613,7 @@ const LOG_ICONS = {
   delete_sub       : '🗑️',
   add_payment      : '💰',
   bulk_subscribe   : '📋✅',
+  delete_program   : '🗑️📋',
 };
 
 async function loadLogs() {
@@ -1653,6 +1657,70 @@ function renderLogs(rows) {
         </table>
       </div>
     </div>`;
+}
+
+/* ══════════════════════════════════════════
+   DELETE PROGRAM (CASCADE)
+══════════════════════════════════════════ */
+
+function openDeleteProg(id) {
+  const p = _progs.find(x => x.id === id);
+  if (!p) return;
+  _deleteProgId = id;
+
+  const progSubs = _allSubs.filter(s => s.programId === id);
+  const subIds   = progSubs.map(s => s.id);
+  const progPays = _allPayments.filter(pay => subIds.includes(pay.subscriptionId));
+
+  document.getElementById('del-prog-name').textContent = p.name;
+  document.getElementById('del-prog-subs').textContent = progSubs.length;
+  document.getElementById('del-prog-pays').textContent = progPays.length;
+
+  openM('m-delete-prog');
+}
+
+async function confirmDeleteProg() {
+  if (!_deleteProgId) return;
+  const id   = _deleteProgId;
+  const prog = _progs.find(x => x.id === id);
+  const name = prog?.name || '';
+
+  const progSubs = _allSubs.filter(s => s.programId === id);
+  const subIds   = progSubs.map(s => s.id);
+
+  try {
+    // 1. حذف الدفعات المرتبطة بالاشتراكات
+    if (subIds.length) {
+      await fetch(`${SB_URL}/payments?subscriptionId=in.(${subIds.join(',')})`,
+        { method: 'DELETE', headers: _h() });
+    }
+    // 2. حذف الاشتراكات المرتبطة بالبرنامج
+    await fetch(`${SB_URL}/subscriptions?programId=eq.${id}`,
+      { method: 'DELETE', headers: _h() });
+    // 3. حذف سجلات الحضور المرتبطة
+    await fetch(`${SB_URL}/attendance?programId=eq.${id}`,
+      { method: 'DELETE', headers: _h() });
+    // 4. حذف البرنامج نفسه
+    await sbDelete(TB.PROGRAMS, id);
+
+    // تحديث الـ state المحلي
+    _progs       = _progs.filter(x => x.id !== id);
+    _allSubs     = _allSubs.filter(s => s.programId !== id);
+    _allPayments = _allPayments.filter(pay => !subIds.includes(pay.subscriptionId));
+    if (_currentProg?.id === id) {
+      _currentProg = null;
+      _progSubs    = [];
+      _progPays    = [];
+      switchSection('programs');
+    }
+
+    addLog('delete_program', `حذف برنامج: ${name}`);
+    closeM('m-delete-prog');
+    toast(`تم حذف برنامج "${name}" نهائياً ✅`);
+    renderProgs();
+  } catch(e) {
+    toast('خطأ في الحذف: ' + e.message, 'error');
+  }
 }
 
 /* ══════════════════════════════════════════

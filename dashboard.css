@@ -288,6 +288,16 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 #toast.t-success { background: var(--success); }
 #toast.t-error   { background: var(--danger); }
 
+/* ── DELETE CONFIRM MODAL ── */
+.modal-confirm { max-width: 460px; }
+.confirm-icon  { font-size: 2.8rem; text-align: center; margin-bottom: 8px; }
+.confirm-title { font-size: 1.1rem; font-weight: 700; text-align: center; color: var(--text); margin-bottom: 6px; }
+.confirm-msg   { font-size: .87rem; color: var(--muted); text-align: center; line-height: 1.7; }
+.confirm-stats { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin: 14px 0; }
+.confirm-stat  { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 8px 16px; font-size: .83rem; font-weight: 600; color: var(--danger); }
+.btn-danger    { background: var(--danger); color: #fff; border: none; padding: 9px 20px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: .9rem; font-weight: 600; }
+.btn-danger:hover { background: #dc2626; }
+
 /* ── BULK SUBSCRIBE MODAL ── */
 .modal-bulk { max-width: 920px; }
 .bulk-panels { display: grid; grid-template-columns: 1fr 1fr; min-height: 440px; }
