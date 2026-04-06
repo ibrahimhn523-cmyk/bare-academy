@@ -1386,6 +1386,183 @@ function toast(msg, type = 'success') {
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
 
+/* ══════════════════════════════════════════
+   IMPORT STUDENTS
+══════════════════════════════════════════ */
+
+// أعمدة القالب: [اسم العمود في الملف, مفتاح الـ DB, إجباري]
+const IMPORT_COLS = [
+  ['الاسم الثلاثي',    'fullName',         true ],
+  ['رقم الجوال',       'phone',            true ],
+  ['جوال إضافي',       'phone2',           false],
+  ['المرحلة الدراسية', 'category',         false],
+  ['المصدر',           'source',           false],
+  ['تاريخ أول تواصل', 'firstContactDate', false],
+  ['ملاحظات',          'notes',            false],
+];
+
+let _importRows = []; // parsed rows ready to import
+
+function downloadStudentTemplate() {
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel غير محملة بعد، انتظر ثانية', 'warning'); return; }
+  const headers = IMPORT_COLS.map(c => c[0]);
+  const sample  = ['محمد أحمد العتيبي', '0501234567', '', 'أول متوسط', 'مباشر', '2025-01-15', ''];
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([headers, sample]);
+
+  // Column widths
+  ws['!cols'] = headers.map(h => ({ wch: Math.max(h.length * 2, 18) }));
+
+  XLSX.utils.book_append_sheet(wb, ws, 'الطلاب');
+  XLSX.writeFile(wb, 'قالب_استيراد_الطلاب.xlsx');
+}
+
+function openImportModal() {
+  resetImport();
+  openM('m-import');
+}
+
+function resetImport() {
+  _importRows = [];
+  document.getElementById('import-file').value = '';
+  document.getElementById('import-step-upload').style.display  = '';
+  document.getElementById('import-step-preview').style.display = 'none';
+  document.getElementById('import-step-result').style.display  = 'none';
+  document.getElementById('import-confirm-btn').style.display  = 'none';
+  closeM('m-import');
+}
+
+function previewImport(input) {
+  const file = input.files[0]; if (!file) return;
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel غير محملة', 'error'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb   = XLSX.read(data, { type: 'array', cellDates: true });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const raw  = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+
+      if (!raw.length) { toast('الملف فارغ أو لا يحتوي بيانات', 'error'); return; }
+
+      // Map columns (flexible — matches by header name)
+      const colMap = {};
+      IMPORT_COLS.forEach(([colName, key]) => { colMap[colName] = key; });
+
+      _importRows = [];
+      const errors = [];
+
+      raw.forEach((row, i) => {
+        const mapped = { source: 'استيراد', isArchived: false };
+        let hasName = false, hasPhone = false;
+
+        Object.keys(row).forEach(header => {
+          const key = colMap[header.trim()];
+          if (key) {
+            let val = String(row[header] || '').trim();
+            // Format date if needed
+            if (key === 'firstContactDate' && val) {
+              // Try to normalize date to YYYY-MM-DD
+              const d = new Date(val);
+              if (!isNaN(d)) val = d.toISOString().split('T')[0];
+            }
+            mapped[key] = val;
+            if (key === 'fullName' && val.length >= 3) hasName = true;
+            if (key === 'phone' && val.length >= 9)   hasPhone = true;
+          }
+        });
+
+        if (!hasName)  { errors.push(`صف ${i+2}: الاسم مفقود أو قصير`); return; }
+        if (!hasPhone) { errors.push(`صف ${i+2}: رقم الجوال مفقود`); return; }
+        if (!mapped.phone2)           mapped.phone2 = '';
+        if (!mapped.category)         mapped.category = '';
+        if (!mapped.source)           mapped.source = 'استيراد';
+        if (!mapped.firstContactDate) mapped.firstContactDate = null;
+        if (!mapped.notes)            mapped.notes = '';
+
+        _importRows.push(mapped);
+      });
+
+      // Show preview
+      document.getElementById('import-step-upload').style.display  = 'none';
+      document.getElementById('import-step-preview').style.display = '';
+
+      const summaryEl = document.getElementById('import-summary');
+      summaryEl.innerHTML = `
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <span style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:12px;font-size:.82rem;font-weight:600">✅ صالح للاستيراد: ${_importRows.length}</span>
+          ${errors.length ? `<span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:12px;font-size:.82rem;font-weight:600">⚠️ مُستبعد: ${errors.length}</span>` : ''}
+        </div>
+        ${errors.length ? `<div style="background:#fef3c7;border-radius:6px;padding:8px 12px;font-size:.78rem;color:#92400e;max-height:80px;overflow-y:auto">${errors.join('<br>')}</div>` : ''}`;
+
+      // Preview table
+      document.getElementById('import-preview-head').innerHTML =
+        '<th>#</th>' + IMPORT_COLS.map(c => `<th style="font-size:.78rem">${c[0]}</th>`).join('');
+
+      document.getElementById('import-preview-body').innerHTML =
+        _importRows.slice(0, 10).map((r, i) => `<tr>
+          <td style="color:var(--muted);font-size:.75rem">${i+1}</td>
+          ${IMPORT_COLS.map(([,key]) => `<td style="font-size:.78rem;white-space:nowrap">${esc(r[key]||'')}</td>`).join('')}
+        </tr>`).join('') +
+        (_importRows.length > 10 ? `<tr><td colspan="${IMPORT_COLS.length+1}" style="text-align:center;color:var(--muted);font-size:.78rem;padding:8px">… و${_importRows.length - 10} صف إضافي</td></tr>` : '');
+
+      document.getElementById('import-count').textContent = _importRows.length;
+      document.getElementById('import-confirm-btn').style.display = _importRows.length ? '' : 'none';
+
+    } catch(err) {
+      toast('خطأ في قراءة الملف: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function confirmImport() {
+  if (!_importRows.length) return;
+  const btn = document.getElementById('import-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الاستيراد…';
+
+  let success = 0, skipped = 0;
+  const skippedNames = [];
+
+  for (const row of _importRows) {
+    try {
+      await sbInsert(TB.STUDENTS, row);
+      success++;
+    } catch(e) {
+      // Likely duplicate phone
+      skipped++;
+      skippedNames.push(row.fullName);
+    }
+  }
+
+  // Show result
+  document.getElementById('import-step-preview').style.display = 'none';
+  document.getElementById('import-step-result').style.display  = '';
+  btn.style.display = 'none';
+
+  document.getElementById('import-result-body').innerHTML = `
+    <div style="font-size:2.5rem;margin-bottom:12px">${success > 0 ? '🎉' : '⚠️'}</div>
+    <div style="font-size:1.1rem;font-weight:bold;margin-bottom:8px">اكتمل الاستيراد</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">
+      <span style="background:#dcfce7;color:#166534;padding:6px 16px;border-radius:12px;font-weight:600">✅ تم استيراد: ${success}</span>
+      ${skipped ? `<span style="background:#fee2e2;color:#991b1b;padding:6px 16px;border-radius:12px;font-weight:600">⏭️ تم تخطي: ${skipped}</span>` : ''}
+    </div>
+    ${skipped ? `<div style="font-size:.78rem;color:var(--muted)">المتخطون (جوال مكرر): ${skippedNames.slice(0,5).join('، ')}${skippedNames.length>5?'…':''}</div>` : ''}
+    <button class="btn btn-primary" style="margin-top:16px" onclick="finishImport()">إغلاق وتحديث القائمة</button>`;
+
+  if (success > 0) addLog('import_students', `استيراد ${success} طالب من Excel`);
+}
+
+async function finishImport() {
+  closeM('m-import');
+  _importRows = [];
+  await loadStudents();
+  renderStudents();
+  toast('تم تحديث قائمة الطلاب ✅');
+}
+
 function toggleSidebar() {
   const sb = document.getElementById('sidebar');
   const mn = document.getElementById('main');
@@ -1418,6 +1595,7 @@ document.addEventListener('click', e => {
    ACTIVITY LOGS
 ══════════════════════════════════════════ */
 const LOG_ICONS = {
+  import_students  : '📥',
   add_student      : '👤➕',
   edit_student     : '👤✏️',
   archive_student  : '📦',

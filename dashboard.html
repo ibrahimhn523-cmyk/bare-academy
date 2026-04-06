@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>لوحة تحكم بارع</title>
 <link rel="stylesheet" href="./dashboard.css">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -36,6 +37,8 @@
       <div class="page-title">سجل الطلاب <span class="page-sub">جميع الطلاب</span></div>
       <div class="hdr-actions">
         <button class="btn btn-refresh" onclick="loadStudents()">🔄 تحديث</button>
+        <button class="btn btn-outline" onclick="downloadStudentTemplate()">⬇️ قالب Excel</button>
+        <button class="btn btn-outline" onclick="openImportModal()">📥 استيراد</button>
         <button class="btn btn-primary" onclick="openAddStudent()">➕ طالب جديد</button>
       </div>
     </div>
@@ -257,6 +260,56 @@
 <div id="toast"></div>
 
 <!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Modal: Import Students -->
+<div class="overlay" id="m-import">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hdr">
+      <div class="modal-title">📥 استيراد طلاب من Excel</div>
+      <button class="modal-close" onclick="closeM('m-import')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: Upload -->
+      <div id="import-step-upload">
+        <div style="background:var(--bg);border-radius:8px;padding:14px 16px;margin-bottom:16px;font-size:.83rem;line-height:1.8;color:var(--muted)">
+          <strong style="color:var(--primary);display:block;margin-bottom:6px">📋 تعليمات الاستيراد:</strong>
+          <ol style="padding-right:18px">
+            <li>حمّل قالب Excel بالضغط على <strong>⬇️ قالب Excel</strong></li>
+            <li>أدخل بيانات الطلاب في الأعمدة المحددة</li>
+            <li>احفظ الملف ثم ارفعه هنا</li>
+          </ol>
+          <div style="margin-top:10px;padding:8px 12px;background:#fef3c7;border-radius:6px;color:#92400e;font-size:.8rem">
+            ⚠️ الأعمدة الإجبارية: <strong>الاسم الثلاثي</strong> و<strong>رقم الجوال</strong>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>اختر ملف Excel أو CSV</label>
+          <input type="file" id="import-file" accept=".xlsx,.xls,.csv"
+            style="width:100%;padding:10px;border:2px dashed var(--border);border-radius:8px;background:var(--bg);cursor:pointer;font-family:inherit"
+            onchange="previewImport(this)">
+        </div>
+      </div>
+      <!-- Step 2: Preview -->
+      <div id="import-step-preview" style="display:none">
+        <div id="import-summary" style="margin-bottom:12px"></div>
+        <div class="tbl-wrap" style="max-height:300px;overflow-y:auto">
+          <table style="min-width:400px">
+            <thead><tr id="import-preview-head"></tr></thead>
+            <tbody id="import-preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Step 3: Result -->
+      <div id="import-step-result" style="display:none">
+        <div id="import-result-body" style="text-align:center;padding:20px"></div>
+      </div>
+    </div>
+    <div class="modal-footer" id="import-footer">
+      <button class="btn btn-outline" onclick="resetImport()">إلغاء</button>
+      <button class="btn btn-primary" id="import-confirm-btn" onclick="confirmImport()" style="display:none">✅ استيراد (<span id="import-count">0</span> طالب)</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal: Add/Edit Student -->
 <div class="overlay" id="m-student">
