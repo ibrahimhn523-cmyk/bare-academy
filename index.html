@@ -516,8 +516,7 @@
             };
 
             try {
-                const newId = Date.now();
-                const response = await fetch(`${SB_URL}/registrations`, {
+                const response = await fetch(`${SB_URL}/students`, {
                     method:  'POST',
                     headers: {
                         'apikey': SB_KEY,
@@ -526,12 +525,13 @@
                         'Prefer': 'return=minimal'
                     },
                     body: JSON.stringify({
-                        id: newId,
                         fullName: formData.fullName,
                         phone: formData.phone,
                         category: formData.category,
+                        source: 'موقع إلكتروني',
+                        firstContactDate: new Date().toISOString().split('T')[0],
                         notes: '',
-                        createdAt: new Date().toISOString()
+                        isArchived: false
                     })
                 });
 
