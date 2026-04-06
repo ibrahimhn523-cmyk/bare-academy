@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بوابة بارع</title>
+<link rel="stylesheet" href="./portal.css">
+</head>
+<body>
+
+<!-- ══════════════ LOGIN SCREEN ══════════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <img src="image/bare-logo.png" alt="بارع" class="login-logo">
+    <div class="login-title">بوابة بارع</div>
+    <div class="login-sub">نظام إدارة النقاط والأنشطة</div>
+    <div class="form-group">
+      <label>اسم المستخدم</label>
+      <input type="text" id="l-user" placeholder="username" autocomplete="username">
+    </div>
+    <div class="form-group">
+      <label>كلمة المرور</label>
+      <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="l-err"></div>
+    <button class="btn-login" onclick="login()">دخول</button>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div id="app">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <button class="tb-menu" onclick="toggleSidebar()">☰</button>
+    <img src="image/bare-logo.png" alt="بارع" class="tb-logo">
+    <span class="tb-title">أكاديمية بارع</span>
+    <span class="tb-sep"></span>
+    <span class="tb-section" id="tb-section">الرئيسية</span>
+    <span class="tb-spacer"></span>
+    <span class="tb-user" id="tb-user"></span>
+    <span class="tb-role" id="tb-role"></span>
+    <button class="tb-logout" onclick="logout()">خروج</button>
+  </div>
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div style="padding:12px 8px 4px">
+      <div class="nav-section-label">القائمة الرئيسية</div>
+      <div class="nav-item active" id="nav-home" onclick="switchSection('home')">
+        <span class="nav-icon">🏠</span><span>الرئيسية</span>
+      </div>
+      <div class="nav-section-label">قسم النظام</div>
+      <div class="nav-sub-item" id="nav-attendance" onclick="switchSection('attendance')">
+        <span class="nav-icon">✅</span><span>التحضير</span>
+      </div>
+      <div class="nav-sub-item" id="nav-points" onclick="switchSection('points')">
+        <span class="nav-icon">⭐</span><span>النقاط</span>
+      </div>
+      <div class="nav-section-label nav-cultural-label" id="nav-cultural-label">قسم الثقافي</div>
+      <div class="nav-item" id="nav-cultural" onclick="switchSection('cultural')">
+        <span class="nav-icon">🏆</span><span>المسابقات الثقافية</span>
+      </div>
+      <div class="nav-section-label nav-sports-label" id="nav-sports-label">قسم الرياضي</div>
+      <div class="nav-item" id="nav-sports" onclick="switchSection('sports')">
+        <span class="nav-icon">⚽</span><span>البطولات الرياضية</span>
+      </div>
+      <div class="nav-section-label">الصدارة</div>
+      <div class="nav-item" id="nav-leaderboard" onclick="switchSection('leaderboard')">
+        <span class="nav-icon">📊</span><span>لوحة الصدارة</span>
+      </div>
+      <div class="nav-divider" id="nav-admin-div" style="display:none"></div>
+      <div class="nav-item" id="nav-admin" onclick="switchSection('admin')" style="display:none">
+        <span class="nav-icon">🔧</span><span>الإدارة</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main id="main">
+
+    <!-- ══ HOME ══ -->
+    <section class="section active" id="section-home">
+      <div class="page-hdr">
+        <div class="page-title">الرئيسية</div>
+        <button class="btn btn-refresh" onclick="loadHome()">🔄 تحديث</button>
+      </div>
+      <div class="kpi-row" id="home-kpi"></div>
+      <div class="cards-grid" id="home-recent"></div>
+    </section>
+
+    <!-- ══ ATTENDANCE ══ -->
+    <section class="section" id="section-attendance">
+      <div class="page-hdr">
+        <div class="page-title">التحضير <span class="page-sub">قسم النظام</span></div>
+      </div>
+      <div class="prog-select-bar">
+        <label>البرنامج:</label>
+        <select id="att-prog-sel" onchange="onAttProgChange()"><option value="">-- اختر --</option></select>
+        <label>المجموعة:</label>
+        <select id="att-group-sel" onchange="loadAttTable()" disabled><option value="">-- اختر --</option></select>
+        <label>التاريخ:</label>
+        <input type="date" id="att-date" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem" onchange="loadAttTable()">
+      </div>
+      <div id="att-bulk-bar" style="display:none" class="att-bulk-bar">
+        <span style="font-size:.83rem;color:var(--muted)">تحضير جماعي للمحددين:</span>
+        <select id="att-bulk-status">
+          <option>حاضر</option><option>متأخر بعذر</option>
+          <option>متأخر بغير عذر</option><option>غائب بعذر</option><option>غائب بغير عذر</option>
+        </select>
+        <button class="btn btn-sm btn-primary" onclick="applyBulkAtt()">تطبيق</button>
+        <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:140px" oninput="filterAttTable()">
+        <button class="btn btn-sm btn-success" onclick="saveAttendance()">💾 حفظ</button>
+      </div>
+      <div id="att-body">
+        <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة والتاريخ لعرض جدول التحضير</p></div>
+      </div>
+    </section>
+
+    <!-- ══ POINTS ══ -->
+    <section class="section" id="section-points">
+      <div class="page-hdr">
+        <div class="page-title">النقاط <span class="page-sub">قسم النظام</span></div>
+      </div>
+      <div class="prog-select-bar">
+        <label>البرنامج:</label>
+        <select id="pts-prog-sel" onchange="loadPointsSection()"><option value="">-- اختر --</option></select>
+        <div id="pts-quota-wrap" style="display:none;flex:1;min-width:160px">
+          <div style="font-size:.78rem;color:var(--muted)">رصيدك اليوم: <strong id="pts-quota-used">0</strong> / <strong id="pts-quota-max">0</strong></div>
+          <div class="quota-bar-wrap"><div class="quota-bar" id="pts-quota-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div id="pts-body">
+        <div class="empty"><div class="ei">⭐</div><p>اختر البرنامج لعرض نقاط الطلاب</p></div>
+      </div>
+    </section>
+
+    <!-- ══ CULTURAL ══ -->
+    <section class="section" id="section-cultural">
+      <div class="page-hdr">
+        <div class="page-title">المسابقات الثقافية</div>
+        <button class="btn btn-gold" onclick="openCulturalModal()">➕ مسابقة جديدة</button>
+      </div>
+      <div class="prog-select-bar">
+        <label>البرنامج:</label>
+        <select id="cult-prog-sel" onchange="loadCultural()"><option value="">-- اختر --</option></select>
+      </div>
+      <div id="cult-body">
+        <div class="empty"><div class="ei">🏆</div><p>اختر البرنامج لعرض المسابقات</p></div>
+      </div>
+    </section>
+
+    <!-- ══ SPORTS ══ -->
+    <section class="section" id="section-sports">
+      <div class="page-hdr">
+        <div class="page-title">البطولات الرياضية</div>
+        <button class="btn btn-gold" onclick="openSportsModal()">➕ بطولة جديدة</button>
+      </div>
+      <div class="prog-select-bar">
+        <label>البرنامج:</label>
+        <select id="sports-prog-sel" onchange="loadSports()"><option value="">-- اختر --</option></select>
+      </div>
+      <div id="sports-body">
+        <div class="empty"><div class="ei">⚽</div><p>اختر البرنامج لعرض البطولات</p></div>
+      </div>
+    </section>
+
+    <!-- ══ LEADERBOARD ══ -->
+    <section class="section" id="section-leaderboard">
+      <div class="page-hdr">
+        <div class="page-title">لوحة الصدارة</div>
+        <button class="btn btn-outline" id="lb-ext-btn" onclick="openLeaderboardExternal()" style="display:none">🔗 عرض عام</button>
+      </div>
+      <div class="prog-select-bar">
+        <label>البرنامج:</label>
+        <select id="lb-prog-sel" onchange="loadLeaderboard()"><option value="">-- اختر --</option></select>
+      </div>
+      <div id="lb-body">
+        <div class="empty"><div class="ei">📊</div><p>اختر البرنامج لعرض الصدارة</p></div>
+      </div>
+    </section>
+
+    <!-- ══ ADMIN ══ -->
+    <section class="section" id="section-admin">
+      <div class="page-hdr">
+        <div class="page-title">الإدارة <span class="page-sub">Super Admin</span></div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="adm-tab-users"    onclick="admTab('users')"  >👥 المستخدمون</button>
+        <button class="btn btn-outline" id="adm-tab-reasons"  onclick="admTab('reasons')">⭐ بنود النقاط</button>
+        <button class="btn btn-outline" id="adm-tab-log"      onclick="admTab('log')"    >🕑 سجل العمليات</button>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="adm-users">
+        <div class="page-hdr" style="margin-bottom:12px">
+          <div style="font-weight:700">المستخدمون</div>
+          <button class="btn btn-gold btn-sm" onclick="openUserModal()">➕ مستخدم جديد</button>
+        </div>
+        <div class="table-card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>اسم المستخدم</th><th>الدور</th><th>الصلاحيات</th>
+                <th>الرصيد اليومي</th><th>الحالة</th><th>إجراءات</th>
+              </tr></thead>
+              <tbody id="adm-users-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reasons Tab -->
+      <div id="adm-reasons" style="display:none">
+        <div class="page-hdr" style="margin-bottom:12px">
+          <div style="font-weight:700">بنود النقاط الجاهزة</div>
+          <button class="btn btn-gold btn-sm" onclick="openReasonModal()">➕ سبب جديد</button>
+        </div>
+        <div class="table-card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>السبب</th><th>القيمة الافتراضية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+              <tbody id="adm-reasons-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log Tab -->
+      <div id="adm-log" style="display:none">
+        <div class="table-card">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>#</th><th>العملية</th><th>التفاصيل</th><th>الوقت</th></tr></thead>
+              <tbody id="adm-log-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<!-- ══════════════ MODALS ══════════════ -->
+
+<!-- Modal: Add Points -->
+<div class="overlay" id="m-addpts">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">➕ إضافة نقاط</div>
+      <button class="modal-close" onclick="closeM('m-addpts')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="addpts-student-id">
+      <div class="form-group">
+        <label>الطالب</label>
+        <input type="text" id="addpts-student-name" readonly style="background:var(--bg)">
+      </div>
+      <div class="form-group">
+        <label>السبب</label>
+        <select id="addpts-reason" onchange="onReasonChange()">
+          <option value="">-- اختر سبباً --</option>
+          <option value="__custom__">✏️ إدخال يدوي</option>
+        </select>
+      </div>
+      <div class="form-group" id="addpts-custom-wrap" style="display:none">
+        <label>السبب (يدوي)</label>
+        <input type="text" id="addpts-custom-reason" placeholder="اكتب السبب">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>المبلغ</label>
+          <input type="number" id="addpts-amount" min="1" max="1000" placeholder="10">
+        </div>
+        <div class="form-group">
+          <label>ملاحظة</label>
+          <input type="text" id="addpts-note" placeholder="اختياري">
+        </div>
+      </div>
+      <div id="addpts-quota-info" style="font-size:.8rem;color:var(--muted);margin-bottom:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-addpts')">إلغاء</button>
+      <button class="btn btn-gold" onclick="savePoints()">✅ تسجيل</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Points History -->
+<div class="overlay" id="m-ptshistory">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-ptshistory-title">سجل نقاط الطالب</div>
+      <button class="modal-close" onclick="closeM('m-ptshistory')">✕</button>
+    </div>
+    <div class="modal-body" id="m-ptshistory-body"></div>
+  </div>
+</div>
+
+<!-- Modal: Cultural Competition -->
+<div class="overlay" id="m-cultural">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-cultural-title">مسابقة ثقافية</div>
+      <button class="modal-close" onclick="closeM('m-cultural')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cult-edit-id">
+      <div class="form-group">
+        <label>البرنامج</label>
+        <select id="cult-modal-prog"></select>
+      </div>
+      <div class="form-group">
+        <label>اسم المسابقة</label>
+        <input type="text" id="cult-name" placeholder="مسابقة الثقافة الإسلامية">
+      </div>
+      <div class="form-group">
+        <label>النوع</label>
+        <select id="cult-type">
+          <option value="general">عامة</option>
+          <option value="quiz">مسابقة معلومات</option>
+          <option value="speech">خطابة</option>
+          <option value="other">أخرى</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-cultural')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveCultural()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cultural Participants -->
+<div class="overlay" id="m-cult-participants">
+  <div class="modal" style="max-width:680px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-cult-part-title">المشاركون</div>
+      <button class="modal-close" onclick="closeM('m-cult-participants')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="cult-part-comp-id">
+      <!-- Add participant -->
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="flex:1;margin-bottom:0">
+          <label>إضافة مشارك</label>
+          <div class="search-wrap">
+            <input type="text" class="search-input" id="cult-part-search" placeholder="ابحث عن طالب…" oninput="searchCultPart()" autocomplete="off">
+            <span class="search-icon">🔍</span>
+            <div class="search-dropdown" id="cult-part-results" style="display:none"></div>
+          </div>
+        </div>
+        <div class="form-group" style="width:80px;margin-bottom:0">
+          <label>المركز</label>
+          <input type="number" id="cult-part-rank" min="1" placeholder="1">
+        </div>
+        <div class="form-group" style="width:80px;margin-bottom:0">
+          <label>النقاط</label>
+          <input type="number" id="cult-part-pts" min="0" placeholder="50">
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="addCultParticipant()" style="align-self:flex-end;margin-bottom:0">إضافة</button>
+      </div>
+      <!-- Participants table -->
+      <div class="table-card" style="margin-bottom:0">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>المركز</th><th>الاسم</th><th>النقاط</th><th>إجراء</th></tr></thead>
+            <tbody id="cult-part-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-cult-participants')">إغلاق</button>
+      <button class="btn btn-success" id="cult-approve-btn" onclick="approveCultural()">🏆 اعتماد نهائي وترحيل النقاط</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Sports Tournament -->
+<div class="overlay" id="m-sports">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-sports-title">بطولة رياضية</div>
+      <button class="modal-close" onclick="closeM('m-sports')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="sports-edit-id">
+      <div class="form-group">
+        <label>البرنامج</label>
+        <select id="sports-modal-prog"></select>
+      </div>
+      <div class="form-group">
+        <label>اسم البطولة</label>
+        <input type="text" id="sports-name" placeholder="بطولة كرة القدم الخماسية">
+      </div>
+      <div class="form-group">
+        <label>النوع</label>
+        <select id="sports-type">
+          <option value="league">دوري</option>
+          <option value="knockout">خروج مغلوب</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-sports')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveSports()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Manage Tournament -->
+<div class="overlay" id="m-tournament">
+  <div class="modal" style="max-width:760px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-tournament-title">إدارة البطولة</div>
+      <button class="modal-close" onclick="closeM('m-tournament')">✕</button>
+    </div>
+    <div class="modal-body" id="m-tournament-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-tournament')">إغلاق</button>
+      <button class="btn btn-success" id="sports-approve-btn" onclick="approveSports()">🏆 اعتماد نهائي</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Match Result -->
+<div class="overlay" id="m-match">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-match-title">نتيجة المباراة</div>
+      <button class="modal-close" onclick="closeM('m-match')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="match-id">
+      <div class="form-row">
+        <div class="form-group" style="flex:1;text-align:center">
+          <label id="match-t1-name">الفريق الأول</label>
+          <input type="number" id="match-t1-score" min="0" value="0" style="text-align:center;font-size:1.5rem;font-weight:bold">
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:8px;font-size:1.5rem;color:var(--muted)">—</div>
+        <div class="form-group" style="flex:1;text-align:center">
+          <label id="match-t2-name">الفريق الثاني</label>
+          <input type="number" id="match-t2-score" min="0" value="0" style="text-align:center;font-size:1.5rem;font-weight:bold">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>الجولة</label>
+        <input type="text" id="match-round" placeholder="مثال: الجولة الأولى">
+      </div>
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="match-date">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-match')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveMatch()">💾 حفظ النتيجة</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Admin User -->
+<div class="overlay" id="m-user">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-user-title">مستخدم جديد</div>
+      <button class="modal-close" onclick="closeM('m-user')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="u-edit-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label>اسم المستخدم</label>
+          <input type="text" id="u-username" placeholder="moderator1">
+        </div>
+        <div class="form-group">
+          <label>كلمة المرور</label>
+          <input type="text" id="u-password" placeholder="••••••••">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>الدور</label>
+          <select id="u-role" onchange="onRoleChange()">
+            <option value="moderator">مشرف</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>الرصيد اليومي (نقاط)</label>
+          <input type="number" id="u-quota" value="100" min="0">
+        </div>
+      </div>
+      <div class="form-group" id="u-perms-wrap">
+        <label>الصلاحيات</label>
+        <div class="perm-grid">
+          <span class="perm-chip on" data-key="attendance" onclick="togglePerm(this)">✅ التحضير</span>
+          <span class="perm-chip on" data-key="points"     onclick="togglePerm(this)">⭐ النقاط</span>
+          <span class="perm-chip"   data-key="cultural"   onclick="togglePerm(this)">🏆 الثقافي</span>
+          <span class="perm-chip"   data-key="sports"     onclick="togglePerm(this)">⚽ الرياضي</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-user')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveUser()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Point Reason -->
+<div class="overlay" id="m-reason">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="m-reason-title">سبب جديد</div>
+      <button class="modal-close" onclick="closeM('m-reason')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="r-edit-id">
+      <div class="form-group">
+        <label>اسم السبب</label>
+        <input type="text" id="r-label" placeholder="مشاركة فعّالة">
+      </div>
+      <div class="form-group">
+        <label>القيمة الافتراضية</label>
+        <input type="number" id="r-value" value="10" min="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-reason')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveReason()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script src="./portal.js"></script>
+</body>
+</html>

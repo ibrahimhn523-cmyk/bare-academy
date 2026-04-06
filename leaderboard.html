@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الصدارة — أكاديمية بارع</title>
+<style>
+@font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Regular.otf') format('opentype'); }
+@font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Bold.otf') format('opentype'); font-weight:bold; }
+:root {
+  --primary:#2D3651; --gold:#d4af37; --gold2:#c19d2e;
+  --bg:#0f172a; --card:#1e293b; --border:#334155;
+  --white:#ffffff; --muted:#64748b;
+  --success:#22c55e; --danger:#ef4444;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'Handicrafts', Tahoma, Arial, sans-serif;
+  background:var(--bg); color:var(--white);
+  min-height:100vh; overflow-x:hidden;
+  direction:rtl;
+}
+
+/* Header */
+.lb-header {
+  background:linear-gradient(135deg, var(--primary) 0%, #0f172a 100%);
+  border-bottom:3px solid var(--gold);
+  padding:20px 24px 16px;
+  text-align:center;
+}
+.lb-header img { width:60px; height:auto; margin:0 auto 10px; display:block; }
+.lb-header h1 { font-size:1.8rem; font-weight:bold; color:var(--white); }
+.lb-header .prog-name { color:var(--gold); font-size:1rem; margin-top:4px; }
+.lb-header .refresh-info { font-size:.75rem; color:var(--muted); margin-top:8px; }
+
+/* Loading */
+.loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:1.1rem; }
+.loading .spin { display:inline-block; font-size:2rem; animation:spin 1.2s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* Podium */
+.podium-section { padding:30px 20px 10px; max-width:600px; margin:0 auto; }
+.podium { display:flex; align-items:flex-end; justify-content:center; gap:16px; }
+.pod-item { text-align:center; flex:1; max-width:160px; }
+.pod-bar-1 { height:100px; background:linear-gradient(180deg,rgba(212,175,55,.3),rgba(212,175,55,.1)); border-radius:8px 8px 0 0; margin-bottom:0; }
+.pod-bar-2 { height:70px; background:linear-gradient(180deg,rgba(148,163,184,.3),rgba(148,163,184,.1)); border-radius:8px 8px 0 0; }
+.pod-bar-3 { height:50px; background:linear-gradient(180deg,rgba(180,83,9,.3),rgba(180,83,9,.1)); border-radius:8px 8px 0 0; }
+.pod-card {
+  background:var(--card); border-radius:12px; padding:14px 10px;
+  position:relative; overflow:hidden;
+}
+.pod-1 .pod-card { border:2px solid var(--gold); }
+.pod-2 .pod-card { border:2px solid #64748b; }
+.pod-3 .pod-card { border:2px solid #78350f; }
+.pod-medal { font-size:2rem; margin-bottom:6px; }
+.pod-name { font-weight:bold; font-size:.88rem; margin-bottom:4px; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pod-group { font-size:.72rem; color:var(--muted); margin-bottom:6px; }
+.pod-pts { font-weight:bold; color:var(--gold); font-size:1.1rem; }
+.pod-pts span { font-size:.72rem; color:var(--muted); }
+.pod-glow-1 { position:absolute; inset:0; background:radial-gradient(circle at 50% 0%, rgba(212,175,55,.15), transparent 70%); pointer-events:none; }
+
+/* List */
+.list-section { max-width:700px; margin:20px auto; padding:0 16px 40px; }
+.list-item {
+  display:flex; align-items:center; gap:14px;
+  background:var(--card); border-radius:10px;
+  padding:12px 16px; margin-bottom:8px;
+  border:1px solid var(--border);
+  transition:transform .2s;
+}
+.list-item:hover { transform:translateX(-4px); border-color:var(--gold2); }
+.list-rank { font-size:1rem; font-weight:bold; color:var(--muted); width:28px; text-align:center; flex-shrink:0; }
+.list-name { flex:1; font-weight:600; font-size:.9rem; }
+.list-group { font-size:.75rem; color:var(--muted); }
+.list-pts { font-weight:bold; color:var(--gold); font-size:1rem; white-space:nowrap; }
+
+/* Empty */
+.empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
+.empty-state .ei { font-size:3rem; margin-bottom:12px; }
+
+/* Ticker */
+.ticker-wrap { background:rgba(212,175,55,.08); border-bottom:1px solid rgba(212,175,55,.2); padding:8px 0; overflow:hidden; }
+.ticker { display:flex; gap:40px; animation:scroll-ticker 25s linear infinite; width:max-content; padding:0 16px; }
+.ticker-item { font-size:.82rem; color:var(--gold); white-space:nowrap; }
+@keyframes scroll-ticker { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+/* Countdown badge */
+.refresh-badge {
+  position:fixed; bottom:16px; left:16px;
+  background:rgba(30,41,59,.9); border:1px solid var(--border);
+  border-radius:20px; padding:6px 14px;
+  font-size:.75rem; color:var(--muted);
+}
+</style>
+</head>
+<body>
+
+<div class="lb-header">
+  <img src="image/bare-logo.png" alt="بارع">
+  <h1>لوحة الصدارة 🏆</h1>
+  <div class="prog-name" id="prog-name">جاري التحميل…</div>
+  <div class="refresh-info">يتحدث تلقائياً كل دقيقة</div>
+</div>
+
+<div class="ticker-wrap" id="ticker-wrap" style="display:none">
+  <div class="ticker" id="ticker"></div>
+</div>
+
+<div id="lb-content">
+  <div class="loading"><div class="spin">⏳</div><p style="margin-top:12px">جاري تحميل الصدارة…</p></div>
+</div>
+
+<div class="refresh-badge" id="refresh-badge">🔄 تحديث بعد <span id="countdown">60</span>ث</div>
+
+<script>
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' };
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function load() {
+  const params = new URLSearchParams(location.search);
+  const progId = parseInt(params.get('prog')) || 0;
+  if (!progId) {
+    document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">⚠️</div><p>يرجى تحديد البرنامج عبر المعامل prog في الرابط</p><p style="margin-top:8px;font-size:.85rem;color:var(--muted)">مثال: leaderboard.html?prog=1</p></div>`;
+    return;
+  }
+
+  try {
+    const [progRes, subsRes, ptsRes] = await Promise.all([
+      fetch(`${SB_URL}/programs?id=eq.${progId}&select=name`, { headers: H }),
+      fetch(`${SB_URL}/subscriptions?programId=eq.${progId}&select=studentId,studentName,groupName`, { headers: H }),
+      fetch(`${SB_URL}/points?programId=eq.${progId}&select=studentId,amount`, { headers: H })
+    ]);
+
+    const [progs, subs, pts] = await Promise.all([progRes.json(), subsRes.json(), ptsRes.json()]);
+
+    document.getElementById('prog-name').textContent = progs[0]?.name || 'البرنامج';
+    document.title = `صدارة: ${progs[0]?.name || 'بارع'}`;
+
+    // Build rankings
+    const ptMap = {};
+    pts.forEach(p => { ptMap[parseInt(p.studentId)] = (ptMap[parseInt(p.studentId)]||0) + (parseInt(p.amount)||0); });
+
+    const ranked = subs
+      .map(s => ({ id: parseInt(s.studentId), name: s.studentName||'', group: s.groupName||'', pts: ptMap[parseInt(s.studentId)]||0 }))
+      .filter((v,i,a) => a.findIndex(x=>x.id===v.id)===i)
+      .sort((a,b) => b.pts - a.pts);
+
+    if (!ranked.length) {
+      document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">📊</div><p>لا يوجد مشتركون بعد</p></div>`;
+      return;
+    }
+
+    // Ticker
+    const tickerEl = document.getElementById('ticker');
+    const tickerWrap = document.getElementById('ticker-wrap');
+    const tickerContent = ranked.slice(0,10).map(r => `<span class="ticker-item">🏆 ${esc(r.name)} — ${r.pts} نقطة</span>`).join('');
+    tickerEl.innerHTML = tickerContent + tickerContent; // double for seamless loop
+    tickerWrap.style.display = '';
+
+    // Render
+    render(ranked);
+  } catch(e) {
+    document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">⚠️</div><p>خطأ في التحميل: ${e.message}</p></div>`;
+  }
+}
+
+function render(ranked) {
+  const top3 = ranked.slice(0, 3);
+  const rest = ranked.slice(3);
+  const medals = ['🥈','🥇','🥉'];
+  const bars   = ['pod-bar-2','pod-bar-1','pod-bar-3'];
+  const cls    = ['pod-2','pod-1','pod-3'];
+  // Order: 2nd center-left, 1st center, 3rd center-right
+  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+
+  const podiumHtml = `
+    <div class="podium-section">
+      <div class="podium">
+        ${order.map((p) => {
+          const medal = p === top3[0] ? '🥇' : p === top3[1] ? '🥈' : '🥉';
+          const bar   = p === top3[0] ? 'pod-bar-1' : p === top3[1] ? 'pod-bar-2' : 'pod-bar-3';
+          const podCls= p === top3[0] ? 'pod-1' : p === top3[1] ? 'pod-2' : 'pod-3';
+          return `<div class="pod-item ${podCls}">
+            <div class="${bar}"></div>
+            <div class="pod-card">
+              ${podCls === 'pod-1' ? '<div class="pod-glow-1"></div>' : ''}
+              <div class="pod-medal">${medal}</div>
+              <div class="pod-name" title="${esc(p.name)}">${esc(p.name)}</div>
+              <div class="pod-group">${esc(p.group)}</div>
+              <div class="pod-pts">${p.pts} <span>نقطة</span></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+
+  const listHtml = rest.length ? `
+    <div class="list-section">
+      ${rest.map((p, i) => `
+        <div class="list-item">
+          <span class="list-rank">${i+4}</span>
+          <div style="flex:1">
+            <div class="list-name">${esc(p.name)}</div>
+            <div class="list-group">${esc(p.group)}</div>
+          </div>
+          <span class="list-pts">${p.pts} نقطة</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  document.getElementById('lb-content').innerHTML = podiumHtml + listHtml;
+}
+
+// Countdown + auto refresh
+let _countdown = 60;
+setInterval(() => {
+  _countdown--;
+  document.getElementById('countdown').textContent = _countdown;
+  if (_countdown <= 0) { _countdown = 60; load(); }
+}, 1000);
+
+load();
+</script>
+</body>
+</html>
