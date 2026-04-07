@@ -691,6 +691,39 @@
   </div>
 </div>
 
+<!-- ══ WHATSAPP MODAL ══ -->
+<div class="overlay" id="m-whatsapp">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <div class="modal-title">📱 إرسال واتساب</div>
+      <button class="modal-close" onclick="closeM('m-whatsapp')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="wa-student-info" style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.88rem"></div>
+      <div class="fg" style="margin-bottom:14px">
+        <label>نوع الرسالة</label>
+        <select id="wa-type" onchange="onWaTypeChange()">
+          <option value="paid">✅ تم السداد</option>
+          <option value="subscribed">📋 تم الاشتراك</option>
+          <option value="reminder">⏰ تذكير بالسداد</option>
+          <option value="expiring">🔔 إعلام بقرب الانتهاء</option>
+          <option value="expired">🔄 إعلام بانتهاء الاشتراك</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label>نص الرسالة <span style="font-size:.74rem;color:var(--muted)">(يمكنك التعديل)</span></label>
+        <textarea id="wa-msg" rows="10" style="font-family:inherit;font-size:.86rem;line-height:1.7;direction:rtl"></textarea>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-whatsapp')">إلغاء</button>
+      <button class="btn" onclick="sendWhatsApp()" style="background:#25d366;color:#fff;border:none;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:.88rem;font-weight:600">
+        <span style="font-size:1rem">📱</span> إرسال واتساب
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="./dashboard.js"></script>
 </body>
 </html>

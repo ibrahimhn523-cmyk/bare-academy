@@ -94,6 +94,7 @@ let _subMultiSel   = new Set();         // IDs المحددة في وضع الت
 let _deleteProgId         = null;        // ID البرنامج المراد حذفه
 let _bulkSelected         = new Set();  // IDs المحددة في الاشتراك الجماعي
 let _bulkFilteredStudents = [];         // الطلاب المعروضون بعد الفلتر
+let _waSubId              = null;       // ID الاشتراك المفتوح في modal الواتساب
 
 /* ══════════════════════════════════════════
    NAVIGATION
@@ -719,6 +720,7 @@ function renderSubscribers() {
       <td>${rem > 0 ? `<strong style="color:var(--danger)">${rem.toLocaleString()} ر.س</strong>` : '<span style="color:var(--success)">✅</span>'}</td>
       <td>
         <div class="actions">
+          <button class="abt abt-wa"    title="إرسال واتساب" onclick="openWhatsApp(${s.id})">📱</button>
           <button class="abt abt-pay"   title="الدفعات"  onclick="openSubPayments(${s.id})">💰</button>
           <button class="abt abt-edit"  title="تعديل"    onclick="openEditSub(${s.id})">✏️</button>
           <button class="abt abt-delete" title="حذف"     onclick="deleteProgSub(${s.id})">🗑️</button>
@@ -1424,6 +1426,67 @@ function calcEndFromSessions(startDate, sessionCount, progDays) {
     if (count < sessionCount) d.setDate(d.getDate() + 1);
   }
   return d.toISOString().split('T')[0];
+}
+
+/* ══════════════════════════════════════════
+   WHATSAPP
+══════════════════════════════════════════ */
+function openWhatsApp(subId) {
+  const s = _progSubs.find(x => x.id === subId); if (!s) return;
+  _waSubId = subId;
+
+  const { paid, due, rem, payStatus } = getSubPayInfo(s);
+  document.getElementById('wa-student-info').innerHTML =
+    `<span>👤 <strong>${esc(s.studentName)}</strong></span>
+     <span style="margin:0 12px;color:var(--muted)">|</span>
+     <span dir="ltr">📞 ${s.phone}</span>
+     <span style="margin:0 12px;color:var(--muted)">|</span>
+     <span>💰 المتبقي: <strong style="color:var(--danger)">${rem.toLocaleString()} ر.س</strong></span>`;
+
+  const typeEl = document.getElementById('wa-type');
+  if (payStatus === 'مسدد')      typeEl.value = 'paid';
+  else if (payStatus === 'جزئي') typeEl.value = 'reminder';
+  else                           typeEl.value = 'subscribed';
+
+  onWaTypeChange();
+  openM('m-whatsapp');
+}
+
+function onWaTypeChange() {
+  const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
+  document.getElementById('wa-msg').value = buildWhatsAppMsg(document.getElementById('wa-type').value, s);
+}
+
+function buildWhatsAppMsg(type, s) {
+  const { paid, due, rem } = getSubPayInfo(s);
+  const name     = s.studentName;
+  const start    = fmtDate(s.startDate);
+  const end      = fmtDate(s.endDate);
+  const paidFmt  = paid.toLocaleString() + ' ريال';
+  const dueFmt   = due.toLocaleString()  + ' ريال';
+
+  switch (type) {
+    case 'paid':
+      return `مساء الخير 🌿\nتم استلام رسوم الاشتراك 💳\n👤 الطالب: ${name}\n💰 المبلغ: ${paidFmt}\n\n⏳ مدة الاشتراك:\nمن ${start} إلى ${end}\n\nشكرًا لتعاونكم، وفي حال وجود أي استفسار يسعدنا تواصلكم معنا 🤝`;
+    case 'subscribed':
+      return `مساء الخير 🌿\nنود إفادتكم بأنه تم تسجيل ابنكم في البرنامج بنجاح، على أن يتم استكمال سداد رسوم الاشتراك لاحقًا بإذن الله.\n\n👤 الطالب: ${name}\n💰 قيمة الرسوم: ${dueFmt}\n\n⏳ مدة الاشتراك:\nمن ${start} إلى ${end}\n\nنسعد بانضمام ابنكم معنا، ويسعدنا تواصلكم معنا في حال الرغبة في السداد أو وجود أي استفسار 🤝`;
+    case 'reminder':
+      return `مساء الخير 🌿\nتذكير بسداد رسوم الاشتراك ⏰\n\n👤 ${name} — 💰 ${dueFmt}\n⏳ من ${start} إلى ${end}\n\nشكرًا لتعاونكم، وللاستفسار تواصلوا معنا 📞`;
+    case 'expiring':
+      return `مساء الخير 🌿\nنود إفادتكم بقرب انتهاء اشتراك ابنكم في البرنامج، حيث يتبقى على نهاية الاشتراك أيام قليلة.\n\n👤 الطالب: ${name}\n⏳ تاريخ نهاية الاشتراك: ${end}\n\nوللتجديد، نأمل إرسال كلمة «تجديد»، وسيتم التواصل معكم مباشرة بإذن الله 🔔\n\nشاكرين تعاونكم، ويسعدنا استمرار ابنكم معنا 🌱`;
+    case 'expired':
+      return `مساء الخير 🌿\nنود إفادتكم بانتهاء اشتراك ابنكم في البرنامج.\n\n👤 الطالب: ${name}\n📅 انتهى الاشتراك بتاريخ: ${end}\n\nوللتجديد، نأمل إرسال كلمة «تجديد»، وسيتم التواصل معكم مباشرة بإذن الله 🔄\n\nشكرًا لتعاونكم، ويسعدنا استمرار ابنكم معنا 🤝`;
+    default: return '';
+  }
+}
+
+function sendWhatsApp() {
+  const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
+  const phone = (s.phone || '').replace(/\D/g, '');
+  const intlPhone = phone.startsWith('0') ? '966' + phone.slice(1) : phone;
+  const msg = document.getElementById('wa-msg').value;
+  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  closeM('m-whatsapp');
 }
 
 /* ══════════════════════════════════════════
