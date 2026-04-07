@@ -89,6 +89,8 @@ let _currentView = 'cards';
 let _sidebarOpen = true;
 let _activeSection = 'students';
 let _subStudentId  = null; // selected student in m-sub modal
+let _subMode       = 'single';          // 'single' | 'multi'
+let _subMultiSel   = new Set();         // IDs المحددة في وضع التحديد المتعدد
 let _deleteProgId         = null;        // ID البرنامج المراد حذفه
 let _bulkSelected         = new Set();  // IDs المحددة في الاشتراك الجماعي
 let _bulkFilteredStudents = [];         // الطلاب المعروضون بعد الفلتر
@@ -730,6 +732,8 @@ function renderSubscribers() {
 function openAddSub() {
   if (!_currentProg) return;
   _subStudentId = null;
+  _subMode = 'single';
+  _subMultiSel.clear();
   document.getElementById('sub-edit-id').value      = '';
   document.getElementById('sub-student-id').value   = '';
   document.getElementById('sub-student-search').value = '';
@@ -737,6 +741,10 @@ function openAddSub() {
   document.getElementById('sub-selected-student').style.display = 'none';
   document.getElementById('sub-new-wrap').style.display = 'none';
   document.getElementById('sub-new-btn').textContent = '➕ طالب جديد غير موجود؟';
+  document.getElementById('sub-single-wrap').style.display = '';
+  document.getElementById('sub-multi-wrap').style.display  = 'none';
+  document.getElementById('sub-mode-single-btn').classList.add('active');
+  document.getElementById('sub-mode-multi-btn').classList.remove('active');
 
   const groups = (_currentProg.groups || '').split('،').map(s => s.trim()).filter(Boolean);
   document.getElementById('sub-group').innerHTML =
@@ -756,6 +764,60 @@ function openAddSub() {
 
   document.getElementById('m-sub-title').textContent = '➕ إضافة مشترك';
   openM('m-sub');
+}
+
+/* ── وضع الاختيار: فردي / متعدد ── */
+function setSubMode(mode) {
+  _subMode = mode;
+  document.getElementById('sub-mode-single-btn').classList.toggle('active', mode === 'single');
+  document.getElementById('sub-mode-multi-btn').classList.toggle('active', mode === 'multi');
+  document.getElementById('sub-single-wrap').style.display   = mode === 'single' ? '' : 'none';
+  document.getElementById('sub-multi-wrap').style.display    = mode === 'multi'  ? '' : 'none';
+  document.getElementById('sub-new-wrap').style.display      = 'none';
+  document.getElementById('sub-new-btn').textContent         = '➕ طالب جديد غير موجود؟';
+  document.getElementById('m-sub-title').textContent =
+    mode === 'multi' ? '➕ إضافة مشتركين (متعدد)' : '➕ إضافة مشترك';
+  if (mode === 'multi') { _subMultiSel.clear(); renderSubMultiList(); }
+}
+
+function renderSubMultiList() {
+  const q    = (document.getElementById('sub-multi-search')?.value || '').toLowerCase();
+  const list = document.getElementById('sub-multi-list');
+  // استبعاد المشتركين الحاليين في البرنامج
+  const currentIds = new Set(_progSubs.map(s => s.studentId));
+  let filtered = _students.filter(s => !s.isArchived && !currentIds.has(s.id));
+  if (q) filtered = filtered.filter(s => s.fullName.toLowerCase().includes(q) || s.phone.includes(q));
+
+  document.getElementById('sub-multi-count').textContent =
+    _subMultiSel.size ? `✅ ${_subMultiSel.size} محدد` : `${filtered.length} طالب`;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="bulk-empty">لا يوجد طلاب غير مشتركين</div>'; return;
+  }
+  list.innerHTML = filtered.map(s => `
+    <div class="bulk-student-item ${_subMultiSel.has(s.id) ? 'selected' : ''}" onclick="toggleSubMultiStudent(${s.id})">
+      <input type="checkbox" ${_subMultiSel.has(s.id) ? 'checked' : ''} onclick="event.stopPropagation();toggleSubMultiStudent(${s.id})" style="accent-color:var(--primary);width:14px;height:14px;flex-shrink:0">
+      <div style="flex:1;min-width:0">
+        <div class="bulk-st-name">${esc(s.fullName)}</div>
+        <div class="bulk-st-meta" dir="ltr">${s.phone}</div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleSubMultiStudent(id) {
+  if (_subMultiSel.has(id)) _subMultiSel.delete(id);
+  else _subMultiSel.add(id);
+  renderSubMultiList();
+}
+
+function toggleSubMultiAll(cb) {
+  const q = (document.getElementById('sub-multi-search')?.value || '').toLowerCase();
+  const currentIds = new Set(_progSubs.map(s => s.studentId));
+  let filtered = _students.filter(s => !s.isArchived && !currentIds.has(s.id));
+  if (q) filtered = filtered.filter(s => s.fullName.toLowerCase().includes(q) || s.phone.includes(q));
+  if (cb.checked) filtered.forEach(s => _subMultiSel.add(s.id));
+  else _subMultiSel.clear();
+  renderSubMultiList();
 }
 
 function searchStudentsForSub() {
@@ -841,7 +903,63 @@ function onSessionsChange() {
 async function saveSub() {
   if (!_currentProg) return;
 
-  // Resolve student
+  // ── وضع التحديد المتعدد ──
+  if (_subMode === 'multi') {
+    if (!_subMultiSel.size) { toast('يرجى تحديد طالب واحد على الأقل', 'error'); return; }
+    const groupName = document.getElementById('sub-group').value;
+    const subType   = document.getElementById('sub-type').value;
+    const startDate = document.getElementById('sub-start').value;
+    const endDate   = document.getElementById('sub-end').value;
+    const sessions  = parseInt(document.getElementById('sub-sessions').value) || 0;
+    const amountDue = parseFloat(document.getElementById('sub-amount-due').value) || 0;
+    const notes     = document.getElementById('sub-notes').value.trim();
+    const payAmt    = parseFloat(document.getElementById('sub-pay-amount').value) || 0;
+    const payDate   = document.getElementById('sub-pay-date').value;
+    const payMethod = document.getElementById('sub-pay-method').value;
+    const payNote   = document.getElementById('sub-pay-note').value;
+    if (!startDate || !endDate) { toast('يرجى تحديد تواريخ الاشتراك', 'error'); return; }
+
+    const ids = [..._subMultiSel];
+    let done = 0;
+    try {
+      for (const sid of ids) {
+        const st = _students.find(s => s.id === sid); if (!st) continue;
+        const subData = {
+          studentId: sid, studentName: st.fullName, phone: st.phone, category: st.category || '',
+          programId: _currentProg.id, programName: _currentProg.name,
+          groupName, subType, paymentType: subType,
+          startDate, endDate, sessionCount: sessions, amountDue,
+          status: subStatus(endDate), notes
+        };
+        const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
+        const subId = created ? parseInt(created.id) : Date.now() + done;
+        _progSubs.push({ id: subId, ...subData });
+        _allSubs.push({ id: subId, ...subData });
+        if (payAmt > 0) {
+          const payData = {
+            subscriptionId: subId, studentId: sid, studentName: st.fullName,
+            amount: payAmt, paid: payAmt, paidAt: payDate, date: payDate,
+            method: payMethod, note: payNote, notes: payNote,
+            required: amountDue, remaining: Math.max(0, amountDue - payAmt),
+            paymentStatus: payAmt >= amountDue ? 'مسدد بالكامل' : 'مسدد جزئياً',
+            installmentNum: 1, startDate, endDate
+          };
+          await sbInsert(TB.PAYMENTS, payData);
+          _progPays.push({ id: Date.now() + done, subscriptionId: subId, studentId: sid, amount: payAmt, paidAt: payDate, method: payMethod, note: payNote });
+          _allPayments.push({ id: Date.now() + done + 1, subscriptionId: subId, studentId: sid, amount: payAmt, paidAt: payDate, method: payMethod, note: payNote });
+        }
+        done++;
+      }
+      addLog('bulk_subscribe', `اشتراك جماعي: ${done} طالب ← ${_currentProg.name}`);
+      toast(`تم إضافة ${done} مشترك بنجاح ✅`);
+      closeM('m-sub');
+      renderSubscribers();
+      renderStudentStats();
+    } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+    return;
+  }
+
+  // ── وضع الطالب الفردي ──
   let studentId = parseInt(document.getElementById('sub-student-id').value) || 0;
   let studentName = '', studentPhone = '', studentCat = '';
 

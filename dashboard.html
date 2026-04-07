@@ -382,18 +382,43 @@
       <input type="hidden" id="sub-student-id">
 
       <!-- اختيار الطالب -->
-      <div class="form-divider">👤 اختيار الطالب</div>
-      <div class="frow single">
-        <div class="fg">
-          <label>بحث عن طالب موجود</label>
-          <div class="search-wrap">
-            <input type="text" id="sub-student-search" placeholder="اكتب الاسم أو الجوال..." oninput="searchStudentsForSub()" autocomplete="off">
-            <div class="search-dropdown" id="sub-student-results" style="display:none"></div>
-          </div>
+      <div class="form-divider" style="display:flex;align-items:center;justify-content:space-between">
+        <span>👤 اختيار الطالب</span>
+        <div class="sub-mode-toggle">
+          <button class="sub-mode-btn active" id="sub-mode-single-btn" onclick="setSubMode('single')">فردي</button>
+          <button class="sub-mode-btn"        id="sub-mode-multi-btn"  onclick="setSubMode('multi')">تحديد متعدد</button>
         </div>
       </div>
-      <div id="sub-selected-student" style="display:none"></div>
-      <button type="button" class="btn btn-secondary" id="sub-new-btn" onclick="toggleNewStudent()" style="font-size:.82rem;margin-bottom:10px">➕ طالب جديد غير موجود؟</button>
+
+      <!-- وضع فردي -->
+      <div id="sub-single-wrap">
+        <div class="frow single">
+          <div class="fg">
+            <label>بحث عن طالب موجود</label>
+            <div class="search-wrap">
+              <input type="text" id="sub-student-search" placeholder="اكتب الاسم أو الجوال..." oninput="searchStudentsForSub()" autocomplete="off">
+              <div class="search-dropdown" id="sub-student-results" style="display:none"></div>
+            </div>
+          </div>
+        </div>
+        <div id="sub-selected-student" style="display:none"></div>
+        <button type="button" class="btn btn-secondary" id="sub-new-btn" onclick="toggleNewStudent()" style="font-size:.82rem;margin-bottom:10px">➕ طالب جديد غير موجود؟</button>
+      </div>
+
+      <!-- وضع متعدد -->
+      <div id="sub-multi-wrap" style="display:none">
+        <div class="bulk-search-row" style="margin-bottom:8px">
+          <input type="text" id="sub-multi-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderSubMultiList()">
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:.82rem">
+          <input type="checkbox" id="sub-multi-all" onchange="toggleSubMultiAll(this)" style="accent-color:var(--primary);width:14px;height:14px">
+          <label for="sub-multi-all" style="cursor:pointer">تحديد الكل</label>
+          <span id="sub-multi-count" style="margin-right:auto;color:var(--primary);font-weight:600"></span>
+        </div>
+        <div class="bulk-student-list" id="sub-multi-list" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          <div class="bulk-empty">جاري التحميل…</div>
+        </div>
+      </div>
 
       <!-- بيانات طالب جديد -->
       <div id="sub-new-wrap" style="display:none;background:var(--bg);border-radius:8px;padding:12px;margin-bottom:10px">
