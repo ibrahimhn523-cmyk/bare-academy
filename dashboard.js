@@ -938,11 +938,8 @@ async function saveSub() {
         if (payAmt > 0) {
           const payData = {
             subscriptionId: subId, studentId: sid, studentName: st.fullName,
-            amount: payAmt, paid: payAmt, paidAt: payDate, date: payDate,
-            method: payMethod, note: payNote, notes: payNote,
-            required: amountDue, remaining: Math.max(0, amountDue - payAmt),
-            paymentStatus: payAmt >= amountDue ? 'مسدد بالكامل' : 'مسدد جزئياً',
-            installmentNum: 1, startDate, endDate
+            amount: payAmt, paidAt: payDate,
+            method: payMethod, note: payNote
           };
           await sbInsert(TB.PAYMENTS, payData);
           _progPays.push({ id: Date.now() + done, subscriptionId: subId, studentId: sid, amount: payAmt, paidAt: payDate, method: payMethod, note: payNote });
@@ -1025,15 +1022,10 @@ async function saveSub() {
     if (!editId && payAmt > 0) {
       const payData = {
         subscriptionId: subId, studentId, studentName,
-        amount: payAmt, paid: payAmt,
+        amount: payAmt,
         paidAt: document.getElementById('sub-pay-date').value,
-        date:   document.getElementById('sub-pay-date').value,
         method: document.getElementById('sub-pay-method').value,
-        note:   document.getElementById('sub-pay-note').value,
-        notes:  document.getElementById('sub-pay-note').value,
-        required: amountDue, remaining: Math.max(0, amountDue - payAmt),
-        paymentStatus: payAmt >= amountDue ? 'مسدد بالكامل' : 'مسدد جزئياً',
-        installmentNum: 1, startDate, endDate
+        note:   document.getElementById('sub-pay-note').value
       };
       await sbInsert(TB.PAYMENTS, payData);
       _progPays.push({ id: Date.now(), subscriptionId: subId, studentId, amount: payAmt, paidAt: payData.date, method: payData.method, note: payData.note });
@@ -1144,11 +1136,7 @@ async function saveNewPayment() {
   try {
     await sbInsert(TB.PAYMENTS, {
       subscriptionId: subId, studentId: sub?.studentId || 0, studentName: sub?.studentName || '',
-      amount, paid: amount, paidAt, date: paidAt,
-      method, note, notes: note,
-      required: sub?.amountDue || 0, remaining: 0,
-      paymentStatus: '', installmentNum: 0,
-      startDate: sub?.startDate || '', endDate: sub?.endDate || ''
+      amount, paidAt, method, note
     });
     const newPay = { id: Date.now(), subscriptionId: subId, studentId: sub?.studentId || 0, amount, paidAt, method, note };
     _progPays.push(newPay);
