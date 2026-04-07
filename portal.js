@@ -238,6 +238,7 @@ function switchSection(name) {
   document.getElementById('tb-section').textContent = SECTION_LABELS[name] || name;
 
   if (name === 'sport-stats') loadSportStats();
+  if (name === 'admin') admTab('users');
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -1770,12 +1771,12 @@ function openLeaderboardExternal() {
 /* ══════════════════════════════════════════
    ADMIN SECTION
 ══════════════════════════════════════════ */
-function admTab(tab) {
+async function admTab(tab) {
   ['users','reasons','log'].forEach(t => {
     document.getElementById(`adm-${t}`).style.display = t === tab ? '' : 'none';
     document.getElementById(`adm-tab-${t}`).className = `btn ${t === tab ? 'btn-primary' : 'btn-outline'}`;
   });
-  if (tab === 'users')   renderAdmUsers();
+  if (tab === 'users')   { await loadUsers(); renderAdmUsers(); }
   if (tab === 'reasons') renderAdmReasons();
   if (tab === 'log')     loadAdmLog();
 }
