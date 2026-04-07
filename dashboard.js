@@ -929,7 +929,7 @@ async function saveSub() {
           programId: _currentProg.id, programName: _currentProg.name,
           groupName, subType, paymentType: subType,
           startDate, endDate, sessionCount: sessions, amountDue,
-          status: subStatus(endDate), notes
+          status: subStatus(endDate)
         };
         const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
         const subId = created ? parseInt(created.id) : Date.now() + done;
@@ -1005,14 +1005,14 @@ async function saveSub() {
         programId: _currentProg.id, programName: _currentProg.name,
         groupName, subType, paymentType: subType,
         startDate, endDate, sessionCount: sessions, amountDue,
-        status: subStatus(endDate), notes
+        status: subStatus(endDate)
       };
       const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
       subId = created ? parseInt(created.id) : Date.now();
       _progSubs.push({ id: subId, ...subData });
       _allSubs.push({ id: subId, ...subData });
     } else {
-      const upd = { groupName, subType, paymentType: subType, startDate, endDate, sessionCount: sessions, amountDue, notes };
+      const upd = { groupName, subType, paymentType: subType, startDate, endDate, sessionCount: sessions, amountDue };
       const i = _progSubs.findIndex(s => s.id === editId);
       if (i !== -1) Object.assign(_progSubs[i], upd);
       const ai = _allSubs.findIndex(s => s.id === editId);
@@ -1971,8 +1971,7 @@ async function saveBulkSub() {
         startDate, endDate,
         sessionCount: sessions,
         amountDue,
-        status: subStatus(endDate),
-        notes
+        status: subStatus(endDate)
       };
       const created = await sbInsertReturn(TB.SUBSCRIPTIONS, subData);
       const newId   = created ? parseInt(created.id) : Date.now() + successCount;
