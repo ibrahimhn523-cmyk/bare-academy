@@ -79,10 +79,6 @@
     <div class="page-hdr">
       <div class="page-title">البرامج</div>
       <div class="hdr-actions">
-        <div class="view-toggle">
-          <button class="vbtn active" id="vbtn-cards" onclick="setView('cards')">⊞</button>
-          <button class="vbtn" id="vbtn-table" onclick="setView('table')">☰</button>
-        </div>
         <button class="btn btn-refresh" onclick="loadPrograms()">🔄 تحديث</button>
         <button class="btn btn-primary" onclick="openAddProg()">➕ برنامج جديد</button>
       </div>
@@ -94,15 +90,20 @@
         <option value="نشط">نشط</option><option value="منتهي">منتهي</option><option value="موقوف">موقوف</option>
       </select>
     </div>
-    <div id="view-cards"><div class="prog-grid" id="prog-cards"></div></div>
-    <div id="view-table" style="display:none">
-      <div class="table-card"><div class="tbl-wrap">
-        <table>
-          <thead><tr><th>#</th><th>البرنامج</th><th>البداية</th><th>النهاية</th><th>الأيام</th><th>الرسم</th><th>المجموعات</th><th>المشتركون</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-          <tbody id="prog-tbody"></tbody>
-        </table>
-      </div></div>
-    </div>
+    <div class="table-card"><div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>اسم البرنامج</th>
+          <th style="text-align:center">عدد الأيام</th>
+          <th>الرسوم</th>
+          <th style="text-align:center">المجموعات</th>
+          <th style="text-align:center">المشتركون</th>
+          <th>إجراءات</th>
+          <th>تفاصيل إضافية</th>
+        </tr></thead>
+        <tbody id="prog-tbody"></tbody>
+      </table>
+    </div></div>
   </section>
 
   <!-- ══════ LEVEL 2: SUBSCRIBERS ══════ -->

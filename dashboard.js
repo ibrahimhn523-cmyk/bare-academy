@@ -481,68 +481,47 @@ function renderProgs() {
   if (st) d = d.filter(p => p.status === st);
   if (q)  d = d.filter(p => p.name.toLowerCase().includes(q));
   d.sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
-  if (_currentView === 'cards') renderProgCards(d);
-  else renderProgTable(d);
-}
-
-function renderProgCards(d) {
-  const el = document.getElementById('prog-cards');
-  if (!d.length) {
-    el.innerHTML = `<div class="empty" style="grid-column:1/-1"><div class="ei">📊</div><p>لا توجد برامج</p></div>`;
-    return;
-  }
-  el.innerHTML = d.map(p => {
-    const days = calcDaysBetween(p.startDate, p.endDate);
-    const cnt  = progSubCount(p.id);
-    const cls  = p.status === 'نشط' ? 'pc-active' : p.status === 'موقوف' ? 'pc-paused' : 'pc-expired';
-    const daysLabel = p.days.length ? p.days.join(' · ') : '—';
-    return `<div class="prog-card ${cls}">
-      <div class="prog-card-hdr">
-        <div>
-          <div class="prog-name">${esc(p.name)}</div>
-          <div class="prog-dates">📅 ${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}</div>
-          <div class="prog-dates" style="margin-top:2px">🗓️ ${daysLabel}</div>
-        </div>
-        <span class="badge b-${p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired'}">${p.status}</span>
-      </div>
-      <div class="prog-stats">
-        <div class="ps"><div class="v">${days}</div><div class="l">يوم</div></div>
-        <div class="ps"><div class="v">${p.fullFee.toLocaleString()}</div><div class="l">ر.س</div></div>
-        <div class="ps"><div class="v">${p.groupCount}</div><div class="l">مجموعات</div></div>
-        <div class="ps"><div class="v">${cnt}</div><div class="l">مشترك</div></div>
-      </div>
-      ${p.notes ? `<div style="font-size:.78rem;color:var(--muted);margin:4px 0">${esc(p.notes)}</div>` : ''}
-      <div class="prog-actions">
-        <button class="prog-btn" style="background:#dbeafe;color:#1d4ed8" onclick="openEditProg(${p.id})">✏️ تعديل</button>
-        <button class="prog-btn" style="background:#f1f5f9;color:var(--text)" onclick="openExtend(${p.id})">📅 تمديد</button>
-        <button class="prog-btn" style="background:#fee2e2;color:var(--danger)" onclick="openDeleteProg(${p.id})" title="حذف نهائي">🗑️ حذف</button>
-        <button class="prog-btn" style="background:var(--gold);color:var(--primary);font-weight:700" onclick="enterProg(${p.id})">🎯 دخول البرنامج</button>
-      </div>
-    </div>`;
-  }).join('');
+  renderProgTable(d);
 }
 
 function renderProgTable(d) {
   const tbody = document.getElementById('prog-tbody');
-  if (!d.length) { tbody.innerHTML = `<tr><td colspan="10"><div class="empty"><div class="ei">📊</div><p>لا توجد برامج</p></div></td></tr>`; return; }
-  tbody.innerHTML = d.map(p => `<tr>
-    <td>${p.id}</td>
-    <td><strong>${esc(p.name)}</strong></td>
-    <td>${fmtDate(p.startDate)}</td>
-    <td>${fmtDate(p.endDate)}</td>
-    <td style="font-size:.78rem">${p.days.join('، ')}</td>
-    <td>${p.fullFee.toLocaleString()} ر.س</td>
-    <td>${p.groupCount}</td>
-    <td>${progSubCount(p.id)}</td>
-    <td><span class="badge b-${p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired'}">${p.status}</span></td>
-    <td>
-      <div class="actions">
-        <button class="abt abt-edit"   onclick="openEditProg(${p.id})">✏️</button>
-        <button class="abt abt-view"   onclick="enterProg(${p.id})" title="دخول البرنامج">🎯</button>
-        <button class="abt abt-delete" onclick="openDeleteProg(${p.id})" title="حذف نهائي">🗑️</button>
-      </div>
-    </td>
-  </tr>`).join('');
+  if (!d.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="ei">📊</div><p>لا توجد برامج</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = d.map(p => {
+    const days    = calcDaysBetween(p.startDate, p.endDate);
+    const cnt     = progSubCount(p.id);
+    const daysStr = p.days.length ? p.days.join('، ') : '—';
+    const statusCls = p.status === 'نشط' ? 'active' : p.status === 'موقوف' ? 'paused' : 'expired';
+    return `<tr class="prog-row" onclick="enterProg(${p.id})" title="اضغط للدخول إلى البرنامج">
+      <td>
+        <div style="font-weight:700;margin-bottom:3px">${esc(p.name)}</div>
+        <span class="badge b-${statusCls}">${p.status}</span>
+      </td>
+      <td style="text-align:center">
+        <strong style="font-size:1.05rem">${days}</strong><br>
+        <span style="font-size:.7rem;color:var(--muted)">يوم</span>
+      </td>
+      <td>${p.fullFee.toLocaleString()} <span style="font-size:.75rem;color:var(--muted)">ر.س</span></td>
+      <td style="text-align:center"><strong>${p.groupCount}</strong></td>
+      <td style="text-align:center"><strong style="font-size:1.05rem">${cnt}</strong></td>
+      <td>
+        <div class="actions" onclick="event.stopPropagation()">
+          <button class="abt abt-edit"   title="تعديل"     onclick="openEditProg(${p.id})">✏️</button>
+          <button class="abt"            title="تمديد"     onclick="openExtend(${p.id})" style="background:#e0f2fe;color:#0284c7">📅</button>
+          <button class="abt abt-delete" title="حذف نهائي" onclick="openDeleteProg(${p.id})">🗑️</button>
+        </div>
+      </td>
+      <td>
+        <span style="font-size:.76rem;color:var(--muted);line-height:1.6">
+          📅 ${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}<br>
+          🗓️ ${daysStr}
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
 function enterProg(id) {
@@ -550,14 +529,6 @@ function enterProg(id) {
   enterProgram(p);
 }
 
-function setView(v) {
-  _currentView = v;
-  document.getElementById('vbtn-cards').classList.toggle('active', v === 'cards');
-  document.getElementById('vbtn-table').classList.toggle('active', v === 'table');
-  document.getElementById('view-cards').style.display = v === 'cards' ? '' : 'none';
-  document.getElementById('view-table').style.display = v === 'table' ? '' : 'none';
-  renderProgs();
-}
 
 function renderGroupInputs() {
   const n = parseInt(document.getElementById('p-group-count').value) || 2;

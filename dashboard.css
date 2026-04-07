@@ -218,10 +218,10 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .prog-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); flex-wrap: wrap; }
 .prog-btn { flex: 1; padding: 7px; border-radius: 7px; border: none; cursor: pointer; font-family: inherit; font-size: .8rem; min-width: 70px; }
 
-/* ── VIEW TOGGLE ── */
-.view-toggle { display: flex; gap: 3px; }
-.vbtn { padding: 6px 9px; border: 1px solid var(--border); background: var(--white); cursor: pointer; border-radius: 6px; font-size: .9rem; }
-.vbtn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+/* ── PROGRAM ROW (clickable) ── */
+tbody tr.prog-row { cursor: pointer; transition: background .12s; }
+tbody tr.prog-row:hover td { background: #f0f4ff; }
+tbody tr.prog-row:active td { background: #e0e7ff; }
 
 /* ── CHARTS ── */
 .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
