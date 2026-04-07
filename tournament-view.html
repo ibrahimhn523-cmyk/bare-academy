@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عرض البطولة — أكاديمية بارع</title>
+<style>
+@font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Regular.otf') format('opentype'); }
+@font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Bold.otf') format('opentype'); font-weight:bold; }
+:root {
+  --primary:#2D3651; --gold:#d4af37; --gold2:#c19d2e;
+  --bg:#0f172a; --card:#1e293b; --border:#334155;
+  --white:#ffffff; --muted:#64748b;
+  --success:#22c55e; --danger:#ef4444; --warning:#f59e0b;
+}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'Handicrafts', Tahoma, Arial, sans-serif;
+  background:var(--bg); color:var(--white);
+  min-height:100vh; overflow-x:hidden; direction:rtl;
+}
+
+/* ── Header ── */
+.tv-header {
+  background:linear-gradient(135deg, var(--primary) 0%, #0f172a 100%);
+  border-bottom:3px solid var(--gold);
+  padding:24px 20px 20px;
+  text-align:center;
+  position:relative;
+}
+.tv-header .logo { width:56px; margin:0 auto 10px; display:block; }
+.tv-sport-icon { font-size:2.8rem; margin-bottom:6px; display:block; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+.tv-tourn-name { font-size:1.9rem; font-weight:bold; color:var(--white); margin-bottom:4px; }
+.tv-tourn-sub { color:var(--gold); font-size:.88rem; letter-spacing:.5px; }
+.tv-status-badge {
+  display:inline-block; margin-top:10px;
+  padding:4px 14px; border-radius:20px; font-size:.78rem; font-weight:600;
+}
+.tv-status-badge.active   { background:rgba(34,197,94,.2); color:var(--success); border:1px solid var(--success); }
+.tv-status-badge.draft    { background:rgba(100,116,139,.2); color:var(--muted); border:1px solid var(--muted); }
+.tv-status-badge.finished { background:rgba(212,175,55,.2); color:var(--gold); border:1px solid var(--gold); }
+
+/* ── Loading / Error ── */
+.tv-loading { text-align:center; padding:80px 20px; color:var(--muted); }
+.tv-spin { font-size:2.5rem; display:inline-block; animation:spin 1s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+.tv-error { text-align:center; padding:60px 20px; }
+.tv-error .ei { font-size:3rem; margin-bottom:12px; }
+.tv-error p { color:var(--muted); font-size:1rem; }
+
+/* ── Main layout ── */
+.tv-main { max-width:860px; margin:0 auto; padding:24px 16px 40px; }
+
+/* ── Section card ── */
+.tv-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:14px; overflow:hidden; margin-bottom:20px;
+}
+.tv-card-hdr {
+  background:rgba(45,54,81,.5); padding:14px 18px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:1px solid var(--border);
+}
+.tv-card-hdr-icon { font-size:1.3rem; }
+.tv-card-hdr-title { font-size:1rem; font-weight:700; color:var(--white); }
+.tv-card-body { padding:0; }
+
+/* ── Stats summary row ── */
+.tv-stats-row {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:0;
+  border-bottom:1px solid var(--border);
+}
+.tv-stat-item {
+  text-align:center; padding:16px 8px;
+  border-left:1px solid var(--border);
+}
+.tv-stat-item:last-child { border-left:none; }
+.tv-stat-val { font-size:1.6rem; font-weight:bold; color:var(--gold); }
+.tv-stat-lbl { font-size:.72rem; color:var(--muted); margin-top:2px; }
+
+/* ── Standings Table ── */
+.tv-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.tv-table thead tr { background:rgba(45,54,81,.6); }
+.tv-table th { padding:10px 12px; text-align:center; color:var(--muted); font-weight:600; font-size:.75rem; white-space:nowrap; }
+.tv-table th:first-child, .tv-table td:first-child { text-align:center; }
+.tv-table th:nth-child(2), .tv-table td:nth-child(2) { text-align:right; }
+.tv-table td { padding:10px 12px; text-align:center; border-bottom:1px solid rgba(51,65,85,.5); color:var(--white); }
+.tv-table tbody tr:last-child td { border-bottom:none; }
+.tv-table tbody tr:hover { background:rgba(255,255,255,.03); }
+.tv-rank-col { font-weight:700; min-width:28px; }
+.tv-team-col { font-weight:700; text-align:right !important; }
+.pts-pill {
+  display:inline-block; background:rgba(212,175,55,.2);
+  color:var(--gold); border:1px solid rgba(212,175,55,.4);
+  border-radius:20px; padding:2px 12px; font-weight:700;
+}
+/* Rank highlights */
+.tv-rank-1 td { background:rgba(212,175,55,.06); }
+.tv-rank-2 td { background:rgba(148,163,184,.04); }
+.tv-rank-3 td { background:rgba(180,83,9,.04); }
+.tv-rank-medal { font-size:1rem; }
+
+/* ── Bracket ── */
+.tv-bracket-wrap { overflow-x:auto; padding:16px; }
+.tv-bracket { display:flex; gap:32px; align-items:flex-start; }
+.tv-bracket-round { display:flex; flex-direction:column; gap:16px; min-width:160px; }
+.tv-br-round-title {
+  font-size:.72rem; font-weight:700; color:var(--gold);
+  text-align:center; padding:6px; letter-spacing:.5px;
+  border-bottom:1px solid rgba(212,175,55,.3); margin-bottom:4px;
+}
+.tv-bracket-match {
+  background:rgba(45,54,81,.4); border:1px solid var(--border);
+  border-radius:10px; overflow:hidden;
+}
+.tv-bracket-team {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 12px; font-size:.82rem;
+  border-bottom:1px solid rgba(51,65,85,.5);
+}
+.tv-bracket-team:last-child { border-bottom:none; }
+.tv-bracket-team.winner { background:rgba(34,197,94,.1); color:var(--success); font-weight:700; }
+.tv-bracket-team.loser  { color:var(--muted); }
+.tv-bracket-score { font-weight:700; font-size:.95rem; min-width:20px; text-align:center; }
+
+/* ── Scorers ── */
+.tv-scorer-row {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 18px; border-bottom:1px solid rgba(51,65,85,.4);
+  transition:.15s;
+}
+.tv-scorer-row:last-child { border-bottom:none; }
+.tv-scorer-row:hover { background:rgba(255,255,255,.03); }
+.tv-scorer-pos { font-size:1.3rem; min-width:32px; text-align:center; }
+.tv-scorer-info { flex:1; }
+.tv-scorer-name { font-weight:700; font-size:.9rem; color:var(--white); }
+.tv-scorer-team { font-size:.74rem; color:var(--muted); margin-top:2px; }
+.tv-scorer-goals { text-align:center; }
+.tv-goals-num { font-size:1.3rem; font-weight:bold; color:var(--gold); display:block; }
+.tv-goals-lbl { font-size:.68rem; color:var(--muted); }
+
+/* ── Results ── */
+.tv-result-row {
+  display:flex; align-items:center; padding:10px 18px;
+  border-bottom:1px solid rgba(51,65,85,.4); gap:8px;
+}
+.tv-result-row:last-child { border-bottom:none; }
+.tv-result-row:hover { background:rgba(255,255,255,.03); }
+.tv-result-team { flex:1; font-weight:600; font-size:.84rem; color:var(--white); }
+.tv-result-team.away { text-align:left; }
+.tv-result-score {
+  background:rgba(45,54,81,.8); border:1px solid var(--border);
+  border-radius:8px; padding:4px 14px; font-weight:bold; font-size:.95rem;
+  color:var(--white); white-space:nowrap; text-align:center; min-width:60px;
+}
+.tv-result-round { font-size:.68rem; color:var(--muted); text-align:center; margin-top:2px; }
+.tv-no-results { text-align:center; color:var(--muted); padding:20px; font-size:.85rem; }
+
+/* ── Teams section ── */
+.tv-teams-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; padding:16px; }
+.tv-team-card {
+  background:rgba(45,54,81,.3); border:1px solid var(--border);
+  border-radius:10px; padding:12px;
+}
+.tv-team-name { font-weight:700; font-size:.9rem; margin-bottom:8px; color:var(--gold); }
+.tv-team-player { font-size:.78rem; color:var(--white); padding:3px 0; display:flex; align-items:center; gap:6px; }
+.tv-team-player::before { content:''; width:6px; height:6px; border-radius:50%; background:var(--border); flex-shrink:0; }
+.tv-team-empty { font-size:.75rem; color:var(--muted); font-style:italic; }
+
+/* ── Footer ── */
+.tv-footer {
+  text-align:center; padding:24px 16px; color:var(--muted); font-size:.75rem;
+  border-top:1px solid var(--border); margin-top:8px;
+}
+.tv-footer a { color:var(--gold); text-decoration:none; }
+
+/* ── Responsive ── */
+@media (max-width:520px) {
+  .tv-tourn-name { font-size:1.4rem; }
+  .tv-stats-row { grid-template-columns:repeat(3,1fr); }
+  .tv-stat-val { font-size:1.2rem; }
+  .tv-table th, .tv-table td { padding:8px 6px; font-size:.76rem; }
+  .tv-scorer-row { padding:10px 12px; }
+  .tv-result-row { padding:8px 12px; }
+  .tv-teams-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="tv-header-wrap">
+  <div class="tv-loading">
+    <div class="tv-spin">⚽</div>
+    <p style="margin-top:12px">جاري تحميل البطولة…</p>
+  </div>
+</div>
+
+<div id="tv-main" style="display:none">
+  <div class="tv-main" id="tv-body"></div>
+</div>
+
+<script>
+/* ── Config ── */
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+
+const TB = {
+  SPORTS : 'sports_tournaments',
+  TEAMS  : 'sports_teams',
+  MATCHES: 'sports_matches',
+};
+
+function sbH() {
+  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` };
+}
+async function sbGet(table, qs = '') {
+  const r = await fetch(`${SB_URL}/${table}?select=*&order=id.asc${qs ? '&' + qs : ''}`, { headers: sbH() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return r.json();
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Status labels ── */
+const STATUS_MAP = {
+  draft    : { label: 'قيد الإعداد',  cls: 'draft'    },
+  active   : { label: 'جارية',        cls: 'active'   },
+  finished : { label: 'منتهية',       cls: 'finished' },
+};
+
+/* ── Build scorer list from matches ── */
+function buildScorers(matches) {
+  const map = {};
+  matches.filter(m => m.status === 'played').forEach(m => {
+    let evts = [];
+    try { evts = JSON.parse(m.scorers || '[]'); } catch {}
+    evts.filter(e => e.type === 'goal').forEach(e => {
+      const key = e.name + '||' + (e.teamName || '');
+      if (!map[key]) map[key] = { name: e.name, team: e.teamName || '', goals: 0 };
+      map[key].goals++;
+    });
+  });
+  return Object.values(map).sort((a, b) => b.goals - a.goals);
+}
+
+/* ── Build standings from teams + matches ── */
+function buildStandings(teams, matches) {
+  const st = teams.map(t => ({ id: t.id, name: t.name, p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0 }));
+  matches.filter(m => m.status === 'played').forEach(m => {
+    const t1 = st.find(s => s.id === parseInt(m.team1Id));
+    const t2 = st.find(s => s.id === parseInt(m.team2Id));
+    if (!t1 || !t2) return;
+    const s1 = parseInt(m.team1Score) || 0;
+    const s2 = parseInt(m.team2Score) || 0;
+    t1.p++; t2.p++;
+    t1.gf += s1; t1.ga += s2;
+    t2.gf += s2; t2.ga += s1;
+    if (s1 > s2)      { t1.w++; t1.pts += 3; t2.l++; }
+    else if (s2 > s1) { t2.w++; t2.pts += 3; t1.l++; }
+    else              { t1.d++; t2.d++; t1.pts++; t2.pts++; }
+  });
+  return st.sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga));
+}
+
+/* ── Parse players from team ── */
+function parsePlayers(team) {
+  try { return JSON.parse(team.players || '[]'); } catch { return []; }
+}
+
+/* ── Render ── */
+function renderHeader(tourn) {
+  const status = STATUS_MAP[tourn.status] || STATUS_MAP.draft;
+  const icon = tourn.icon || '⚽';
+  const sportType = tourn.sportType || 'رياضي';
+  const typeLabel = tourn.type === 'league' ? 'نظام دوري' : 'خروج مغلوب';
+  document.getElementById('tv-header-wrap').innerHTML = `
+    <div class="tv-header">
+      <img src="images/logo.png" alt="بارع" class="logo" onerror="this.style.display='none'">
+      <span class="tv-sport-icon">${esc(icon)}</span>
+      <div class="tv-tourn-name">${esc(tourn.name)}</div>
+      <div class="tv-tourn-sub">${esc(sportType)} — ${esc(typeLabel)}</div>
+      <span class="tv-status-badge ${status.cls}">${status.label}</span>
+    </div>`;
+}
+
+function renderStatsRow(teams, matches) {
+  const played  = matches.filter(m => m.status === 'played').length;
+  const pending = matches.filter(m => m.status !== 'played').length;
+  const scorers = buildScorers(matches);
+  const topGoals = scorers[0] ? scorers[0].goals : 0;
+  return `
+    <div class="tv-stats-row">
+      <div class="tv-stat-item">
+        <div class="tv-stat-val">${teams.length}</div>
+        <div class="tv-stat-lbl">فريق</div>
+      </div>
+      <div class="tv-stat-item">
+        <div class="tv-stat-val">${played}</div>
+        <div class="tv-stat-lbl">مباراة لُعبت</div>
+      </div>
+      <div class="tv-stat-item">
+        <div class="tv-stat-val">${topGoals}</div>
+        <div class="tv-stat-lbl">أعلى هدافية</div>
+      </div>
+    </div>`;
+}
+
+function renderStandings(teams, matches) {
+  const standings = buildStandings(teams, matches);
+  const medals = ['🥇','🥈','🥉'];
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">📋</span>
+        <span class="tv-card-hdr-title">جدول الترتيب</span>
+      </div>
+      <div class="tv-card-body">
+        <table class="tv-table">
+          <thead>
+            <tr>
+              <th>#</th><th style="text-align:right">الفريق</th>
+              <th>ل</th><th>ف</th><th>ت</th><th>خ</th>
+              <th>أهداف</th><th>نقاط</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${standings.map((t, i) => `
+              <tr class="${i < 3 ? 'tv-rank-' + (i+1) : ''}">
+                <td class="tv-rank-col">${i < 3 ? `<span class="tv-rank-medal">${medals[i]}</span>` : i+1}</td>
+                <td class="tv-team-col">${esc(t.name)}</td>
+                <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+                <td style="color:var(--muted)">${t.gf}:${t.ga}</td>
+                <td><span class="pts-pill">${t.pts}</span></td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderBracket(matches) {
+  const rounds = [...new Set(matches.map(m => m.round || 'الدور الأول'))];
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">🏆</span>
+        <span class="tv-card-hdr-title">شجرة البطولة</span>
+      </div>
+      <div class="tv-card-body">
+        <div class="tv-bracket-wrap">
+          <div class="tv-bracket">
+            ${rounds.map(r => {
+              const roundMatches = matches.filter(m => (m.round || 'الدور الأول') === r);
+              return `
+                <div class="tv-bracket-round">
+                  <div class="tv-br-round-title">${esc(r)}</div>
+                  ${roundMatches.map(m => {
+                    const played = m.status === 'played';
+                    const s1 = parseInt(m.team1Score) || 0;
+                    const s2 = parseInt(m.team2Score) || 0;
+                    const t1w = played && s1 > s2;
+                    const t2w = played && s2 > s1;
+                    return `
+                      <div class="tv-bracket-match">
+                        <div class="tv-bracket-team ${t1w ? 'winner' : played ? 'loser' : ''}">
+                          <span>${esc(m.team1Name || '—')}</span>
+                          <span class="tv-bracket-score">${played ? s1 : '—'}</span>
+                        </div>
+                        <div class="tv-bracket-team ${t2w ? 'winner' : played ? 'loser' : ''}">
+                          <span>${esc(m.team2Name || '—')}</span>
+                          <span class="tv-bracket-score">${played ? s2 : '—'}</span>
+                        </div>
+                      </div>`;
+                  }).join('')}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderScorers(matches) {
+  const scorers = buildScorers(matches);
+  if (!scorers.length) return '';
+  const medals = ['🥇','🥈','🥉'];
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">👟</span>
+        <span class="tv-card-hdr-title">ترتيب الهدافين</span>
+      </div>
+      <div class="tv-card-body">
+        ${scorers.map((s, i) => `
+          <div class="tv-scorer-row">
+            <span class="tv-scorer-pos">${i < 3 ? medals[i] : i + 1}</span>
+            <div class="tv-scorer-info">
+              <div class="tv-scorer-name">${esc(s.name)}</div>
+              <div class="tv-scorer-team">🔴 ${esc(s.team)}</div>
+            </div>
+            <div class="tv-scorer-goals">
+              <span class="tv-goals-num">${s.goals}</span>
+              <span class="tv-goals-lbl">هدف</span>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderResults(matches) {
+  const played = matches.filter(m => m.status === 'played').reverse().slice(0, 10);
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">🎯</span>
+        <span class="tv-card-hdr-title">آخر النتائج</span>
+      </div>
+      <div class="tv-card-body">
+        ${played.length ? played.map(m => `
+          <div class="tv-result-row">
+            <span class="tv-result-team">${esc(m.team1Name || '—')}</span>
+            <div>
+              <div class="tv-result-score">${m.team1Score} — ${m.team2Score}</div>
+              ${m.round ? `<div class="tv-result-round">${esc(m.round)}</div>` : ''}
+            </div>
+            <span class="tv-result-team away">${esc(m.team2Name || '—')}</span>
+          </div>`).join('')
+        : '<div class="tv-no-results">لم تُلعب أي مباراة بعد</div>'}
+      </div>
+    </div>`;
+}
+
+function renderTeams(teams) {
+  if (!teams.length) return '';
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">👥</span>
+        <span class="tv-card-hdr-title">الفرق المشاركة</span>
+      </div>
+      <div class="tv-card-body">
+        <div class="tv-teams-grid">
+          ${teams.map(t => {
+            const players = parsePlayers(t);
+            return `
+              <div class="tv-team-card">
+                <div class="tv-team-name">${esc(t.name)}</div>
+                ${players.length
+                  ? players.map(p => `<div class="tv-team-player">${esc(p.name || p)}</div>`).join('')
+                  : '<div class="tv-team-empty">لا يوجد لاعبون</div>'}
+              </div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderUpcoming(matches) {
+  const pending = matches.filter(m => m.status !== 'played').slice(0, 6);
+  if (!pending.length) return '';
+  return `
+    <div class="tv-card">
+      <div class="tv-card-hdr">
+        <span class="tv-card-hdr-icon">📅</span>
+        <span class="tv-card-hdr-title">المباريات القادمة</span>
+      </div>
+      <div class="tv-card-body">
+        ${pending.map(m => `
+          <div class="tv-result-row">
+            <span class="tv-result-team">${esc(m.team1Name || '—')}</span>
+            <div>
+              <div class="tv-result-score" style="color:var(--muted);font-size:.8rem;min-width:70px">
+                ${m.matchDate ? new Date(m.matchDate).toLocaleDateString('ar-SA') : 'قريباً'}
+              </div>
+              ${m.round ? `<div class="tv-result-round">${esc(m.round)}</div>` : ''}
+            </div>
+            <span class="tv-result-team away">${esc(m.team2Name || '—')}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ── Main load function ── */
+async function loadTournament() {
+  const params = new URLSearchParams(window.location.search);
+  const id = parseInt(params.get('id')) || 0;
+
+  if (!id) {
+    document.getElementById('tv-header-wrap').innerHTML = `
+      <div class="tv-header">
+        <div class="tv-error">
+          <div class="ei">⚠️</div>
+          <p>لم يتم تحديد بطولة. يرجى استخدام رابط صحيح.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  try {
+    const [tournArr, teams, matches] = await Promise.all([
+      sbGet(TB.SPORTS,  `id=eq.${id}`),
+      sbGet(TB.TEAMS,   `tournamentId=eq.${id}`),
+      sbGet(TB.MATCHES, `tournamentId=eq.${id}`),
+    ]);
+
+    const tourn = tournArr[0];
+    if (!tourn) {
+      document.getElementById('tv-header-wrap').innerHTML = `
+        <div class="tv-header">
+          <div class="tv-error">
+            <div class="ei">🔍</div>
+            <p>لم يتم العثور على البطولة.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    // Update page title
+    document.title = `${tourn.name} — أكاديمية بارع`;
+
+    // Render header
+    renderHeader(tourn);
+
+    const isLeague = tourn.type === 'league';
+    const statsRow = renderStatsRow(teams, matches);
+
+    // Build body
+    let html = `
+      <div class="tv-card" style="margin-bottom:20px">
+        <div class="tv-card-body">${statsRow}</div>
+      </div>
+      ${isLeague ? renderStandings(teams, matches) : renderBracket(matches)}
+      ${renderScorers(matches)}
+      ${renderResults(matches)}
+      ${renderUpcoming(matches)}
+      ${renderTeams(teams)}`;
+
+    document.getElementById('tv-body').innerHTML = html;
+    document.getElementById('tv-main').style.display = '';
+
+  } catch (err) {
+    document.getElementById('tv-header-wrap').innerHTML = `
+      <div class="tv-header">
+        <span class="tv-sport-icon">⚠️</span>
+        <div class="tv-tourn-name">حدث خطأ</div>
+        <div class="tv-tourn-sub">${esc(err.message)}</div>
+      </div>`;
+  }
+}
+
+/* ── Footer ── */
+function renderFooter() {
+  document.getElementById('tv-main').insertAdjacentHTML('beforeend', `
+    <div class="tv-footer">
+      <p>أكاديمية بارع — منصة الإدارة الشاملة</p>
+      <p style="margin-top:6px">🔄 يُحدَّث تلقائياً · <a href="javascript:location.reload()">تحديث الصفحة</a></p>
+    </div>`);
+}
+
+/* ── Start ── */
+loadTournament().then(renderFooter).catch(() => {});
+</script>
+</body>
+</html>

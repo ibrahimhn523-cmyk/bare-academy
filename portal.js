@@ -82,11 +82,22 @@ let _cultSelComp = null;
 let _cultSelProg = null;
 
 // sports state
-let _sportsT    = [];   // tournaments
-let _sportsSel  = null; // selected tournament
-let _sportsTeams= [];
+let _sportsT      = [];   // tournaments
+let _sportsSel    = null; // selected tournament
+let _sportsTeams  = [];
 let _sportsMatches= [];
-let _sportsSProg = null;
+let _sportsSProg  = null;
+
+// wizard state
+let _wz = { step:1, progId:0, name:'', icon:'⚽', sportType:'كرة قدم', type:'league',
+            teams:[], pointsConfig:{rank1:100,rank2:70,rank3:50,topScorer:50,topAssist:30,bestKeeper:30},
+            schedule:[], wzStudents:[] };
+
+// match events
+let _matchEvents = [];   // [{name, teamId, teamName, type}]
+
+// stats state
+let _ssT = [];           // tournaments for stats selector
 
 /* ══════════════════════════════════════════
    AUTHENTICATION
@@ -150,7 +161,7 @@ async function startApp() {
     ['nav-cultural','nav-cultural-label'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display='none'; });
   }
   if (!hasPermission('sports')) {
-    ['nav-sports','nav-sports-label'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display='none'; });
+    ['nav-sports','nav-sports-label','nav-sport-stats'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display='none'; });
   }
 
   // Load base data
@@ -195,7 +206,7 @@ function parseDays(d) {
 }
 
 function populateProgSelects() {
-  const ids = ['att-prog-sel','pts-prog-sel','cult-prog-sel','sports-prog-sel','lb-prog-sel','cult-modal-prog','sports-modal-prog'];
+  const ids = ['att-prog-sel','pts-prog-sel','cult-prog-sel','sports-prog-sel','lb-prog-sel','cult-modal-prog','sports-modal-prog','ss-prog-sel'];
   ids.forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value;
@@ -209,7 +220,8 @@ function populateProgSelects() {
 ══════════════════════════════════════════ */
 const SECTION_LABELS = {
   home:'الرئيسية', attendance:'التحضير', points:'النقاط',
-  cultural:'الثقافي', sports:'الرياضي', leaderboard:'الصدارة', admin:'الإدارة'
+  cultural:'الثقافي', sports:'الرياضي', 'sport-stats':'إحصائيات البطولة',
+  leaderboard:'الصدارة', admin:'الإدارة'
 };
 
 function switchSection(name) {
@@ -225,6 +237,7 @@ function switchSection(name) {
 
   document.getElementById('tb-section').textContent = SECTION_LABELS[name] || name;
 
+  if (name === 'sport-stats') loadSportStats();
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -782,6 +795,9 @@ async function loadSports() {
     const rows = await sbRead(TB.SPORTS, `programId=eq.${progId}`);
     _sportsT = rows;
     renderSportsList();
+    // إظهار nav إحصائيات إذا يوجد بطولات
+    const navSS = document.getElementById('nav-sport-stats');
+    if (navSS && hasPermission('sports')) navSS.style.display = rows.length ? '' : 'none';
   } catch(e) {
     body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
   }
@@ -790,23 +806,28 @@ async function loadSports() {
 function renderSportsList() {
   const body = document.getElementById('sports-body');
   if (!_sportsT.length) {
-    body.innerHTML = `<div class="empty"><div class="ei">⚽</div><p>لا توجد بطولات بعد</p></div>`; return;
+    body.innerHTML = `<div class="empty"><div class="ei">⚽</div><p>لا توجد بطولات بعد — اضغط "بطولة جديدة" لإنشاء أول بطولة</p></div>`; return;
   }
-  const typeLabel = { league:'دوري', knockout:'خروج مغلوب' };
+  const typeLabel   = { league:'دوري', knockout:'خروج مغلوب' };
+  const sportIcons  = { 'كرة قدم':'⚽', 'كرة طائرة':'🏐', 'كرة سلة':'🏀', 'تنس طاولة':'🏓', 'تنس':'🎾', 'سباحة':'🏊', 'ملاكمة':'🥊' };
   const statusLabel = { draft:'مسودة', active:'نشطة', approved:'معتمدة' };
-  body.innerHTML = `<div class="cards-grid">` + _sportsT.map(t => `
-    <div class="comp-card">
-      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:6px">
-        <div class="comp-title">⚽ ${esc(t.name)}</div>
-        <span class="badge b-${t.status}">${statusLabel[t.status]||t.status}</span>
+  const statusCls   = { draft:'b-draft', active:'b-active', approved:'b-approved' };
+  body.innerHTML = `<div class="cards-grid">` + _sportsT.map(t => {
+    const icon = t.icon || sportIcons[t.sportType] || '⚽';
+    return `<div class="comp-card">
+      <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px">
+        <div class="comp-title">${icon} ${esc(t.name)}</div>
+        <span class="badge ${statusCls[t.status]||'b-draft'}">${statusLabel[t.status]||t.status}</span>
       </div>
-      <div class="comp-meta">${typeLabel[t.type]||t.type}</div>
-      <div class="comp-actions">
+      <div class="comp-meta">${typeLabel[t.type]||t.type}${t.sportType ? ' · '+esc(t.sportType) : ''}</div>
+      <div class="comp-actions" style="margin-top:10px">
         ${t.status !== 'approved' ? `<button class="btn btn-sm btn-primary" onclick="openTournament(${t.id})">⚽ إدارة</button>` : ''}
-        ${t.status !== 'approved' ? `<button class="btn btn-sm btn-outline" onclick="openSportsModal(${t.id})">✏️</button>` : ''}
-        ${t.status === 'approved' ? `<span style="font-size:.78rem;color:var(--success)">✅ تم اعتماد النتائج</span>` : ''}
+        <button class="btn btn-sm btn-outline" onclick="openSportStatsFor(${t.id})">📊 إحصائيات</button>
+        ${t.status !== 'approved' ? `<button class="btn btn-sm btn-outline" onclick="openSportsModal(${t.id})">✏️ تعديل</button>` : ''}
+        ${t.status === 'approved' ? `<span style="font-size:.78rem;color:var(--success)">✅ تم الاعتماد</span>` : ''}
       </div>
-    </div>`).join('') + `</div>`;
+    </div>`;
+  }).join('') + `</div>`;
 }
 
 function openSportsModal(id = 0) {
@@ -1015,6 +1036,8 @@ async function addMatch() {
 function openMatch(matchId) {
   const m = _sportsMatches.find(x => x.id === matchId);
   if (!m) return;
+  _matchEvents = [];
+  try { _matchEvents = JSON.parse(m.scorers || '[]'); } catch {}
   document.getElementById('match-id').value = matchId;
   document.getElementById('match-t1-name').textContent = m.team1Name || '';
   document.getElementById('match-t2-name').textContent = m.team2Name || '';
@@ -1022,7 +1045,40 @@ function openMatch(matchId) {
   document.getElementById('match-t2-score').value = m.team2Score || 0;
   document.getElementById('match-round').value  = m.round || '';
   document.getElementById('match-date').value   = m.matchDate || todayDate();
+  // populate team selector
+  const teamSel = document.getElementById('event-team-sel');
+  if (teamSel) {
+    teamSel.innerHTML = _sportsTeams.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+  }
+  renderMatchEvents();
   openM('m-match');
+}
+
+function addMatchEvent() {
+  const name   = (document.getElementById('event-player-name')?.value || '').trim();
+  const teamId = parseInt(document.getElementById('event-team-sel')?.value) || 0;
+  const type   = document.getElementById('event-type-sel')?.value || 'goal';
+  if (!name) { toast('يرجى إدخال اسم اللاعب', 'error'); return; }
+  const team = _sportsTeams.find(t => t.id === teamId);
+  _matchEvents.push({ name, teamId, teamName: team?.name || '', type });
+  document.getElementById('event-player-name').value = '';
+  renderMatchEvents();
+}
+
+function renderMatchEvents() {
+  const el = document.getElementById('match-events-list');
+  if (!el) return;
+  const typeIcons = { goal:'⚽', assist:'🎯', yellow:'🟨', red:'🟥' };
+  el.innerHTML = _matchEvents.map((ev, i) => `
+    <span class="event-chip ${ev.type}">
+      ${typeIcons[ev.type]||'⚽'} ${esc(ev.name)} <span style="opacity:.6;font-size:.7rem">(${esc(ev.teamName)})</span>
+      <button onclick="removeMatchEvent(${i})">✕</button>
+    </span>`).join('') || `<span style="font-size:.78rem;color:var(--muted)">لا توجد أحداث بعد</span>`;
+}
+
+function removeMatchEvent(index) {
+  _matchEvents.splice(index, 1);
+  renderMatchEvents();
 }
 
 async function saveMatch() {
@@ -1031,14 +1087,14 @@ async function saveMatch() {
   const s2 = parseInt(document.getElementById('match-t2-score').value) || 0;
   const round = document.getElementById('match-round').value.trim();
   const date  = document.getElementById('match-date').value;
+  const scorersJson = JSON.stringify(_matchEvents);
 
   try {
     if (id) {
-      await sbUpdate(TB.MATCHES, id, { team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played' });
+      await sbUpdate(TB.MATCHES, id, { team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played', scorers: scorersJson });
       const i = _sportsMatches.findIndex(m => m.id === id);
-      if (i !== -1) Object.assign(_sportsMatches[i], { team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played' });
+      if (i !== -1) Object.assign(_sportsMatches[i], { team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played', scorers: scorersJson });
     } else {
-      // New match
       const t1Id = parseInt(document.getElementById('nm-t1')?.value) || _sportsTeams[0]?.id;
       const t2Id = parseInt(document.getElementById('nm-t2')?.value) || _sportsTeams[1]?.id;
       const t1 = _sportsTeams.find(t => t.id === t1Id);
@@ -1046,7 +1102,7 @@ async function saveMatch() {
       const created = await sbInsertReturn(TB.MATCHES, {
         tournamentId: _sportsSel.id, team1Id: t1Id, team2Id: t2Id,
         team1Name: t1?.name, team2Name: t2?.name,
-        team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played'
+        team1Score: s1, team2Score: s2, round, matchDate: date, status: 'played', scorers: scorersJson
       });
       if (created) _sportsMatches.push(created);
     }
@@ -1071,11 +1127,13 @@ async function approveSports() {
       });
       return { ...t, leaguePts: pts };
     }).sort((a,b) => b.leaguePts - a.leaguePts);
-    const rewards = [50, 30, 20];
+    let cfg = { rank1:100, rank2:70, rank3:50 };
+    try { if (_sportsSel.pointsConfig) cfg = { ...cfg, ...JSON.parse(_sportsSel.pointsConfig) }; } catch {}
+    const rewards = [cfg.rank1, cfg.rank2, cfg.rank3];
     standings.slice(0,3).forEach((team, i) => {
       try {
         const players = JSON.parse(team.players || '[]');
-        players.forEach(p => { if (p.studentId) toAward.push({ studentId: p.studentId, pts: rewards[i], reason: `دوري ${_sportsSel.name} - المركز ${i+1}` }); });
+        players.forEach(p => { if (p.studentId) toAward.push({ studentId: p.studentId, pts: rewards[i], reason: `${_sportsSel.name} - المركز ${i+1}` }); });
       } catch {}
     });
   }
@@ -1092,6 +1150,543 @@ async function approveSports() {
     closeM('m-tournament');
     renderSportsList();
   } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+/* ══════════════════════════════════════════
+   WIZARD — CREATE TOURNAMENT
+══════════════════════════════════════════ */
+const SPORT_ICONS = ['⚽','🏀','🏐','🎾','🏓','🥊','🏊','🏋️','🏃','🎱'];
+const SPORT_TYPES = ['كرة قدم','كرة سلة','كرة طائرة','تنس طاولة','تنس','سباحة','ملاكمة','أخرى'];
+
+function openWizard() {
+  _wz = { step:1, progId: parseInt(document.getElementById('sports-prog-sel')?.value) || 0,
+          name:'', icon:'⚽', sportType:'كرة قدم', type:'league',
+          teams:[{name:'الفريق الأول', players:[]},{name:'الفريق الثاني', players:[]}],
+          pointsConfig:{rank1:100,rank2:70,rank3:50,topScorer:50,topAssist:30,bestKeeper:30},
+          schedule:[], wzStudents:[] };
+  renderWizardStep(1);
+  openM('m-wizard');
+}
+
+function renderWizardStep(n) {
+  _wz.step = n;
+  // تحديث شريط الخطوات
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('wz-s' + i);
+    if (!el) continue;
+    el.className = 'wz-step' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+  document.getElementById('wz-back-btn').style.display = n > 1 ? '' : 'none';
+  document.getElementById('wz-next-btn').textContent   = n === 4 ? '💾 إنشاء البطولة' : 'التالي →';
+
+  const body = document.getElementById('wz-body');
+  if (n === 1) body.innerHTML = renderWizStep1();
+  if (n === 2) body.innerHTML = renderWizStep2();
+  if (n === 3) body.innerHTML = renderWizStep3();
+  if (n === 4) body.innerHTML = renderWizStep4();
+}
+
+function renderWizStep1() {
+  const progOpts = _progs.map(p => `<option value="${p.id}" ${p.id===_wz.progId?'selected':''}>${esc(p.name)}</option>`).join('');
+  const iconOpts = SPORT_ICONS.map(ic => `<span class="icon-opt${ic===_wz.icon?' sel':''}" onclick="wzPickIcon('${ic}')" id="ico-${ic}">${ic}</span>`).join('');
+  const typeOpts = SPORT_TYPES.map(t => `<option value="${t}" ${t===_wz.sportType?'selected':''}>${t}</option>`).join('');
+  return `
+    <div class="form-group">
+      <label>اسم البطولة <span style="color:var(--danger)">*</span></label>
+      <input type="text" id="wz-name" placeholder="مثال: دوري بارع الرمضاني" value="${esc(_wz.name)}"
+        oninput="_wz.name=this.value" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem">
+    </div>
+    <div class="form-group">
+      <label>البرنامج <span style="color:var(--danger)">*</span></label>
+      <select id="wz-prog" onchange="_wz.progId=parseInt(this.value)"
+        style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.88rem">
+        <option value="">-- اختر --</option>${progOpts}
+      </select>
+    </div>
+    <div class="form-group">
+      <label>أيقونة البطولة</label>
+      <div class="icon-picker">${iconOpts}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-group">
+        <label>نوع الرياضة</label>
+        <select id="wz-sport-type" onchange="_wz.sportType=this.value"
+          style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.88rem">
+          ${typeOpts}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>نظام البطولة</label>
+        <select id="wz-type" onchange="_wz.type=this.value"
+          style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.88rem">
+          <option value="league" ${_wz.type==='league'?'selected':''}>دوري (كل فريق يلعب مع الآخر)</option>
+          <option value="knockout" ${_wz.type==='knockout'?'selected':''}>خروج مغلوب (bracket)</option>
+        </select>
+      </div>
+    </div>`;
+}
+
+function wzPickIcon(ic) {
+  _wz.icon = ic;
+  document.querySelectorAll('.icon-opt').forEach(el => el.classList.remove('sel'));
+  const el = document.getElementById('ico-' + ic);
+  if (el) el.classList.add('sel');
+}
+
+function renderWizStep2() {
+  // جمع الطلاب من البرنامج المختار
+  if (_wz.progId) {
+    _wz.wzStudents = _wz.wzStudents.length ? _wz.wzStudents : getProgStudents(_wz.progId);
+  }
+  const allAssigned = new Set(_wz.teams.flatMap(t => t.players.map(p => p.studentId)));
+
+  const studentsHtml = _wz.wzStudents.length
+    ? _wz.wzStudents.map(s => {
+        const assigned = allAssigned.has(s.id);
+        const teamIdx  = _wz.teams.findIndex(t => t.players.some(p => p.studentId === s.id));
+        return `<div class="tb-student-row ${assigned?'assigned':''}">
+          <span>${esc(s.fullName)}</span>
+          ${assigned
+            ? `<button class="tb-assign-btn" style="background:#fee2e2;color:var(--danger)" onclick="removeFromTeam(${s.id})">↩ إزالة</button>`
+            : `<select id="ts-${s.id}" style="font-size:.72rem;padding:2px 4px;border:1px solid var(--border);border-radius:5px;font-family:inherit">
+                ${_wz.teams.map((t,i) => `<option value="${i}">${esc(t.name)}</option>`).join('')}
+              </select>
+              <button class="tb-assign-btn" onclick="assignToTeam(${s.id})">إضافة</button>`
+          }
+        </div>`;
+      }).join('')
+    : `<div style="color:var(--muted);font-size:.83rem;padding:16px;text-align:center">لا توجد بيانات طلاب للبرنامج المختار</div>`;
+
+  const groupOpts = _wz.progId
+    ? ((_progs.find(p => p.id===_wz.progId)?.groups || '').split('،').map(g => g.trim()).filter(Boolean)
+        .map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('') || '')
+    : '';
+
+  const teamsHtml = _wz.teams.map((t, i) => `
+    <div class="tb-team-card">
+      <div class="tb-team-hdr">
+        <input type="text" class="tb-team-name-lbl" value="${esc(t.name)}"
+          onchange="_wz.teams[${i}].name=this.value"
+          style="border:none;border-bottom:1.5px solid var(--border);background:transparent;font-weight:700;font-size:.85rem;color:var(--primary);width:100%;font-family:inherit;outline:none;padding:2px 0">
+        ${_wz.teams.length > 2 ? `<button onclick="removeWizTeam(${i})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:.85rem">✕</button>` : ''}
+      </div>
+      <div class="tb-team-players">
+        ${t.players.length
+          ? t.players.map(p => `<span class="tb-player-chip" onclick="removeFromTeam(${p.studentId})">👤 ${esc(p.name)} ✕</span>`).join('')
+          : `<span style="font-size:.75rem;color:var(--muted)">لا يوجد لاعبون بعد</span>`}
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:4px">${t.players.length} لاعب</div>
+    </div>`).join('');
+
+  return `
+    ${groupOpts ? `<div class="form-group" style="margin-bottom:12px">
+      <label>سحب الطلاب من مجموعة (اختياري)</label>
+      <div style="display:flex;gap:8px">
+        <select id="wz-group-sel" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem">
+          <option value="">جميع المشتركين</option>${groupOpts}
+        </select>
+        <button class="btn btn-sm btn-outline" onclick="filterWizByGroup()">🔄 تحديث</button>
+      </div>
+    </div>` : ''}
+    <div class="team-builder">
+      <div>
+        <div style="font-weight:700;font-size:.85rem;margin-bottom:8px;color:var(--primary)">قائمة الطلاب (${_wz.wzStudents.length})</div>
+        <div class="tb-students">${studentsHtml}</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-weight:700;font-size:.85rem;color:var(--primary)">الفرق (${_wz.teams.length})</span>
+          <button class="btn btn-sm btn-gold" onclick="addWizTeam()">➕ فريق</button>
+        </div>
+        <div class="tb-teams">${teamsHtml}</div>
+      </div>
+    </div>`;
+}
+
+function getProgStudents(progId) {
+  // يحضر المشتركين في البرنامج من _students
+  const progSubs = window._allSubs ? window._allSubs.filter(s => s.programId === progId) : [];
+  if (progSubs.length) {
+    return progSubs.map(s => ({ id: s.studentId, fullName: s.studentName || '' }))
+                   .filter((v,i,a) => a.findIndex(x=>x.id===v.id)===i);
+  }
+  return _students.slice(0, 30); // fallback
+}
+
+function filterWizByGroup() {
+  const g = document.getElementById('wz-group-sel')?.value;
+  if (!g) { _wz.wzStudents = getProgStudents(_wz.progId); }
+  else {
+    // نبحث في _allSubs عن طلاب هذه المجموعة
+    const subs = window._allSubs
+      ? window._allSubs.filter(s => s.programId === _wz.progId && s.groupName === g)
+      : [];
+    _wz.wzStudents = subs.length
+      ? subs.map(s => ({ id: s.studentId, fullName: s.studentName || '' })).filter((v,i,a)=>a.findIndex(x=>x.id===v.id)===i)
+      : getProgStudents(_wz.progId);
+  }
+  renderWizardStep(2);
+}
+
+function assignToTeam(studentId) {
+  const sel = document.getElementById('ts-' + studentId);
+  const teamIdx = parseInt(sel?.value) || 0;
+  const s = _wz.wzStudents.find(x => x.id === studentId);
+  if (!s) return;
+  if (!_wz.teams[teamIdx]) return;
+  // إزالة من أي فريق آخر أولاً
+  _wz.teams.forEach(t => { t.players = t.players.filter(p => p.studentId !== studentId); });
+  _wz.teams[teamIdx].players.push({ studentId: s.id, name: s.fullName });
+  renderWizardStep(2);
+}
+
+function removeFromTeam(studentId) {
+  _wz.teams.forEach(t => { t.players = t.players.filter(p => p.studentId !== studentId); });
+  renderWizardStep(2);
+}
+
+function addWizTeam() {
+  _wz.teams.push({ name: `الفريق ${_wz.teams.length + 1}`, players: [] });
+  renderWizardStep(2);
+}
+
+function removeWizTeam(idx) {
+  if (_wz.teams.length <= 2) { toast('البطولة تحتاج فريقين على الأقل', 'error'); return; }
+  _wz.teams.splice(idx, 1);
+  renderWizardStep(2);
+}
+
+function renderWizStep3() {
+  const c = _wz.pointsConfig;
+  const field = (label, key, val) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <label style="font-size:.87rem">${label}</label>
+      <input type="number" min="0" value="${val}"
+        onchange="_wz.pointsConfig.${key}=parseInt(this.value)||0"
+        style="width:80px;padding:6px 8px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.9rem;text-align:center">
+    </div>`;
+  return `
+    <div style="background:var(--bg);border-radius:10px;padding:14px 16px;margin-bottom:12px;font-size:.82rem;color:var(--muted)">
+      🏆 النقاط ستُمنح تلقائياً عند الاعتماد النهائي بناءً على المراكز. يمكنك تعديلها أو إبقاؤها كما هي.
+    </div>
+    <div style="background:var(--white);border-radius:10px;padding:4px 16px;box-shadow:var(--shadow)">
+      <div style="font-weight:700;font-size:.85rem;padding:12px 0;color:var(--primary)">🥇 جوائز المراكز (لكل لاعب في الفريق)</div>
+      ${field('🥇 المركز الأول', 'rank1', c.rank1)}
+      ${field('🥈 المركز الثاني', 'rank2', c.rank2)}
+      ${field('🥉 المركز الثالث', 'rank3', c.rank3)}
+      <div style="font-weight:700;font-size:.85rem;padding:12px 0 4px;color:var(--primary);margin-top:8px">🌟 جوائز فردية</div>
+      ${field('👟 الهداف (Golden Boot)', 'topScorer', c.topScorer)}
+      ${field('🎯 صانع الأهداف', 'topAssist', c.topAssist)}
+      ${field('🧤 أفضل حارس', 'bestKeeper', c.bestKeeper)}
+    </div>`;
+}
+
+function renderWizStep4() {
+  const scheduleHtml = _wz.schedule.length
+    ? `<div class="schedule-preview">
+        ${_wz.schedule.map((m,i) => `
+          <div class="match-preview-row">
+            <span class="mp-team">${esc(m.t1.name)}</span>
+            <span class="mp-vs">⚽</span>
+            <span class="mp-team" style="text-align:left">${esc(m.t2.name)}</span>
+            <span class="mp-round">${esc(m.round||'')}</span>
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:10px;font-size:.83rem;color:var(--muted)">${_wz.schedule.length} مباراة</div>`
+    : `<div style="text-align:center;padding:28px;color:var(--muted)">
+        <div style="font-size:2rem;margin-bottom:8px">📅</div>
+        <p style="font-size:.85rem">اضغط "توليد الجدول" لتوليد المباريات تلقائياً</p>
+      </div>`;
+  return `
+    <div style="background:var(--bg);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:.82rem;color:var(--muted)">
+      الفرق: <strong>${_wz.teams.map(t=>esc(t.name)).join(' · ')}</strong>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:14px">
+      <button class="btn btn-primary" style="flex:1" onclick="wizardGenerateSchedule()">⚡ توليد الجدول تلقائياً</button>
+      ${_wz.schedule.length ? `<button class="btn btn-outline" onclick="_wz.schedule=[];renderWizardStep(4)">🗑️ مسح</button>` : ''}
+    </div>
+    ${scheduleHtml}`;
+}
+
+function wizardGenerateSchedule() {
+  const teams = _wz.teams.filter(t => t.name.trim());
+  if (teams.length < 2) { toast('يجب وجود فريقين على الأقل', 'error'); return; }
+  _wz.schedule = _wz.type === 'league' ? generateRoundRobin(teams) : generateKnockout(teams);
+  renderWizardStep(4);
+}
+
+function generateRoundRobin(teams) {
+  const t = [...teams.map((x,i) => ({ ...x, _idx: i }))];
+  if (t.length % 2 !== 0) t.push({ name: 'استراحة', _idx: -1 });
+  const rounds = t.length - 1;
+  const half   = t.length / 2;
+  const matches = [];
+  const arr = [...t];
+  for (let r = 0; r < rounds; r++) {
+    const roundName = `الجولة ${r + 1}`;
+    for (let i = 0; i < half; i++) {
+      const t1 = arr[i], t2 = arr[arr.length - 1 - i];
+      if (t1._idx !== -1 && t2._idx !== -1) matches.push({ t1, t2, round: roundName });
+    }
+    // تدوير: ثبّت الأول، حرّك البقية
+    arr.splice(1, 0, arr.pop());
+  }
+  return matches;
+}
+
+function generateKnockout(teams) {
+  const matches = [];
+  const roundName = teams.length <= 4 ? 'نصف النهائي' : teams.length <= 8 ? 'ربع النهائي' : 'دور 16';
+  for (let i = 0; i + 1 < teams.length; i += 2) {
+    matches.push({ t1: teams[i], t2: teams[i + 1], round: roundName });
+  }
+  if (teams.length % 2 !== 0) {
+    matches.push({ t1: teams[teams.length - 1], t2: { name: 'منتصف تلقائي', _idx: -1 }, round: roundName });
+  }
+  return matches;
+}
+
+function wizardNext() {
+  const step = _wz.step;
+  if (step === 1) {
+    _wz.name = document.getElementById('wz-name')?.value.trim() || _wz.name;
+    _wz.progId = parseInt(document.getElementById('wz-prog')?.value) || _wz.progId;
+    if (!_wz.name) { toast('يرجى إدخال اسم البطولة', 'error'); return; }
+    if (!_wz.progId) { toast('يرجى اختيار البرنامج', 'error'); return; }
+    // جلب الطلاب
+    if (!_wz.wzStudents.length) _wz.wzStudents = getProgStudents(_wz.progId);
+    renderWizardStep(2);
+  } else if (step === 2) {
+    const hasPlayers = _wz.teams.some(t => t.players.length > 0);
+    if (!hasPlayers) {
+      if (!confirm('لم تضف لاعبين للفرق بعد. هل تريد المتابعة؟')) return;
+    }
+    renderWizardStep(3);
+  } else if (step === 3) {
+    renderWizardStep(4);
+  } else if (step === 4) {
+    saveWizard();
+  }
+}
+
+function wizardBack() {
+  if (_wz.step > 1) renderWizardStep(_wz.step - 1);
+}
+
+async function saveWizard() {
+  const btn = document.getElementById('wz-next-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الحفظ…';
+  try {
+    // 1. إنشاء البطولة
+    const tourn = await sbInsertReturn(TB.SPORTS, {
+      programId: _wz.progId, name: _wz.name, icon: _wz.icon,
+      sportType: _wz.sportType, type: _wz.type, status: 'draft',
+      pointsConfig: JSON.stringify(_wz.pointsConfig)
+    });
+    if (!tourn) throw new Error('فشل في إنشاء البطولة');
+    const tournId = parseInt(tourn.id);
+
+    // 2. إنشاء الفرق
+    const createdTeams = [];
+    for (const team of _wz.teams) {
+      const ct = await sbInsertReturn(TB.TEAMS, {
+        tournamentId: tournId, name: team.name,
+        players: JSON.stringify(team.players)
+      });
+      if (ct) createdTeams.push({ ...ct, players: team.players });
+    }
+
+    // 3. إنشاء المباريات المولّدة
+    if (_wz.schedule.length) {
+      for (const m of _wz.schedule) {
+        // ابحث عن الفرق الفعلية المُنشأة
+        const ct1 = createdTeams.find(t => t.name === m.t1.name);
+        const ct2 = createdTeams.find(t => t.name === m.t2.name);
+        if (ct1 && ct2) {
+          await sbInsert(TB.MATCHES, {
+            tournamentId: tournId,
+            team1Id: parseInt(ct1.id), team2Id: parseInt(ct2.id),
+            team1Name: ct1.name, team2Name: ct2.name,
+            team1Score: 0, team2Score: 0, round: m.round,
+            status: 'pending', scorers: '[]'
+          });
+        }
+      }
+    }
+
+    // 4. تحديث الـ state
+    _sportsT.push({ ...tourn, icon: _wz.icon, sportType: _wz.sportType, pointsConfig: JSON.stringify(_wz.pointsConfig) });
+    toast(`✅ تم إنشاء بطولة "${_wz.name}" بنجاح!`);
+    closeM('m-wizard');
+    renderSportsList();
+    const navSS = document.getElementById('nav-sport-stats');
+    if (navSS && hasPermission('sports')) navSS.style.display = '';
+  } catch(e) {
+    toast('خطأ: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 إنشاء البطولة';
+  }
+}
+
+/* ══════════════════════════════════════════
+   SPORT STATS SECTION
+══════════════════════════════════════════ */
+async function loadSportStats() {
+  const progId = parseInt(document.getElementById('ss-prog-sel')?.value) || 0;
+  const body   = document.getElementById('sport-stats-body');
+  const sel    = document.getElementById('ss-tourn-sel');
+  if (!progId) { body.innerHTML = `<div class="empty"><div class="ei">📊</div><p>اختر البرنامج</p></div>`; return; }
+
+  try {
+    const rows = await sbRead(TB.SPORTS, `programId=eq.${progId}`);
+    _ssT = rows;
+    sel.innerHTML = '<option value="">-- اختر بطولة --</option>' + rows.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    body.innerHTML = `<div class="empty"><div class="ei">📊</div><p>اختر البطولة من القائمة</p></div>`;
+    document.getElementById('ss-view-btn').style.display = 'none';
+  } catch(e) {
+    body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
+  }
+}
+
+async function renderSportStatsBody() {
+  const tournId = parseInt(document.getElementById('ss-tourn-sel')?.value) || 0;
+  const body = document.getElementById('sport-stats-body');
+  if (!tournId) { body.innerHTML = `<div class="empty"><div class="ei">📊</div><p>اختر البطولة</p></div>`; return; }
+
+  body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
+  try {
+    const [teams, matches] = await Promise.all([
+      sbRead(TB.TEAMS,   `tournamentId=eq.${tournId}`),
+      sbRead(TB.MATCHES, `tournamentId=eq.${tournId}`)
+    ]);
+    const tourn = _ssT.find(t => t.id === tournId);
+    document.getElementById('ss-view-btn').style.display = '';
+
+    const isLeague = tourn?.type === 'league';
+    const scorers  = buildScorerList(matches);
+
+    // جدول ترتيب الدوري
+    let standingHtml = '';
+    if (isLeague) {
+      const standings = teams.map(t => ({
+        id:t.id, name:t.name, p:0, w:0, d:0, l:0, gf:0, ga:0, pts:0
+      }));
+      matches.filter(m => m.status==='played').forEach(m => {
+        const t1 = standings.find(s => s.id === parseInt(m.team1Id));
+        const t2 = standings.find(s => s.id === parseInt(m.team2Id));
+        if (!t1||!t2) return;
+        t1.p++; t2.p++;
+        t1.gf += parseInt(m.team1Score)||0; t1.ga += parseInt(m.team2Score)||0;
+        t2.gf += parseInt(m.team2Score)||0; t2.ga += parseInt(m.team1Score)||0;
+        if (m.team1Score > m.team2Score)  { t1.w++; t1.pts+=3; t2.l++; }
+        else if (m.team1Score < m.team2Score) { t2.w++; t2.pts+=3; t1.l++; }
+        else { t1.d++; t2.d++; t1.pts++; t2.pts++; }
+      });
+      standings.sort((a,b) => b.pts-a.pts || (b.gf-b.ga)-(a.gf-a.ga));
+      standingHtml = `
+        <div class="sport-stat-card" style="grid-column:1/-1">
+          <div class="sport-stat-title">📋 جدول الترتيب</div>
+          <div class="table-card" style="margin:0"><div class="tbl-wrap"><table>
+            <thead><tr><th>#</th><th>الفريق</th><th>ل</th><th>ف</th><th>ت</th><th>خ</th><th>أهداف</th><th>نقاط</th></tr></thead>
+            <tbody>${standings.map((t,i) => `<tr class="${i<3?'league-rank-'+(i+1):''}">
+              <td style="font-weight:700;color:var(--muted)">${i+1}</td>
+              <td style="font-weight:700">${esc(t.name)}</td>
+              <td>${t.p}</td><td>${t.w}</td><td>${t.d}</td><td>${t.l}</td>
+              <td>${t.gf}:${t.ga}</td>
+              <td><span class="pts-badge">${t.pts}</span></td>
+            </tr>`).join('')}</tbody>
+          </table></div></div>
+        </div>`;
+    } else {
+      // شجرة خروج مغلوب
+      const rounds = [...new Set(matches.map(m => m.round||'الدور الأول'))];
+      standingHtml = `
+        <div class="sport-stat-card" style="grid-column:1/-1">
+          <div class="sport-stat-title">🏆 شجرة البطولة</div>
+          <div class="bracket-wrap"><div class="bracket">
+            ${rounds.map(r => `
+              <div class="bracket-round">
+                <div class="bracket-round-title">${esc(r)}</div>
+                ${matches.filter(m=>(m.round||'الدور الأول')===r).map(m => {
+                  const t1w = m.status==='played' && parseInt(m.team1Score)>parseInt(m.team2Score);
+                  const t2w = m.status==='played' && parseInt(m.team2Score)>parseInt(m.team1Score);
+                  return `<div class="bracket-match">
+                    <div class="bracket-team ${t1w?'winner':''}"><span>${esc(m.team1Name||'—')}</span><span class="bracket-score">${m.status==='played'?m.team1Score:'—'}</span></div>
+                    <div class="bracket-team ${t2w?'winner':''}"><span>${esc(m.team2Name||'—')}</span><span class="bracket-score">${m.status==='played'?m.team2Score:'—'}</span></div>
+                  </div>`;
+                }).join('')}
+              </div>`).join('')}
+          </div></div>
+        </div>`;
+    }
+
+    // قائمة الهدافين
+    const scorerHtml = scorers.length ? `
+      <div class="sport-stat-card">
+        <div class="sport-stat-title">👟 قائمة الهدافين</div>
+        <div class="scorer-list">
+          ${scorers.map((s,i) => `
+            <div class="scorer-row">
+              <span class="scorer-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1}</span>
+              <div style="flex:1"><span class="scorer-name">${esc(s.name)}</span><br><span class="scorer-team">${esc(s.team)}</span></div>
+              <div><span class="scorer-goals">${s.goals}</span><span class="scorer-lbl">هدف</span></div>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    // آخر النتائج
+    const playedMatches = matches.filter(m => m.status==='played').reverse().slice(0, 8);
+    const resultsHtml = `
+      <div class="sport-stat-card">
+        <div class="sport-stat-title">📋 آخر النتائج</div>
+        ${playedMatches.length ? playedMatches.map(m => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.84rem">
+            <span style="flex:1;font-weight:600">${esc(m.team1Name||'')}</span>
+            <span style="font-weight:bold;font-size:1rem;padding:0 12px;color:var(--primary)">${m.team1Score} — ${m.team2Score}</span>
+            <span style="flex:1;font-weight:600;text-align:left">${esc(m.team2Name||'')}</span>
+          </div>`).join('')
+        : `<p style="color:var(--muted);font-size:.83rem;text-align:center;padding:16px">لا توجد نتائج بعد</p>`}
+      </div>`;
+
+    body.innerHTML = `<div class="sport-stat-grid">${standingHtml}${scorerHtml}${resultsHtml}</div>`;
+  } catch(e) {
+    body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
+  }
+}
+
+function buildScorerList(matches) {
+  const map = {};
+  matches.filter(m => m.status === 'played').forEach(m => {
+    let evts = [];
+    try { evts = JSON.parse(m.scorers || '[]'); } catch {}
+    evts.filter(e => e.type === 'goal').forEach(e => {
+      const key = e.name + '__' + (e.teamName || '');
+      if (!map[key]) map[key] = { name: e.name, team: e.teamName || '', goals: 0 };
+      map[key].goals++;
+    });
+  });
+  return Object.values(map).sort((a,b) => b.goals - a.goals);
+}
+
+function openSportStatsFor(tournId) {
+  // تبديل لصفحة الإحصائيات مع تحديد البطولة تلقائياً
+  const progId = _sportsSProg?.id;
+  switchSection('sport-stats');
+  if (progId) {
+    setTimeout(async () => {
+      const sel = document.getElementById('ss-prog-sel');
+      if (sel) { sel.value = progId; await loadSportStats(); }
+      const tsel = document.getElementById('ss-tourn-sel');
+      if (tsel) { tsel.value = tournId; renderSportStatsBody(); }
+    }, 100);
+  }
+}
+
+function openTournamentView() {
+  const tournId = document.getElementById('ss-tourn-sel')?.value;
+  if (tournId) window.open(`tournament-view.html?id=${tournId}`, '_blank');
 }
 
 /* ══════════════════════════════════════════
