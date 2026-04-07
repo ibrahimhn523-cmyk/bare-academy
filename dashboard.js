@@ -1671,7 +1671,16 @@ async function confirmDeleteProg() {
     // 3. حذف سجلات الحضور المرتبطة
     await fetch(`${SB_URL}/attendance?programId=eq.${id}`,
       { method: 'DELETE', headers: _h() });
-    // 4. حذف البرنامج نفسه
+    // 4. حذف البطولات الرياضية المرتبطة (فرق + مباريات + البطولة)
+    const tournsRes = await fetch(`${SB_URL}/sports_tournaments?select=id&programId=eq.${id}`,
+      { headers: _h() });
+    const tourns = tournsRes.ok ? await tournsRes.json() : [];
+    for (const t of tourns) {
+      await fetch(`${SB_URL}/sports_matches?tournamentId=eq.${t.id}`,  { method: 'DELETE', headers: _h() });
+      await fetch(`${SB_URL}/sports_teams?tournamentId=eq.${t.id}`,    { method: 'DELETE', headers: _h() });
+      await fetch(`${SB_URL}/sports_tournaments?id=eq.${t.id}`,        { method: 'DELETE', headers: _h() });
+    }
+    // 5. حذف البرنامج نفسه
     await sbDelete(TB.PROGRAMS, id);
 
     // تحديث الـ state المحلي
