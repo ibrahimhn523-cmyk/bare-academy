@@ -369,7 +369,7 @@ async function saveStudent() {
     phone2:           document.getElementById('st-phone2').value.trim(),
     category:         document.getElementById('st-cat').value,
     source:           document.getElementById('st-source').value,
-    firstContactDate: document.getElementById('st-contact-date').value,
+    firstContactDate: document.getElementById('st-contact-date').value || null,
     notes:            document.getElementById('st-notes').value.trim()
   };
 
@@ -937,7 +937,7 @@ async function saveSub() {
         _allSubs.push({ id: subId, ...subData });
         if (payAmt > 0) {
           const payData = {
-            subscriptionId: subId, studentId: sid, studentName: st.fullName,
+            subscriptionId: subId,
             amount: payAmt, paidAt: payDate,
             method: payMethod, note: payNote
           };
@@ -1021,7 +1021,7 @@ async function saveSub() {
     const payAmt = parseFloat(document.getElementById('sub-pay-amount').value) || 0;
     if (!editId && payAmt > 0) {
       const payData = {
-        subscriptionId: subId, studentId, studentName,
+        subscriptionId: subId,
         amount: payAmt,
         paidAt: document.getElementById('sub-pay-date').value,
         method: document.getElementById('sub-pay-method').value,
@@ -1135,7 +1135,7 @@ async function saveNewPayment() {
   const sub = _progSubs.find(s => s.id === subId);
   try {
     await sbInsert(TB.PAYMENTS, {
-      subscriptionId: subId, studentId: sub?.studentId || 0, studentName: sub?.studentName || '',
+      subscriptionId: subId,
       amount, paidAt, method, note
     });
     const newPay = { id: Date.now(), subscriptionId: subId, studentId: sub?.studentId || 0, amount, paidAt, method, note };
