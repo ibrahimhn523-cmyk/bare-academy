@@ -164,6 +164,20 @@ tbody td { padding: 10px 13px; vertical-align: middle; }
 .abt-wa      { background: #dcfce7; color: #16a34a; }
 .abt-wa:hover { background: #bbf7d0; }
 
+/* ── COMM SECTION ── */
+.comm-table-wrap  { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+.comm-msg-wrap    { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-top: 14px; }
+.comm-vars        { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.comm-var-btn     { font-size: .72rem; background: #ede9fe; color: #6d28d9; border: none; border-radius: 6px; padding: 3px 8px; cursor: pointer; transition: .15s; }
+.comm-var-btn:hover { background: #c4b5fd; }
+.comm-progress    { background: var(--white); border: 1px solid #86efac; border-radius: 10px; padding: 16px; margin-top: 14px; }
+.progress-bar-bg  { background: var(--border); border-radius: 999px; height: 8px; margin: 10px 0; overflow: hidden; }
+.progress-bar-fill { background: var(--success); height: 100%; border-radius: 999px; transition: width .4s; }
+.tpl-card         { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+.tpl-card-name    { font-weight: 700; font-size: .88rem; margin-bottom: 6px; }
+.tpl-card-body    { font-size: .78rem; color: var(--muted); white-space: pre-wrap; max-height: 60px; overflow: hidden; line-height: 1.5; }
+.comm-count-badge { background: #dcfce7; color: #16a34a; font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+
 /* ── BUTTONS ── */
 .btn { border: none; border-radius: 8px; padding: 8px 16px; font-family: inherit; font-size: .88rem; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; transition: opacity .18s; text-decoration: none; }
 .btn-primary   { background: var(--primary); color: #fff; }

@@ -216,6 +216,18 @@
     </div>
   </section>
 
+  <!-- ══════ LEVEL 2: COMMUNICATION ══════ -->
+  <section class="section" id="section-comm">
+    <div class="page-hdr">
+      <div class="page-title">💬 التواصل <span class="page-sub" id="comm-prog-name"></span></div>
+      <div class="hdr-actions">
+        <button class="btn btn-outline" id="comm-tab-send-btn" onclick="_commTab='send';renderComm()">📋 إرسال رسالة</button>
+        <button class="btn btn-outline" id="comm-tab-tpl-btn"  onclick="_commTab='templates';renderComm()">📝 القوالب</button>
+      </div>
+    </div>
+    <div id="comm-body"></div>
+  </section>
+
   <!-- ══════ LEVEL 2: PROGRAM STATS ══════ -->
   <section class="section" id="section-prog-stats">
     <div class="page-hdr">
@@ -687,6 +699,28 @@
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeM('m-extend')">إلغاء</button>
       <button class="btn btn-primary" onclick="saveExtend()">✅ تمديد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD TEMPLATE MODAL ══ -->
+<div class="overlay" id="m-add-template">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">📝 قالب جديد</div>
+      <button class="modal-close" onclick="closeM('m-add-template')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg"><label>اسم القالب</label><input id="tpl-name" placeholder="مثال: تذكير أسبوعي"></div>
+      <div class="fg">
+        <label>نص الرسالة</label>
+        <div style="margin-bottom:6px;font-size:.75rem;color:var(--muted)">المتغيرات المتاحة: {الاسم} {الجوال} {المبلغ_الكلي} {المدفوع} {المتبقي} {بداية_الاشتراك} {نهاية_الاشتراك} {المجموعة}</div>
+        <textarea id="tpl-body" rows="8" style="font-family:inherit;direction:rtl;width:100%"></textarea>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-secondary" onclick="closeM('m-add-template')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveCommTemplate()">💾 حفظ القالب</button>
     </div>
   </div>
 </div>
