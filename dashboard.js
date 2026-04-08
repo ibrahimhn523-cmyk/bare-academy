@@ -1510,18 +1510,39 @@ function renderComm() {
     </div>
 
     <div class="comm-msg-wrap">
-      <div class="frow" style="margin-bottom:10px;align-items:flex-end">
-        <div class="fg"><label>اختر قالباً</label>
-          <select id="comm-tpl-select" onchange="onCommTplChange()">${tplOpts}</select>
-        </div>
+      <div class="fg" style="margin-bottom:12px">
+        <label>محتوى الرسالة</label>
+        <select id="comm-tpl-select" onchange="onCommTplChange()">${tplOpts}</select>
       </div>
-      <div class="comm-vars">
+
+      <div class="comm-vars-panel">
+        <span class="vars-label">إدراج متغير:</span>
         ${COMM_VARS.map(v => `<button class="comm-var-btn" onclick="insertCommVar('${v}')">${v}</button>`).join('')}
       </div>
+
       <div class="fg">
-        <label>نص الرسالة <small style="color:var(--muted)">(قابل للتعديل — المتغيرات تُستبدل تلقائياً)</small></label>
-        <textarea id="comm-msg" rows="8" style="font-family:inherit;font-size:.86rem;line-height:1.7;direction:rtl;width:100%"></textarea>
+        <label>نص الرسالة <small style="color:var(--muted)">(المتغيرات تُستبدل تلقائياً عند الإرسال)</small></label>
+        <div class="comm-editor-wrap">
+          <textarea id="comm-msg" rows="8" style="font-family:inherit;font-size:.86rem;line-height:1.7;direction:rtl;width:100%"
+            oninput="updateCommCounter();updateCommPreview()"></textarea>
+          <div class="comm-char-counter"><span id="comm-char-count">0</span> / 1000</div>
+        </div>
       </div>
+
+      <div class="comm-preview-wrap" id="comm-preview-wrap" style="display:none">
+        <div class="comm-preview-label">👁 معاينة — بيانات أول مشترك محدد</div>
+        <div class="comm-preview-body" id="comm-preview-body"></div>
+      </div>
+
+      <details class="comm-attach-wrap">
+        <summary>📎 إرفاق ملف (اختياري)</summary>
+        <div class="comm-attach-body">
+          <input type="file" id="comm-attach-file" accept="image/*,.pdf,.doc,.docx" style="display:none" onchange="onCommFileSelect()">
+          <button class="btn btn-outline" style="font-size:.82rem" onclick="document.getElementById('comm-attach-file').click()">📁 اختر ملف</button>
+          <span id="comm-attach-name" style="font-size:.8rem;color:var(--muted)">لم يُختر ملف</span>
+          <div style="width:100%;font-size:.74rem;color:var(--muted)">⚠️ الملف لن يُرسل مباشرةً — سيُضاف اسمه في نص الرسالة فقط</div>
+        </div>
+      </details>
     </div>
 
     <div style="display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap">
@@ -1619,21 +1640,21 @@ function updateCommBadge() {
 function onCommTplChange() {
   const val = document.getElementById('comm-tpl-select')?.value;
   if (!val) return;
-  // نبني رسالة نموذجية باستخدام أول مشترك محدد أو أول مشترك عام
   const sub = _commSelected.size
     ? _progSubs.find(s => _commSelected.has(s.id))
     : _progSubs[0];
 
   if (val.startsWith('default:')) {
     const key = val.split(':')[1];
-    const msg = sub ? buildWhatsAppMsg(key, sub) : '';
-    document.getElementById('comm-msg').value = msg;
+    document.getElementById('comm-msg').value = sub ? buildWhatsAppMsg(key, sub) : '';
   } else if (val.startsWith('custom:')) {
     const idx = parseInt(val.split(':')[1]);
     const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
     const tpl = saved[idx];
     if (tpl) document.getElementById('comm-msg').value = sub ? buildCommMsg(tpl.body, sub) : tpl.body;
   }
+  updateCommCounter();
+  updateCommPreview();
 }
 
 function insertCommVar(v) {
@@ -1643,6 +1664,43 @@ function insertCommVar(v) {
   ta.value = ta.value.slice(0, s) + v + ta.value.slice(e);
   ta.selectionStart = ta.selectionEnd = s + v.length;
   ta.focus();
+  updateCommCounter();
+  updateCommPreview();
+}
+
+function updateCommCounter() {
+  const len = document.getElementById('comm-msg')?.value.length || 0;
+  const el  = document.getElementById('comm-char-count');
+  if (!el) return;
+  el.textContent = len;
+  el.style.color = len > 900 ? 'var(--danger)' : len > 700 ? 'var(--warning)' : 'var(--muted)';
+}
+
+function updateCommPreview() {
+  const body = document.getElementById('comm-msg')?.value || '';
+  const wrap = document.getElementById('comm-preview-wrap');
+  const prev = document.getElementById('comm-preview-body');
+  if (!wrap || !prev) return;
+  const sub = _commSelected.size
+    ? _progSubs.find(s => _commSelected.has(s.id))
+    : _progSubs[0];
+  if (!body.trim() || !sub) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  prev.textContent = buildCommMsg(body, sub);
+}
+
+function onCommFileSelect() {
+  const file = document.getElementById('comm-attach-file')?.files[0];
+  const nameEl = document.getElementById('comm-attach-name');
+  if (!file || !nameEl) return;
+  nameEl.textContent = file.name;
+  // أضف اسم الملف كتذكير في نهاية الرسالة
+  const ta = document.getElementById('comm-msg');
+  if (ta && !ta.value.includes(file.name)) {
+    ta.value = ta.value.trimEnd() + (ta.value ? '\n\n📎 ' : '📎 ') + file.name;
+    updateCommCounter();
+    updateCommPreview();
+  }
 }
 
 function buildCommMsg(body, sub) {
