@@ -157,6 +157,12 @@ async function startApp() {
   ['nav-admin','nav-admin-div'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = isSA ? '' : 'none';
   });
+  if (!hasPermission('attendance')) {
+    const e = document.getElementById('nav-attendance'); if (e) e.style.display = 'none';
+  }
+  if (!hasPermission('points')) {
+    const e = document.getElementById('nav-points'); if (e) e.style.display = 'none';
+  }
   if (!hasPermission('cultural')) {
     ['nav-cultural','nav-cultural-label'].forEach(id => { const e = document.getElementById(id); if(e) e.style.display='none'; });
   }
@@ -225,6 +231,23 @@ const SECTION_LABELS = {
 };
 
 function switchSection(name) {
+  // ── حارس الصلاحيات ──
+  const _SECTION_PERMS = {
+    attendance   : 'attendance',
+    points       : 'points',
+    cultural     : 'cultural',
+    sports       : 'sports',
+    'sport-stats': 'sports',
+    admin        : '__admin__'
+  };
+  const req = _SECTION_PERMS[name];
+  if (req === '__admin__' && _user?.role !== 'super_admin') {
+    toast('ليس لديك صلاحية للوصول إلى هذا القسم', 'error'); return;
+  }
+  if (req && req !== '__admin__' && !hasPermission(req)) {
+    toast('ليس لديك صلاحية للوصول إلى هذا القسم', 'error'); return;
+  }
+
   _activeSection = name;
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   const sec = document.getElementById('section-' + name);
