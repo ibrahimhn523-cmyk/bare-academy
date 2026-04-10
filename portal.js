@@ -20,6 +20,7 @@ const TB = {
   TEAMS       : 'sports_teams',
   MATCHES     : 'sports_matches',
   STATS       : 'sports_stats',
+  SETTINGS    : 'settings',
 };
 
 /* ── Supabase Helpers ── */
@@ -71,9 +72,13 @@ let _attSelGroup = '';
 let _attDate  = '';
 
 // points state
-let _ptsSubs   = [];    // subscriptions for selected program
-let _ptsPoints = [];    // points for selected program
+let _ptsSubs    = [];    // subscriptions for selected program
+let _ptsPoints  = [];    // points for selected program
 let _ptsSelProg = null;
+let _pointsStep = 1;     // وحدة القسمة للتحقق من صحة قيم النقاط
+// leaderboard state
+let _lbSubs = [];        // بيانات خام للصدارة
+let _lbPts  = [];        // نقاط خام للصدارة
 
 // cultural state
 let _cultComps  = [];
@@ -171,7 +176,7 @@ async function startApp() {
   }
 
   // Load base data
-  try { await Promise.all([loadStudents(), loadPrograms(), loadReasons()]); } catch(e) {}
+  try { await Promise.all([loadStudents(), loadPrograms(), loadReasons(), loadPointsStep()]); } catch(e) {}
   if (isSA) { try { await loadUsers(); } catch(e) {} }
 
   // Populate program selects
@@ -199,6 +204,25 @@ async function loadPrograms() {
 async function loadReasons() {
   const rows = await sbRead(TB.POINT_REASONS, 'isActive=eq.true');
   _reasons = rows.map(r => ({ id: parseInt(r.id), label: r.label, defaultValue: parseInt(r.defaultValue) || 10 }));
+}
+
+async function loadPointsStep() {
+  try {
+    const rows = await sbRead(TB.SETTINGS, 'key=eq.points_step');
+    if (rows.length) _pointsStep = Math.max(1, parseInt(rows[0].value) || 1);
+  } catch(e) { /* يبقى الافتراضي 1 */ }
+}
+
+/* مساعدا عرض مصدر النقاط */
+function srcLabel(s) {
+  if (s === 'cultural') return '\uD83C\uDFC6 \u062B\u0642\u0627\u0641\u064A';
+  if (s === 'sports')   return '\u26BD \u0631\u064A\u0627\u0636\u064A';
+  return '\uD83C\uDF1F \u0639\u0627\u0645';
+}
+function srcBadgeClass(s) {
+  if (s === 'cultural') return 'b-cultural';
+  if (s === 'sports')   return 'b-sports';
+  return 'b-manual';
 }
 
 async function loadUsers() {
@@ -541,6 +565,13 @@ function openAddPoints(studentId, studentName) {
     _reasons.map(r => `<option value="${r.id}" data-val="${r.defaultValue}">${esc(r.label)} (${r.defaultValue})</option>`).join('') +
     '<option value="__custom__">✏️ إدخال يدوي</option>';
 
+  // Reset section dropdown
+  const secSel = document.getElementById('addpts-section');
+  if (secSel) secSel.value = 'general';
+  // Step hint
+  const hint = document.getElementById('addpts-step-hint');
+  if (hint) hint.textContent = _pointsStep > 1 ? `يجب أن يكون مضاعفاً لـ ${_pointsStep}` : '';
+
   // Quota info
   const quota = _user.dailyQuota || 100;
   getTodayUsage(_user.username, _ptsSelProg?.id || 0).then(used => {
@@ -573,6 +604,10 @@ async function savePoints() {
   if (!studentId || amount <= 0) { toast('يرجى إدخال مبلغ صحيح', 'error'); return; }
   if (!reason) { toast('يرجى اختيار سبب أو إدخاله', 'error'); return; }
   if (!_ptsSelProg) { toast('لم يتم اختيار البرنامج', 'error'); return; }
+  // التحقق من المضاعف
+  if (_pointsStep > 1 && amount % _pointsStep !== 0) {
+    toast(`\u064A\u062C\u0628 \u0623\u0646 \u064A\u0643\u0648\u0646 \u0627\u0644\u0645\u0628\u0644\u063A \u0645\u0636\u0627\u0639\u0641\u0627\u064B \u0644\u0640 ${_pointsStep}`, 'error'); return;
+  }
 
   // Check quota
   const used = await getTodayUsage(_user.username, _ptsSelProg.id);
@@ -581,13 +616,14 @@ async function savePoints() {
     return;
   }
 
+  const section = document.getElementById('addpts-section')?.value || 'general';
   try {
-    await sbInsert(TB.POINTS, {
+    const created = await sbInsertReturn(TB.POINTS, {
       studentId, programId: _ptsSelProg.id, amount,
       reason: reason.replace(/\s*\(\d+\)$/,''), notes: note,
-      addedBy: _user.username, source: 'manual'
+      addedBy: _user.username, source: section
     });
-    _ptsPoints.push({ studentId, programId: _ptsSelProg.id, amount, reason, addedBy: _user.username });
+    _ptsPoints.push(created || { studentId, programId: _ptsSelProg.id, amount, reason, addedBy: _user.username, source: section });
     toast('تم تسجيل النقاط ✅');
     closeM('m-addpts');
     renderPointsTable();
@@ -618,21 +654,70 @@ async function openPtsHistory(studentId, studentName) {
       </div>
       <div class="table-card" style="margin:0">
         <div class="tbl-wrap"><table>
-          <thead><tr><th>السبب</th><th>النقاط</th><th>المصدر</th><th>المضيف</th><th>التاريخ</th></tr></thead>
+          <thead><tr><th>السبب</th><th>النقاط</th><th>القسم</th><th>المضيف</th><th>التاريخ</th><th>إجراء</th></tr></thead>
           <tbody>
-            ${pts.map(p => `<tr>
-              <td>${esc(p.reason||'')}</td>
-              <td><span class="pts-badge">+${p.amount}</span></td>
-              <td><span class="badge b-${p.source||'manual'}">${p.source === 'cultural' ? '🏆 ثقافي' : p.source === 'sports' ? '⚽ رياضي' : '👤 يدوي'}</span></td>
-              <td style="font-size:.78rem;color:var(--muted)">${esc(p.addedBy||'')}</td>
-              <td style="font-size:.78rem;color:var(--muted)">${fmtDatetime(p.addedAt)}</td>
-            </tr>`).join('')}
+            ${pts.map(p => {
+              const canEdit = _user?.role === 'super_admin' || p.addedBy === _user?.username;
+              const actions = canEdit
+                ? `<td class="td-actions">
+                     <button class="btn btn-sm btn-outline" onclick="openEditPtsEntry('${p.id}',${p.amount},'${esc(p.notes||'')}')">✏️</button>
+                     <button class="btn btn-sm btn-danger"  onclick="deletePtsEntry('${p.id}',${studentId})">🗑️</button>
+                   </td>`
+                : `<td style="color:var(--muted);font-size:.8rem">—</td>`;
+              return `<tr>
+                <td>${esc(p.reason||'')}</td>
+                <td><span class="pts-badge">+${p.amount}</span></td>
+                <td><span class="badge ${srcBadgeClass(p.source)}">${srcLabel(p.source)}</span></td>
+                <td style="font-size:.78rem;color:var(--muted)">${esc(p.addedBy||'')}</td>
+                <td style="font-size:.78rem;color:var(--muted)">${fmtDatetime(p.addedAt)}</td>
+                ${actions}
+              </tr>`;
+            }).join('')}
           </tbody>
         </table></div>
       </div>`;
   } catch(e) {
     document.getElementById('m-ptshistory-body').innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
   }
+}
+
+async function deletePtsEntry(id, studentId) {
+  if (!confirm('حذف هذه النقاط؟ لا يمكن التراجع.')) return;
+  try {
+    await fetch(`${SB_URL}/points?id=eq.${id}`, { method: 'DELETE', headers: _h() });
+    _ptsPoints = _ptsPoints.filter(p => String(p.id) !== String(id));
+    toast('تم الحذف ✅');
+    closeM('m-ptshistory');
+    renderPointsTable();
+    // إعادة فتح السجل مع البيانات المحدثة
+    const sub = _ptsSubs.find(s => parseInt(s.studentId) === studentId);
+    if (sub) setTimeout(() => openPtsHistory(studentId, sub.studentName), 100);
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+}
+
+function openEditPtsEntry(id, currentAmount, currentNotes) {
+  document.getElementById('editpts-id').value     = id;
+  document.getElementById('editpts-amount').value = currentAmount;
+  document.getElementById('editpts-notes').value  = currentNotes;
+  openM('m-editpts');
+}
+
+async function saveEditPtsEntry() {
+  const id     = document.getElementById('editpts-id').value;
+  const amount = parseInt(document.getElementById('editpts-amount').value) || 0;
+  const notes  = document.getElementById('editpts-notes').value.trim();
+  if (!id || amount <= 0) { toast('يرجى إدخال مبلغ صحيح', 'error'); return; }
+  if (_pointsStep > 1 && amount % _pointsStep !== 0) {
+    toast(`يجب أن يكون المبلغ مضاعفاً لـ ${_pointsStep}`, 'error'); return;
+  }
+  try {
+    await sbUpdate(TB.POINTS, id, { amount, notes });
+    const idx = _ptsPoints.findIndex(p => String(p.id) === String(id));
+    if (idx !== -1) { _ptsPoints[idx].amount = amount; _ptsPoints[idx].notes = notes; }
+    toast('تم التعديل ✅');
+    closeM('m-editpts');
+    renderPointsTable();
+  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
 }
 
 /* ══════════════════════════════════════════
@@ -1718,11 +1803,18 @@ function openTournamentView() {
 ══════════════════════════════════════════ */
 async function loadLeaderboard() {
   const progId = parseInt(document.getElementById('lb-prog-sel').value) || 0;
-  const body   = document.getElementById('lb-body');
-  const extBtn = document.getElementById('lb-ext-btn');
-  if (!progId) { body.innerHTML = `<div class="empty"><div class="ei">📊</div><p>اختر البرنامج</p></div>`; extBtn.style.display='none'; return; }
+  const body      = document.getElementById('lb-body');
+  const extBtn    = document.getElementById('lb-ext-btn');
+  const filterBar = document.getElementById('lb-section-filter');
+  if (!progId) {
+    body.innerHTML = `<div class="empty"><div class="ei">📊</div><p>اختر البرنامج</p></div>`;
+    extBtn.style.display = 'none';
+    if (filterBar) filterBar.style.display = 'none';
+    return;
+  }
   extBtn.style.display = '';
   extBtn.onclick = () => window.open(`leaderboard.html?prog=${progId}`, '_blank');
+  if (filterBar) filterBar.style.display = 'flex';
 
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
   try {
@@ -1730,10 +1822,22 @@ async function loadLeaderboard() {
       sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}`),
       sbRead(TB.POINTS, `programId=eq.${progId}`)
     ]);
-    body.innerHTML = renderLeaderboardHTML(subs, pts);
+    _lbSubs = subs;
+    _lbPts  = pts;
+    applyLeaderboardFilter();
   } catch(e) {
     body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>${e.message}</p></div>`;
   }
+}
+
+function applyLeaderboardFilter() {
+  const sel = [];
+  if (document.getElementById('lb-filter-general')?.checked)  sel.push('general', 'manual');
+  if (document.getElementById('lb-filter-cultural')?.checked) sel.push('cultural');
+  if (document.getElementById('lb-filter-sports')?.checked)   sel.push('sports');
+  // إذا لم يُحدد شيء → اعرض الكل
+  const filtered = sel.length ? _lbPts.filter(p => sel.includes(p.source || 'manual')) : _lbPts;
+  document.getElementById('lb-body').innerHTML = renderLeaderboardHTML(_lbSubs, filtered);
 }
 
 function renderLeaderboardHTML(subs, pts) {
@@ -1742,48 +1846,65 @@ function renderLeaderboardHTML(subs, pts) {
 
   const ranked = subs
     .map(s => ({ id: parseInt(s.studentId), name: s.studentName || '', group: s.groupName || '', pts: ptMap[parseInt(s.studentId)] || 0 }))
-    .filter((v,i,a) => a.findIndex(x=>x.id===v.id)===i)  // unique by studentId
+    .filter((v,i,a) => a.findIndex(x=>x.id===v.id)===i)
     .sort((a,b) => b.pts - a.pts);
 
   if (!ranked.length) return `<div class="empty"><div class="ei">📊</div><p>لا يوجد مشتركون في هذا البرنامج</p></div>`;
 
-  const top3 = ranked.slice(0,3);
-  const rest = ranked.slice(3);
+  const top3  = ranked.slice(0, 3);
+  const tier2 = ranked.slice(3, 13);   // المراتب 4-13 قائمة ثابتة
+  const tier3 = ranked.slice(13);      // المراتب 14+ تمرير تلقائي
 
-  // Podium order: 2nd, 1st, 3rd
+  // المنصة — الترتيب: 2، 1، 3
   const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
-  const medals = ['🥈','🥇','🥉'];
-  const podiumClass = ['lb-pod-2','lb-pod-1','lb-pod-3'];
-
   const podiumHtml = `
     <div class="lb-podium">
-      ${podiumOrder.map((p, i) => {
-        const origIdx = podiumOrder.indexOf(p);
-        const medal = p === top3[0] ? '🥇' : p === top3[1] ? '🥈' : '🥉';
+      ${podiumOrder.map(p => {
+        const medal = p === top3[0] ? '\uD83E\uDD47' : p === top3[1] ? '\uD83E\uDD48' : '\uD83E\uDD49';
         const cls   = p === top3[0] ? 'lb-pod-1' : p === top3[1] ? 'lb-pod-2' : 'lb-pod-3';
         return `<div class="lb-pod-item ${cls}">
           <div class="lb-bar"></div>
           <div class="lb-pod-card">
             <div class="lb-pod-rank">${medal}</div>
             <div class="lb-pod-name" title="${esc(p.name)}">${esc(p.name)}</div>
-            <div class="lb-pod-pts">${p.pts} نقطة</div>
+            <div class="lb-pod-pts">${p.pts} \u0646\u0642\u0637\u0629</div>
           </div>
         </div>`;
       }).join('')}
     </div>`;
 
-  const listHtml = `
-    <div class="table-card">
-      ${rest.map((p, i) => `
+  // المراتب 4-13: قائمة ثابتة
+  const tier2Html = tier2.length ? `
+    <div class="table-card lb-tier2">
+      ${tier2.map((p, i) => `
         <div class="lb-list-item">
           <span class="lb-num">${i+4}</span>
           <span class="lb-name">${esc(p.name)}</span>
           <span class="lb-grp">${esc(p.group)}</span>
           <span class="lb-pts">${p.pts}</span>
         </div>`).join('')}
-    </div>`;
+    </div>` : '';
 
-  return podiumHtml + (rest.length ? listHtml : '');
+  // المراتب 14+: تمرير تلقائي لانهائي
+  const scrollDur = Math.max(10, tier3.length * 1.5);
+  const tier3ItemsHtml = tier3.map((p, i) => `
+    <div class="lb-list-item">
+      <span class="lb-num">${i+14}</span>
+      <span class="lb-name">${esc(p.name)}</span>
+      <span class="lb-grp">${esc(p.group)}</span>
+      <span class="lb-pts">${p.pts}</span>
+    </div>`).join('');
+  const tier3Html = tier3.length ? `
+    <div class="table-card lb-tier3">
+      <div class="lb-scroll-label">\u0627\u0644\u0645\u0631\u0627\u062A\u0628 14+</div>
+      <div class="lb-scroll-wrap">
+        <div class="lb-scroll-inner" style="animation-duration:${scrollDur}s">
+          ${tier3ItemsHtml}${tier3ItemsHtml}
+        </div>
+      </div>
+    </div>` : '';
+
+  return podiumHtml + tier2Html + tier3Html;
 }
 
 function openLeaderboardExternal() {
@@ -1795,13 +1916,35 @@ function openLeaderboardExternal() {
    ADMIN SECTION
 ══════════════════════════════════════════ */
 async function admTab(tab) {
-  ['users','reasons','log'].forEach(t => {
-    document.getElementById(`adm-${t}`).style.display = t === tab ? '' : 'none';
-    document.getElementById(`adm-tab-${t}`).className = `btn ${t === tab ? 'btn-primary' : 'btn-outline'}`;
+  ['users','reasons','log','settings'].forEach(t => {
+    const panel = document.getElementById(`adm-${t}`);
+    const btn   = document.getElementById(`adm-tab-${t}`);
+    if (panel) panel.style.display = t === tab ? '' : 'none';
+    if (btn)   btn.className = `btn ${t === tab ? 'btn-primary' : 'btn-outline'}`;
   });
-  if (tab === 'users')   { await loadUsers(); renderAdmUsers(); }
-  if (tab === 'reasons') renderAdmReasons();
-  if (tab === 'log')     loadAdmLog();
+  if (tab === 'users')    { await loadUsers(); renderAdmUsers(); }
+  if (tab === 'reasons')  renderAdmReasons();
+  if (tab === 'log')      loadAdmLog();
+  if (tab === 'settings') loadAdmSettings();
+}
+
+function loadAdmSettings() {
+  const el = document.getElementById('adm-step-val');
+  if (el) el.value = _pointsStep;
+  const st = document.getElementById('adm-settings-status');
+  if (st) st.textContent = '';
+}
+
+async function savePointsSettings() {
+  const val = Math.max(1, parseInt(document.getElementById('adm-step-val').value) || 1);
+  try {
+    await sbUpsert(TB.SETTINGS, { key: 'points_step', value: String(val) });
+    _pointsStep = val;
+    document.getElementById('adm-settings-status').textContent = '\u2705 \u062A\u0645 \u0627\u0644\u062D\u0641\u0638';
+    const hint = document.getElementById('addpts-step-hint');
+    if (hint) hint.textContent = _pointsStep > 1 ? `\u064A\u062C\u0628 \u0623\u0646 \u064A\u0643\u0648\u0646 \u0645\u0636\u0627\u0639\u0641\u0627\u064B \u0644\u0640 ${_pointsStep}` : '';
+    toast('\u062A\u0645 \u062D\u0641\u0638 \u0627\u0644\u0625\u0639\u062F\u0627\u062F\u0627\u062A \u2705');
+  } catch(e) { toast('\u062E\u0637\u0623: ' + e.message, 'error'); }
 }
 
 function renderAdmUsers() {

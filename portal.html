@@ -195,6 +195,18 @@
         <label>البرنامج:</label>
         <select id="lb-prog-sel" onchange="loadLeaderboard()"><option value="">-- اختر --</option></select>
       </div>
+      <div id="lb-section-filter" style="display:none;gap:16px;align-items:center;padding:10px 0;flex-wrap:wrap" class="prog-select-bar">
+        <span style="font-size:.83rem;font-weight:600;color:var(--muted)">فلترة القسم:</span>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;direction:ltr">
+          <input type="checkbox" id="lb-filter-general"  checked onchange="applyLeaderboardFilter()"> <span>🌟 عام</span>
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;direction:ltr">
+          <input type="checkbox" id="lb-filter-cultural" checked onchange="applyLeaderboardFilter()"> <span>🏆 ثقافي</span>
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;direction:ltr">
+          <input type="checkbox" id="lb-filter-sports"   checked onchange="applyLeaderboardFilter()"> <span>⚽ رياضي</span>
+        </label>
+      </div>
       <div id="lb-body">
         <div class="empty"><div class="ei">📊</div><p>اختر البرنامج لعرض الصدارة</p></div>
       </div>
@@ -208,9 +220,10 @@
 
       <!-- Tabs -->
       <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="btn btn-primary" id="adm-tab-users"    onclick="admTab('users')"  >👥 المستخدمون</button>
-        <button class="btn btn-outline" id="adm-tab-reasons"  onclick="admTab('reasons')">⭐ بنود النقاط</button>
-        <button class="btn btn-outline" id="adm-tab-log"      onclick="admTab('log')"    >🕑 سجل العمليات</button>
+        <button class="btn btn-primary" id="adm-tab-users"    onclick="admTab('users')"   >👥 المستخدمون</button>
+        <button class="btn btn-outline" id="adm-tab-reasons"  onclick="admTab('reasons')" >⭐ بنود النقاط</button>
+        <button class="btn btn-outline" id="adm-tab-log"      onclick="admTab('log')"     >🕑 سجل العمليات</button>
+        <button class="btn btn-outline" id="adm-tab-settings" onclick="admTab('settings')">⚙️ إعدادات</button>
       </div>
 
       <!-- Users Tab -->
@@ -244,6 +257,22 @@
               <thead><tr><th>السبب</th><th>القيمة الافتراضية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
               <tbody id="adm-reasons-body"></tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings Tab -->
+      <div id="adm-settings" style="display:none">
+        <div class="table-card" style="padding:20px;max-width:460px">
+          <div style="font-weight:700;margin-bottom:16px">⚙️ إعدادات نظام النقاط</div>
+          <div class="form-group">
+            <label>وحدة المضاعف (قابلية القسمة)</label>
+            <input type="number" id="adm-step-val" min="1" value="1" style="max-width:120px">
+            <div style="font-size:.76rem;color:var(--muted);margin-top:4px">مثال: 10 ← النقاط يجب أن تكون 10، 20، 30… — اضبطه على 1 لإلغاء التقييد</div>
+          </div>
+          <div style="margin-top:14px;display:flex;align-items:center;gap:12px">
+            <button class="btn btn-gold" onclick="savePointsSettings()">💾 حفظ</button>
+            <span id="adm-settings-status" style="font-size:.82rem;color:var(--success)"></span>
           </div>
         </div>
       </div>
@@ -292,10 +321,19 @@
         <label>السبب (يدوي)</label>
         <input type="text" id="addpts-custom-reason" placeholder="اكتب السبب">
       </div>
+      <div class="form-group">
+        <label>القسم</label>
+        <select id="addpts-section">
+          <option value="general">🌟 عام</option>
+          <option value="cultural">🏆 ثقافي</option>
+          <option value="sports">⚽ رياضي</option>
+        </select>
+      </div>
       <div class="form-row">
         <div class="form-group">
           <label>المبلغ</label>
-          <input type="number" id="addpts-amount" min="1" max="1000" placeholder="10">
+          <input type="number" id="addpts-amount" min="1" max="10000" placeholder="10">
+          <div id="addpts-step-hint" style="font-size:.74rem;color:var(--muted);margin-top:3px"></div>
         </div>
         <div class="form-group">
           <label>ملاحظة</label>
@@ -599,6 +637,31 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeM('m-reason')">إلغاء</button>
       <button class="btn btn-gold" onclick="saveReason()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Edit Points Entry -->
+<div class="overlay" id="m-editpts">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-hdr">
+      <div class="modal-title">✏️ تعديل النقاط</div>
+      <button class="modal-close" onclick="closeM('m-editpts')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editpts-id">
+      <div class="form-group">
+        <label>المبلغ</label>
+        <input type="number" id="editpts-amount" min="1" max="10000">
+      </div>
+      <div class="form-group">
+        <label>ملاحظة</label>
+        <input type="text" id="editpts-notes" placeholder="اختياري">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-editpts')">إلغاء</button>
+      <button class="btn btn-gold" onclick="saveEditPtsEntry()">💾 حفظ</button>
     </div>
   </div>
 </div>

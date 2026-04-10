@@ -505,3 +505,33 @@ tbody tr:hover { background:#f8faff; }
   .sport-stat-grid { grid-template-columns:1fr; }
   .wizard-steps .wz-label { display:none; }
 }
+
+/* ══ POINTS SYSTEM — NEW STYLES ══ */
+
+/* شارات أقسام النقاط */
+.b-manual, .b-general { background: rgba(148,163,184,.15); color: var(--primary); }
+.b-cultural            { background: rgba(212,175,55,.15);  color: #92400e; }
+.b-sports              { background: rgba(59,130,246,.12);  color: #1e3a8a; }
+
+/* طبقات الصدارة */
+.lb-tier2 { margin-bottom: 8px; }
+.lb-tier3 { overflow: hidden; }
+
+.lb-scroll-label {
+  font-size: .74rem; font-weight: 700; color: var(--muted);
+  padding: 6px 0 4px; text-align: center; letter-spacing: .04em;
+}
+.lb-scroll-wrap {
+  max-height: 240px;
+  overflow: hidden;
+  position: relative;
+}
+.lb-scroll-inner {
+  animation: lb-scroll 20s linear infinite;
+}
+.lb-scroll-inner:hover { animation-play-state: paused; }
+
+@keyframes lb-scroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-50%); }
+}
