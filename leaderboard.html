@@ -21,28 +21,81 @@ body {
   direction:rtl;
 }
 
-/* Header */
+/* ══ Header ══ */
 .lb-header {
   background:linear-gradient(135deg, var(--primary) 0%, #0f172a 100%);
   border-bottom:3px solid var(--gold);
   padding:20px 24px 16px;
   text-align:center;
+  position:relative;
 }
 .lb-header img { width:60px; height:auto; margin:0 auto 10px; display:block; }
 .lb-header h1 { font-size:1.8rem; font-weight:bold; color:var(--white); }
 .lb-header .prog-name { color:var(--gold); font-size:1rem; margin-top:4px; }
 .lb-header .refresh-info { font-size:.75rem; color:var(--muted); margin-top:8px; }
 
-/* Loading */
+/* ══ Sort Button ══ */
+.sort-btn-wrap {
+  position:absolute;
+  top:50%; left:16px;
+  transform:translateY(-50%);
+}
+.sort-btn {
+  display:flex; align-items:center; gap:6px;
+  background:rgba(212,175,55,.12);
+  border:1px solid rgba(212,175,55,.35);
+  color:var(--gold);
+  font-family:inherit; font-size:.82rem;
+  padding:7px 14px; border-radius:20px;
+  cursor:pointer; transition:background .2s;
+  white-space:nowrap;
+}
+.sort-btn:hover { background:rgba(212,175,55,.22); }
+.sort-arrow { font-size:.65rem; transition:transform .2s; }
+.sort-btn.open .sort-arrow { transform:rotate(180deg); }
+
+/* ══ Sort Dropdown ══ */
+.sort-dropdown {
+  position:absolute;
+  top:calc(100% + 8px); left:0;
+  background:#1e293b;
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:12px;
+  min-width:210px;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);
+  z-index:200;
+  display:none;
+}
+.sort-dropdown.open { display:block; }
+.sort-section-title {
+  font-size:.72rem; color:var(--muted);
+  text-transform:uppercase; letter-spacing:.04em;
+  margin-bottom:8px; padding-bottom:4px;
+  border-bottom:1px solid var(--border);
+}
+.sort-option {
+  display:flex; align-items:center; gap:8px;
+  padding:7px 8px; border-radius:8px;
+  cursor:pointer; font-size:.84rem;
+  transition:background .15s;
+  margin-bottom:2px;
+}
+.sort-option:hover { background:rgba(255,255,255,.06); }
+.sort-option input[type=radio],
+.sort-option input[type=checkbox] { accent-color:var(--gold); width:15px; height:15px; cursor:pointer; }
+.sort-divider { border:none; border-top:1px solid var(--border); margin:10px 0; }
+
+/* ══ Loading ══ */
 .loading { text-align:center; padding:60px 20px; color:var(--muted); font-size:1.1rem; }
 .loading .spin { display:inline-block; font-size:2rem; animation:spin 1.2s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* Podium */
+/* ══ Podium ══ */
 .podium-section { padding:30px 20px 10px; max-width:600px; margin:0 auto; }
 .podium { display:flex; align-items:flex-end; justify-content:center; gap:16px; }
 .pod-item { text-align:center; flex:1; max-width:160px; }
-.pod-bar-1 { height:100px; background:linear-gradient(180deg,rgba(212,175,55,.3),rgba(212,175,55,.1)); border-radius:8px 8px 0 0; margin-bottom:0; }
+.pod-bar-1 { height:100px; background:linear-gradient(180deg,rgba(212,175,55,.3),rgba(212,175,55,.1)); border-radius:8px 8px 0 0; }
 .pod-bar-2 { height:70px; background:linear-gradient(180deg,rgba(148,163,184,.3),rgba(148,163,184,.1)); border-radius:8px 8px 0 0; }
 .pod-bar-3 { height:50px; background:linear-gradient(180deg,rgba(180,83,9,.3),rgba(180,83,9,.1)); border-radius:8px 8px 0 0; }
 .pod-card {
@@ -59,7 +112,7 @@ body {
 .pod-pts span { font-size:.72rem; color:var(--muted); }
 .pod-glow-1 { position:absolute; inset:0; background:radial-gradient(circle at 50% 0%, rgba(212,175,55,.15), transparent 70%); pointer-events:none; }
 
-/* List */
+/* ══ List ══ */
 .list-section { max-width:700px; margin:20px auto; padding:0 16px 40px; }
 .list-item {
   display:flex; align-items:center; gap:14px;
@@ -74,17 +127,35 @@ body {
 .list-group { font-size:.75rem; color:var(--muted); }
 .list-pts { font-weight:bold; color:var(--gold); font-size:1rem; white-space:nowrap; }
 
-/* Empty */
+/* ══ Group Header ══ */
+.group-header {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 4px 6px;
+  margin-top:20px; margin-bottom:6px;
+}
+.group-header-line { flex:1; height:1px; background:var(--border); }
+.group-header-name {
+  font-size:.78rem; color:var(--gold);
+  background:rgba(212,175,55,.1);
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:20px; padding:3px 12px;
+  white-space:nowrap;
+}
+
+/* ══ Source Badge ══ */
+.src-badge {
+  font-size:.68rem; border-radius:10px;
+  padding:2px 8px; white-space:nowrap; flex-shrink:0;
+}
+.src-general { background:rgba(148,163,184,.15); color:#94a3b8; }
+.src-cultural { background:rgba(212,175,55,.15); color:#d4af37; }
+.src-sports   { background:rgba(59,130,246,.15); color:#60a5fa; }
+
+/* ══ Empty ══ */
 .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
 .empty-state .ei { font-size:3rem; margin-bottom:12px; }
 
-/* Ticker */
-.ticker-wrap { background:rgba(212,175,55,.08); border-bottom:1px solid rgba(212,175,55,.2); padding:8px 0; overflow:hidden; }
-.ticker { display:flex; gap:40px; animation:scroll-ticker 25s linear infinite; width:max-content; padding:0 16px; }
-.ticker-item { font-size:.82rem; color:var(--gold); white-space:nowrap; }
-@keyframes scroll-ticker { from { transform:translateX(0); } to { transform:translateX(-50%); } }
-
-/* Countdown badge */
+/* ══ Refresh badge ══ */
 .refresh-badge {
   position:fixed; bottom:16px; left:16px;
   background:rgba(30,41,59,.9); border:1px solid var(--border);
@@ -96,14 +167,45 @@ body {
 <body>
 
 <div class="lb-header">
+  <!-- Sort button -->
+  <div class="sort-btn-wrap" id="sort-btn-wrap">
+    <button class="sort-btn" id="sort-btn" onclick="toggleSort()">
+      <span>فرز</span>
+      <span class="sort-arrow" id="sort-arrow">▾</span>
+    </button>
+    <div class="sort-dropdown" id="sort-dropdown">
+      <!-- Sort order -->
+      <div class="sort-section-title">الترتيب</div>
+      <label class="sort-option">
+        <input type="radio" name="sort-order" value="pts" checked onchange="applySort()">
+        <span>📊 حسب النقاط</span>
+      </label>
+      <label class="sort-option">
+        <input type="radio" name="sort-order" value="group" onchange="applySort()">
+        <span>👥 حسب المجموعة</span>
+      </label>
+      <hr class="sort-divider">
+      <!-- Source filter -->
+      <div class="sort-section-title">مصدر النقاط</div>
+      <label class="sort-option">
+        <input type="checkbox" id="f-general" checked onchange="applySort()">
+        <span>🌟 عام</span>
+      </label>
+      <label class="sort-option">
+        <input type="checkbox" id="f-cultural" checked onchange="applySort()">
+        <span>🏆 ثقافي</span>
+      </label>
+      <label class="sort-option">
+        <input type="checkbox" id="f-sports" checked onchange="applySort()">
+        <span>⚽ رياضي</span>
+      </label>
+    </div>
+  </div>
+
   <img src="image/bare-logo.png" alt="بارع">
   <h1>لوحة الصدارة 🏆</h1>
   <div class="prog-name" id="prog-name">جاري التحميل…</div>
   <div class="refresh-info">يتحدث تلقائياً كل دقيقة</div>
-</div>
-
-<div class="ticker-wrap" id="ticker-wrap" style="display:none">
-  <div class="ticker" id="ticker"></div>
 </div>
 
 <div id="lb-content">
@@ -119,6 +221,27 @@ const H = { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type
 
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+// ── Global state ──
+let _allSubs = [];
+let _allPts  = [];
+
+// ── Sort dropdown toggle ──
+function toggleSort() {
+  const btn = document.getElementById('sort-btn');
+  const dd  = document.getElementById('sort-dropdown');
+  const open = dd.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!document.getElementById('sort-btn-wrap').contains(e.target)) {
+    document.getElementById('sort-dropdown').classList.remove('open');
+    document.getElementById('sort-btn').classList.remove('open');
+  }
+});
+
+// ── Load data ──
 async function load() {
   const params = new URLSearchParams(location.search);
   const progId = parseInt(params.get('prog')) || 0;
@@ -131,7 +254,7 @@ async function load() {
     const [progRes, subsRes, ptsRes] = await Promise.all([
       fetch(`${SB_URL}/programs?id=eq.${progId}&select=name`, { headers: H }),
       fetch(`${SB_URL}/subscriptions?programId=eq.${progId}&select=studentId,studentName,groupName`, { headers: H }),
-      fetch(`${SB_URL}/points?programId=eq.${progId}&select=studentId,amount`, { headers: H })
+      fetch(`${SB_URL}/points?programId=eq.${progId}&select=studentId,amount,source`, { headers: H })
     ]);
 
     const [progs, subs, pts] = await Promise.all([progRes.json(), subsRes.json(), ptsRes.json()]);
@@ -139,81 +262,139 @@ async function load() {
     document.getElementById('prog-name').textContent = progs[0]?.name || 'البرنامج';
     document.title = `صدارة: ${progs[0]?.name || 'بارع'}`;
 
-    // Build rankings
-    const ptMap = {};
-    pts.forEach(p => { ptMap[parseInt(p.studentId)] = (ptMap[parseInt(p.studentId)]||0) + (parseInt(p.amount)||0); });
+    _allSubs = subs;
+    _allPts  = pts;
 
-    const ranked = subs
-      .map(s => ({ id: parseInt(s.studentId), name: s.studentName||'', group: s.groupName||'', pts: ptMap[parseInt(s.studentId)]||0 }))
-      .filter((v,i,a) => a.findIndex(x=>x.id===v.id)===i)
-      .sort((a,b) => b.pts - a.pts);
-
-    if (!ranked.length) {
-      document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">📊</div><p>لا يوجد مشتركون بعد</p></div>`;
-      return;
-    }
-
-    // Ticker
-    const tickerEl = document.getElementById('ticker');
-    const tickerWrap = document.getElementById('ticker-wrap');
-    const tickerContent = ranked.slice(0,10).map(r => `<span class="ticker-item">🏆 ${esc(r.name)} — ${r.pts} نقطة</span>`).join('');
-    tickerEl.innerHTML = tickerContent + tickerContent; // double for seamless loop
-    tickerWrap.style.display = '';
-
-    // Render
-    render(ranked);
+    applySort();
   } catch(e) {
     document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">⚠️</div><p>خطأ في التحميل: ${e.message}</p></div>`;
   }
 }
 
-function render(ranked) {
+// ── Apply sort & filter then render ──
+function applySort() {
+  // Collect active sources
+  const activeSrc = [];
+  if (document.getElementById('f-general')?.checked)  activeSrc.push('general', 'manual', null, undefined, '');
+  if (document.getElementById('f-cultural')?.checked) activeSrc.push('cultural');
+  if (document.getElementById('f-sports')?.checked)   activeSrc.push('sports');
+
+  // Filter points by source
+  const filteredPts = _allPts.filter(p => activeSrc.includes(p.source || 'manual'));
+
+  // Build point map
+  const ptMap = {};
+  filteredPts.forEach(p => {
+    const sid = parseInt(p.studentId);
+    ptMap[sid] = (ptMap[sid] || 0) + (parseInt(p.amount) || 0);
+  });
+
+  // Build ranked list (unique students)
+  const ranked = _allSubs
+    .map(s => ({ id: parseInt(s.studentId), name: s.studentName||'', group: s.groupName||'', pts: ptMap[parseInt(s.studentId)] || 0 }))
+    .filter((v,i,a) => a.findIndex(x => x.id === v.id) === i);
+
+  // Sort
+  const order = document.querySelector('input[name="sort-order"]:checked')?.value || 'pts';
+  if (order === 'pts') {
+    ranked.sort((a,b) => b.pts - a.pts);
+  } else {
+    ranked.sort((a,b) => {
+      const gc = (a.group||'').localeCompare(b.group||'', 'ar');
+      return gc !== 0 ? gc : b.pts - a.pts;
+    });
+  }
+
+  if (!ranked.length) {
+    document.getElementById('lb-content').innerHTML = `<div class="empty-state"><div class="ei">📊</div><p>لا يوجد مشتركون</p></div>`;
+    return;
+  }
+
+  render(ranked, order);
+}
+
+// ── Render ──
+function render(ranked, order) {
   const top3 = ranked.slice(0, 3);
   const rest = ranked.slice(3);
-  const medals = ['🥈','🥇','🥉'];
-  const bars   = ['pod-bar-2','pod-bar-1','pod-bar-3'];
-  const cls    = ['pod-2','pod-1','pod-3'];
-  // Order: 2nd center-left, 1st center, 3rd center-right
-  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
 
-  const podiumHtml = `
-    <div class="podium-section">
-      <div class="podium">
-        ${order.map((p) => {
-          const medal = p === top3[0] ? '🥇' : p === top3[1] ? '🥈' : '🥉';
-          const bar   = p === top3[0] ? 'pod-bar-1' : p === top3[1] ? 'pod-bar-2' : 'pod-bar-3';
-          const podCls= p === top3[0] ? 'pod-1' : p === top3[1] ? 'pod-2' : 'pod-3';
-          return `<div class="pod-item ${podCls}">
-            <div class="${bar}"></div>
-            <div class="pod-card">
-              ${podCls === 'pod-1' ? '<div class="pod-glow-1"></div>' : ''}
-              <div class="pod-medal">${medal}</div>
-              <div class="pod-name" title="${esc(p.name)}">${esc(p.name)}</div>
-              <div class="pod-group">${esc(p.group)}</div>
-              <div class="pod-pts">${p.pts} <span>نقطة</span></div>
+  // Podium (only shown in pts order)
+  let podiumHtml = '';
+  if (order === 'pts' && top3.length) {
+    const podiumOrder = [top3[1], top3[0], top3[2]].filter(Boolean);
+    podiumHtml = `
+      <div class="podium-section">
+        <div class="podium">
+          ${podiumOrder.map(p => {
+            const medal  = p === top3[0] ? '\uD83E\uDD47' : p === top3[1] ? '\uD83E\uDD48' : '\uD83E\uDD49';
+            const barCls = p === top3[0] ? 'pod-bar-1' : p === top3[1] ? 'pod-bar-2' : 'pod-bar-3';
+            const podCls = p === top3[0] ? 'pod-1'     : p === top3[1] ? 'pod-2'     : 'pod-3';
+            return `<div class="pod-item ${podCls}">
+              <div class="${barCls}"></div>
+              <div class="pod-card">
+                ${podCls === 'pod-1' ? '<div class="pod-glow-1"></div>' : ''}
+                <div class="pod-medal">${medal}</div>
+                <div class="pod-name" title="${esc(p.name)}">${esc(p.name)}</div>
+                <div class="pod-group">${esc(p.group)}</div>
+                <div class="pod-pts">${p.pts} <span>\u0646\u0642\u0637\u0629</span></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  // List
+  let listHtml = '';
+  if (order === 'group') {
+    // Group mode: show all, grouped by group name
+    const groups = {};
+    ranked.forEach((p, i) => {
+      const g = p.group || '\u0628\u062F\u0648\u0646 \u0645\u062C\u0645\u0648\u0639\u0629';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push({ ...p, globalRank: i + 1 });
+    });
+    listHtml = `<div class="list-section">`;
+    Object.entries(groups).forEach(([groupName, members]) => {
+      listHtml += `
+        <div class="group-header">
+          <div class="group-header-line"></div>
+          <div class="group-header-name">\uD83D\uDC65 ${esc(groupName)}</div>
+          <div class="group-header-line"></div>
+        </div>`;
+      members.forEach((p, i) => {
+        listHtml += `
+          <div class="list-item">
+            <span class="list-rank">${i + 1}</span>
+            <div style="flex:1">
+              <div class="list-name">${esc(p.name)}</div>
             </div>
+            <span class="list-pts">${p.pts} \u0646\u0642\u0637\u0629</span>
           </div>`;
-        }).join('')}
-      </div>
-    </div>`;
-
-  const listHtml = rest.length ? `
-    <div class="list-section">
-      ${rest.map((p, i) => `
-        <div class="list-item">
-          <span class="list-rank">${i+4}</span>
-          <div style="flex:1">
-            <div class="list-name">${esc(p.name)}</div>
-            <div class="list-group">${esc(p.group)}</div>
-          </div>
-          <span class="list-pts">${p.pts} نقطة</span>
-        </div>`).join('')}
-    </div>` : '';
+      });
+    });
+    listHtml += `</div>`;
+  } else {
+    // Points mode: show rest (4+) as numbered list
+    if (rest.length) {
+      listHtml = `<div class="list-section">
+        ${rest.map((p, i) => `
+          <div class="list-item">
+            <span class="list-rank">${i + 4}</span>
+            <div style="flex:1">
+              <div class="list-name">${esc(p.name)}</div>
+              <div class="list-group">${esc(p.group)}</div>
+            </div>
+            <span class="list-pts">${p.pts} \u0646\u0642\u0637\u0629</span>
+          </div>`).join('')}
+      </div>`;
+    }
+  }
 
   document.getElementById('lb-content').innerHTML = podiumHtml + listHtml;
 }
 
-// Countdown + auto refresh
+// ── Countdown + auto refresh ──
 let _countdown = 60;
 setInterval(() => {
   _countdown--;
