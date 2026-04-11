@@ -133,6 +133,13 @@
           <div class="quota-bar-wrap"><div class="quota-bar" id="pts-quota-bar" style="width:0%"></div></div>
         </div>
       </div>
+      <!-- شريط الاختيار الجماعي -->
+      <div class="bulk-bar" id="pts-bulk-bar" style="display:none">
+        <span class="bulk-count" id="pts-bulk-count">0 طالب محدد</span>
+        <button class="btn btn-sm btn-gold"    onclick="openBulkPoints('add')">➕ إضافة نقاط</button>
+        <button class="btn btn-sm btn-danger"  onclick="openBulkPoints('deduct')">➖ خصم نقاط</button>
+        <button class="btn btn-sm btn-outline" onclick="clearBulkSel()">✕ إلغاء التحديد</button>
+      </div>
       <div id="pts-body">
         <div class="empty"><div class="ei">⭐</div><p>اختر البرنامج لعرض نقاط الطلاب</p></div>
       </div>
@@ -662,6 +669,61 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeM('m-editpts')">إلغاء</button>
       <button class="btn btn-gold" onclick="saveEditPtsEntry()">💾 حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Bulk Points (إضافة/خصم جماعي) -->
+<div class="overlay" id="m-bulkpts">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr">
+      <div class="modal-title" id="bulk-modal-title">➕ إضافة جماعية</div>
+      <button class="modal-close" onclick="closeM('m-bulkpts')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- شارة نوع العملية -->
+      <div class="bulk-mode-badge add" id="bulk-mode-badge">➕ إضافة نقاط</div>
+      <!-- الطلاب المحددون -->
+      <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">الطلاب المحددون: <strong id="bulk-students-count"></strong></div>
+      <div class="bulk-students-wrap" id="bulk-students-list"></div>
+      <!-- السبب -->
+      <div class="form-group">
+        <label>السبب</label>
+        <select id="bulk-reason" onchange="onBulkReasonChange()">
+          <option value="">-- اختر سبباً --</option>
+          <option value="__custom__">✏️ إدخال يدوي</option>
+        </select>
+      </div>
+      <div class="form-group" id="bulk-custom-wrap" style="display:none">
+        <label>السبب (يدوي)</label>
+        <input type="text" id="bulk-custom-reason" placeholder="اكتب السبب">
+      </div>
+      <!-- القسم -->
+      <div class="form-group">
+        <label>القسم</label>
+        <select id="bulk-section">
+          <option value="general">🌟 عام</option>
+          <option value="cultural">🏆 ثقافي</option>
+          <option value="sports">⚽ رياضي</option>
+        </select>
+      </div>
+      <!-- المبلغ والملاحظة -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>المبلغ</label>
+          <input type="number" id="bulk-amount" min="1" max="10000" placeholder="10">
+          <div id="bulk-step-hint" style="font-size:.74rem;color:var(--muted);margin-top:3px"></div>
+        </div>
+        <div class="form-group">
+          <label>ملاحظة</label>
+          <input type="text" id="bulk-note" placeholder="اختياري">
+        </div>
+      </div>
+      <div id="bulk-quota-info" style="font-size:.8rem;color:var(--muted);margin-bottom:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeM('m-bulkpts')">إلغاء</button>
+      <button class="btn btn-gold" id="bulk-save-btn" onclick="saveBulkPoints()">✅ تسجيل للجميع</button>
     </div>
   </div>
 </div>

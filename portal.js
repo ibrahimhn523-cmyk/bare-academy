@@ -76,6 +76,9 @@ let _ptsSubs    = [];    // subscriptions for selected program
 let _ptsPoints  = [];    // points for selected program
 let _ptsSelProg = null;
 let _pointsStep = 1;     // وحدة القسمة للتحقق من صحة قيم النقاط
+// bulk selection state
+let _ptsBulkSel  = new Set(); // Set of selected studentIds (integers)
+let _ptsBulkMode = 'add';     // 'add' | 'deduct'
 // leaderboard state
 let _lbSubs = [];        // بيانات خام للصدارة
 let _lbPts  = [];        // نقاط خام للصدارة
@@ -479,6 +482,10 @@ async function loadPointsSection() {
     body.innerHTML = `<div class="empty"><div class="ei">⭐</div><p>اختر البرنامج</p></div>`; return;
   }
 
+  // امسح التحديد الجماعي عند تغيير البرنامج
+  _ptsBulkSel.clear();
+  updateBulkBar();
+
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
   try {
     const [subs, pts] = await Promise.all([
@@ -517,22 +524,29 @@ function renderPointsTable() {
   // Sort by points desc
   const sorted = [..._ptsSubs].sort((a,b) => (ptMap[parseInt(b.studentId)]||0) - (ptMap[parseInt(a.studentId)]||0));
 
+  const allChecked = _ptsBulkSel.size === sorted.length && sorted.length > 0;
   body.innerHTML = `
     <div class="table-card">
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>الطالب</th><th>المجموعة</th><th>النقاط</th><th>إجراءات</th></tr></thead>
+          <thead><tr>
+            <th style="width:36px"><input type="checkbox" id="pts-chk-all" ${allChecked ? 'checked' : ''} onchange="toggleBulkAll(this.checked)" title="تحديد الكل"></th>
+            <th>#</th><th>الطالب</th><th>المجموعة</th><th>النقاط</th><th>إجراءات</th>
+          </tr></thead>
           <tbody>
             ${sorted.map((s, i) => {
-              const pts = ptMap[parseInt(s.studentId)] || 0;
-              return `<tr>
+              const sid = parseInt(s.studentId);
+              const pts = ptMap[sid] || 0;
+              const checked = _ptsBulkSel.has(sid);
+              return `<tr class="${checked ? 'row-selected' : ''}">
+                <td><input type="checkbox" class="pts-chk" data-id="${sid}" ${checked ? 'checked' : ''} onchange="toggleBulkSel(${sid}, this.checked)"></td>
                 <td style="color:var(--muted);font-size:.8rem">${i+1}</td>
                 <td style="font-weight:600">${esc(s.studentName)}</td>
                 <td style="font-size:.8rem;color:var(--muted)">${esc(s.groupName||'—')}</td>
-                <td><span class="pts-badge">${pts}</span></td>
+                <td><span class="pts-badge ${pts < 0 ? 'pts-deduct' : ''}">${pts >= 0 ? '' : ''}${pts}</span></td>
                 <td class="td-actions">
-                  <button class="btn btn-sm btn-gold" onclick="openAddPoints(${s.studentId},'${esc(s.studentName)}')">➕</button>
-                  <button class="btn btn-sm btn-outline" onclick="openPtsHistory(${s.studentId},'${esc(s.studentName)}')">📋</button>
+                  <button class="btn btn-sm btn-gold" onclick="openAddPoints(${sid},'${esc(s.studentName)}')">➕</button>
+                  <button class="btn btn-sm btn-outline" onclick="openPtsHistory(${sid},'${esc(s.studentName)}')">📋</button>
                 </td>
               </tr>`;
             }).join('')}
@@ -580,6 +594,201 @@ function openAddPoints(studentId, studentName) {
   });
 
   openM('m-addpts');
+}
+
+/* ── Bulk Selection ── */
+function toggleBulkSel(id, checked) {
+  if (checked) _ptsBulkSel.add(id);
+  else _ptsBulkSel.delete(id);
+  updateBulkBar();
+  // مزامنة checkbox الكل
+  const allChk = document.getElementById('pts-chk-all');
+  if (allChk) allChk.checked = _ptsBulkSel.size === _ptsSubs.length && _ptsSubs.length > 0;
+  // تحديث لون الصف
+  const row = document.querySelector(`.pts-chk[data-id="${id}"]`)?.closest('tr');
+  if (row) row.className = checked ? 'row-selected' : '';
+}
+
+function toggleBulkAll(checked) {
+  _ptsBulkSel.clear();
+  if (checked) _ptsSubs.forEach(s => _ptsBulkSel.add(parseInt(s.studentId)));
+  updateBulkBar();
+  document.querySelectorAll('.pts-chk').forEach(c => {
+    c.checked = checked;
+    const row = c.closest('tr');
+    if (row) row.className = checked ? 'row-selected' : '';
+  });
+}
+
+function updateBulkBar() {
+  const bar   = document.getElementById('pts-bulk-bar');
+  const count = document.getElementById('pts-bulk-count');
+  if (!bar) return;
+  if (_ptsBulkSel.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = `${_ptsBulkSel.size} طالب محدد`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function clearBulkSel() {
+  _ptsBulkSel.clear();
+  updateBulkBar();
+  document.querySelectorAll('.pts-chk').forEach(c => {
+    c.checked = false;
+    const row = c.closest('tr');
+    if (row) row.className = '';
+  });
+  const allChk = document.getElementById('pts-chk-all');
+  if (allChk) allChk.checked = false;
+}
+
+function openBulkPoints(mode) {
+  if (_ptsBulkSel.size === 0) { toast('لم تحدد أي طالب', 'error'); return; }
+  _ptsBulkMode = mode;
+  const isAdd = mode === 'add';
+
+  document.getElementById('bulk-modal-title').textContent = isAdd ? '➕ إضافة جماعية' : '➖ خصم جماعي';
+  const badge = document.getElementById('bulk-mode-badge');
+  badge.textContent = isAdd ? '➕ إضافة نقاط' : '➖ خصم نقاط';
+  badge.className = `bulk-mode-badge ${isAdd ? 'add' : 'deduct'}`;
+  document.getElementById('bulk-save-btn').textContent = isAdd ? '✅ إضافة للجميع' : '✅ خصم من الجميع';
+
+  // قائمة الطلاب المحددين
+  const selected = _ptsSubs.filter(s => _ptsBulkSel.has(parseInt(s.studentId)));
+  document.getElementById('bulk-students-count').textContent = selected.length;
+  document.getElementById('bulk-students-list').innerHTML = selected
+    .map(s => `<span class="bulk-chip">${esc(s.studentName)}</span>`).join('');
+
+  // تعبئة الأسباب
+  const sel = document.getElementById('bulk-reason');
+  sel.innerHTML = '<option value="">-- اختر سبباً --</option>' +
+    _reasons.map(r => `<option value="${r.id}" data-val="${r.defaultValue}">${esc(r.label)} (${r.defaultValue})</option>`).join('') +
+    '<option value="__custom__">✏️ إدخال يدوي</option>';
+
+  // إعادة ضبط الحقول
+  document.getElementById('bulk-amount').value = '';
+  document.getElementById('bulk-note').value = '';
+  document.getElementById('bulk-section').value = 'general';
+  document.getElementById('bulk-custom-wrap').style.display = 'none';
+  document.getElementById('bulk-custom-reason').value = '';
+  document.getElementById('bulk-step-hint').textContent = _pointsStep > 1 ? `يجب أن يكون مضاعفاً لـ ${_pointsStep}` : '';
+
+  // معلومات الكوتا (للإضافة فقط)
+  const quotaInfo = document.getElementById('bulk-quota-info');
+  if (isAdd) {
+    getTodayUsage(_user.username, _ptsSelProg?.id || 0).then(used => {
+      const rem = (_user.dailyQuota || 100) - used;
+      quotaInfo.textContent = `رصيدك المتبقي اليوم: ${rem} نقطة`;
+    });
+  } else {
+    quotaInfo.textContent = 'الخصم لا يستهلك من الرصيد اليومي';
+  }
+
+  openM('m-bulkpts');
+}
+
+function onBulkReasonChange() {
+  const sel = document.getElementById('bulk-reason');
+  const isCustom = sel.value === '__custom__';
+  document.getElementById('bulk-custom-wrap').style.display = isCustom ? '' : 'none';
+  if (!isCustom && sel.options[sel.selectedIndex]?.dataset?.val) {
+    document.getElementById('bulk-amount').value = sel.options[sel.selectedIndex].dataset.val;
+  }
+}
+
+async function saveBulkPoints() {
+  const amountRaw = parseInt(document.getElementById('bulk-amount').value) || 0;
+  const note      = document.getElementById('bulk-note').value.trim();
+  const isCustom  = document.getElementById('bulk-reason').value === '__custom__';
+  const reason    = isCustom
+    ? document.getElementById('bulk-custom-reason').value.trim()
+    : document.getElementById('bulk-reason').options[document.getElementById('bulk-reason').selectedIndex]?.text || '';
+  const section   = document.getElementById('bulk-section').value || 'general';
+
+  if (amountRaw <= 0) { toast('يرجى إدخال مبلغ صحيح', 'error'); return; }
+  if (!reason)        { toast('يرجى اختيار سبب أو إدخاله', 'error'); return; }
+  if (_pointsStep > 1 && amountRaw % _pointsStep !== 0) {
+    toast(`يجب أن يكون المبلغ مضاعفاً لـ ${_pointsStep}`, 'error'); return;
+  }
+
+  const isAdd      = _ptsBulkMode === 'add';
+  const finalAmt   = isAdd ? amountRaw : -amountRaw;
+  const selected   = _ptsSubs.filter(s => _ptsBulkSel.has(parseInt(s.studentId)));
+
+  // فحص الكوتا فقط عند الإضافة
+  if (isAdd) {
+    const used     = await getTodayUsage(_user.username, _ptsSelProg.id);
+    const totalAdd = amountRaw * selected.length;
+    const quota    = _user.dailyQuota || 100;
+    if (used + totalAdd > quota) {
+      toast(`تجاوزت الرصيد اليومي — مطلوب: ${totalAdd} نقطة | متبقي: ${quota - used}`, 'error');
+      return;
+    }
+  }
+
+  // حفظ تسلسلي مع إظهار التقدم
+  const btn = document.getElementById('bulk-save-btn');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ…';
+
+  let successCount = 0;
+  const failedNames = [];
+  const cleanReason = reason.replace(/\s*\(\d+\)$/, '');
+
+  for (const sub of selected) {
+    try {
+      const created = await sbInsertReturn(TB.POINTS, {
+        studentId : parseInt(sub.studentId),
+        programId : _ptsSelProg.id,
+        amount    : finalAmt,
+        reason    : cleanReason,
+        notes     : note,
+        addedBy   : _user.username,
+        source    : section
+      });
+      _ptsPoints.push(created || {
+        studentId: parseInt(sub.studentId),
+        programId: _ptsSelProg.id,
+        amount   : finalAmt,
+        reason   : cleanReason,
+        notes    : note,
+        addedBy  : _user.username,
+        source   : section
+      });
+      successCount++;
+      // تحديث زر التقدم
+      btn.textContent = `${successCount} / ${selected.length}…`;
+    } catch(e) {
+      failedNames.push(sub.studentName);
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = isAdd ? '✅ إضافة للجميع' : '✅ خصم من الجميع';
+
+  if (failedNames.length) {
+    toast(`تم ${successCount} بنجاح — فشل: ${failedNames.join('، ')}`, 'warn');
+  } else {
+    toast(`تم ${isAdd ? 'إضافة' : 'خصم'} النقاط لـ ${successCount} طالب ✅`);
+  }
+
+  closeM('m-bulkpts');
+  _ptsBulkSel.clear();
+  updateBulkBar();
+  renderPointsTable();
+
+  // تحديث شريط الكوتا
+  if (isAdd) {
+    const newUsed = await getTodayUsage(_user.username, _ptsSelProg.id);
+    const quota   = _user.dailyQuota || 100;
+    const pct     = Math.min(100, Math.round(newUsed / quota * 100));
+    document.getElementById('pts-quota-used').textContent = newUsed;
+    const bar = document.getElementById('pts-quota-bar');
+    bar.style.width = pct + '%';
+    bar.className = 'quota-bar' + (pct >= 100 ? ' over' : pct >= 80 ? ' warn' : '');
+  }
 }
 
 function onReasonChange() {
@@ -666,7 +875,7 @@ async function openPtsHistory(studentId, studentName) {
                 : `<td style="color:var(--muted);font-size:.8rem">—</td>`;
               return `<tr>
                 <td>${esc(p.reason||'')}</td>
-                <td><span class="pts-badge">+${p.amount}</span></td>
+                <td><span class="pts-badge ${p.amount < 0 ? 'pts-deduct' : ''}">${p.amount >= 0 ? '+' : ''}${p.amount}</span></td>
                 <td><span class="badge ${srcBadgeClass(p.source)}">${srcLabel(p.source)}</span></td>
                 <td style="font-size:.78rem;color:var(--muted)">${esc(p.addedBy||'')}</td>
                 <td style="font-size:.78rem;color:var(--muted)">${fmtDatetime(p.addedAt)}</td>
