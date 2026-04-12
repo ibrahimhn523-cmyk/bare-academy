@@ -82,6 +82,9 @@ let _progs       = [];
 let _allSubs     = [];   // all subscriptions (for student card + sub counts on programs page)
 let _allPayments = [];   // all payments (for student card)
 let _progSubs    = [];   // subscriptions for current program
+let _attSorted      = [];    // cached sorted attendance rows for filter/search
+let _attSessions    = 0;     // total sessions count for percentage calc
+let _attActiveGroup = 'all'; // currently selected group filter
 let _progPays    = [];   // payments for current program
 let _context     = 'academy';
 let _currentProg = null;
@@ -1303,6 +1306,7 @@ async function loadAttStats() {
   stuBody.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
   if (kpiRow) kpiRow.innerHTML = '';
   if (sesBody) sesBody.innerHTML = '';
+  _attActiveGroup = 'all';
 
   try {
     const allAtt = await sbRead(TB.ATTENDANCE, `programId=eq.${_currentProg.id}`);
@@ -1370,8 +1374,9 @@ async function loadAttStats() {
         <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${topAbsent.days} يوم غياب</div>
       </div>`;
 
-    // -- جدول الطلاب --
-    const sorted = studentEntries
+    // -- حفظ البيانات للفلترة --
+    _attSessions = totalSessions;
+    _attSorted = studentEntries
       .map(([id, s]) => ({ id: parseInt(id), ...s }))
       .sort((a, b) => {
         const pa = totalSessions ? (a.present + a.late) / totalSessions : 0;
@@ -1379,34 +1384,25 @@ async function loadAttStats() {
         return pa - pb;
       });
 
+    // -- شريط الفلترة --
+    const uniqueGroups = [...new Set(_attSorted.map(s => s.group).filter(Boolean))].sort();
     stuBody.innerHTML = `
-      <div class="table-card"><div class="tbl-wrap"><table>
-        <thead><tr>
-          <th>الطالب</th><th>المجموعة</th>
-          <th>✅ حاضر</th><th>⚠️ متأخر</th><th>❌ غائب</th>
-          <th>النسبة</th><th>الحضور</th>
-        </tr></thead>
-        <tbody>${sorted.map(s => {
-          const pct   = totalSessions ? Math.round((s.present + s.late) / totalSessions * 100) : null;
-          const color = pct === null ? 'var(--muted)' : pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
-          return `<tr>
-            <td style="font-weight:600">${esc(s.name)}</td>
-            <td style="font-size:.8rem;color:var(--muted)">${esc(s.group || '—')}</td>
-            <td style="color:var(--success);font-weight:700;text-align:center">${s.present}</td>
-            <td style="color:var(--warning);font-weight:700;text-align:center">${s.late}</td>
-            <td style="color:var(--danger);font-weight:700;text-align:center">${s.absent}</td>
-            <td style="font-weight:700;color:${color}">${pct === null ? '—' : pct + '%'}</td>
-            <td style="min-width:90px">${pct === null ? '' :
-              `<div style="display:flex;align-items:center;gap:6px">
-                <div class="bar-track" style="width:72px;height:8px">
-                  <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
-                </div>
-                <span style="font-size:.75rem;color:${color}">${pct}%</span>
-              </div>`}
-            </td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div></div>`;
+      <div class="filter-bar" style="gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        <input type="text" id="att-search" placeholder="🔍 بحث باسم الطالب…"
+          oninput="filterAttTable()"
+          style="flex:1;min-width:180px;max-width:280px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:.8rem;color:var(--muted)">المجموعة:</span>
+          <button class="btn btn-sm btn-primary" data-attgrp="__all__" onclick="setAttGroup('all')">الكل</button>
+          ${uniqueGroups.map(g => `
+            <button class="btn btn-sm btn-outline" data-attgrp="${esc(g)}" onclick="setAttGroup('${esc(g)}')">${esc(g)}</button>
+          `).join('')}
+        </div>
+      </div>
+      <div id="att-table-wrap"></div>`;
+
+    renderAttTable(_attSorted);
+
 
     // -- آخر 5 جلسات --
     const lastFive = sessions.slice(-5).reverse();
@@ -1446,6 +1442,58 @@ async function loadAttStats() {
   } catch(e) {
     stuBody.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر التحميل: ${e.message}</p></div>`;
   }
+}
+
+/* ── مساعدات فلترة التحضير ── */
+function setAttGroup(group) {
+  _attActiveGroup = group;
+  document.querySelectorAll('[data-attgrp]').forEach(btn => {
+    const g = btn.dataset.attgrp;
+    const active = (group === 'all' && g === '__all__') || g === group;
+    btn.className = 'btn btn-sm ' + (active ? 'btn-primary' : 'btn-outline');
+  });
+  filterAttTable();
+}
+
+function filterAttTable() {
+  const search = (document.getElementById('att-search')?.value || '').trim();
+  const filtered = _attSorted.filter(s => {
+    const matchName  = !search || s.name.includes(search);
+    const matchGroup = _attActiveGroup === 'all' || s.group === _attActiveGroup;
+    return matchName && matchGroup;
+  });
+  renderAttTable(filtered);
+}
+
+function renderAttTable(rows) {
+  const wrap = document.getElementById('att-table-wrap');
+  if (!wrap) return;
+  if (!rows.length) {
+    wrap.innerHTML = `<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`;
+    return;
+  }
+  const ts = _attSessions || 1;
+  wrap.innerHTML = `
+    <div class="table-card"><div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>الطالب</th><th>المجموعة</th>
+        <th>✅ حاضر</th><th>⚠️ متأخر</th><th>❌ غائب</th>
+        <th>النسبة</th><th style="min-width:90px">الحضور</th>
+      </tr></thead>
+      <tbody>${rows.map(s => {
+        const pct   = _attSessions ? Math.round((s.present + s.late) / _attSessions * 100) : null;
+        const color = pct === null ? 'var(--muted)' : pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
+        return `<tr>
+          <td style="font-weight:600">${esc(s.name)}</td>
+          <td style="font-size:.8rem;color:var(--muted)">${esc(s.group || '—')}</td>
+          <td style="color:var(--success);text-align:center;font-weight:600">${s.present}</td>
+          <td style="color:var(--warning);text-align:center;font-weight:600">${s.late}</td>
+          <td style="color:var(--danger);text-align:center;font-weight:600">${s.absent}</td>
+          <td style="font-weight:700;color:${color}">${pct === null ? '—' : pct + '%'}</td>
+          <td>${pct === null ? '' : `<div class="bar-track" style="width:80px;height:8px"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
 }
 
 /* ══════════════════════════════════════════
