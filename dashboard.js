@@ -1343,14 +1343,6 @@ async function loadAttStats() {
   }
 }
 
-async function saveAttPwd() {
-  const pwd = document.getElementById('att-pwd-input').value.trim();
-  if (!pwd) { toast('يرجى إدخال كلمة المرور', 'error'); return; }
-  try {
-    await sbUpsert(TB.SETTINGS, { key: 'attendance_password', value: pwd });
-    toast('تم حفظ كلمة مرور التحضير ✅');
-  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
-}
 
 /* ══════════════════════════════════════════
    PROGRAM STATISTICS
