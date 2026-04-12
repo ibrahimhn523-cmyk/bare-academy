@@ -383,8 +383,9 @@ async function loadAttTable() {
     }
     _attSubs = subsRows.map(r => ({ id: parseInt(r.id), studentId: parseInt(r.studentId), studentName: r.studentName || '' }));
 
-    // Load existing attendance for this date
-    const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}&date=eq.${date}`);
+    // Load existing attendance for this date + group
+    const groupFilter = group === 'الكل' ? '' : `&groupName=eq.${encodeURIComponent(group)}`;
+    const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}&date=eq.${date}${groupFilter}`);
     _attData = {};
     attRows.forEach(a => { _attData[parseInt(a.studentId)] = a.status; });
 
@@ -403,6 +404,15 @@ function renderAttTable() {
     body.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب في هذه المجموعة</p></div>`;
     return;
   }
+
+  // تهيئة _attData لكل طالب بالقيمة الافتراضية إن لم تكن موجودة
+  // هذا يضمن أن حفظ لن يُحضّر أحداً لم يُعيَّن له وضع صريح
+  _attSubs.forEach(s => {
+    if (!Object.prototype.hasOwnProperty.call(_attData, s.studentId)) {
+      _attData[s.studentId] = 'حاضر';
+    }
+  });
+
   const search = document.getElementById('att-search')?.value?.toLowerCase() || '';
   const filtered = _attSubs.filter(s => s.studentName.toLowerCase().includes(search));
 
