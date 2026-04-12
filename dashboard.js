@@ -141,9 +141,6 @@ function renderSidebar() {
         <div class="nav-item ${_activeSection === 'fees' ? 'active' : ''}" onclick="switchSection('fees')">
           <span class="nav-icon">💰</span><span>الرسوم</span>
         </div>
-        <div class="nav-item ${_activeSection === 'attendance' ? 'active' : ''}" onclick="switchSection('attendance')">
-          <span class="nav-icon">✅</span><span>التحضير</span>
-        </div>
         <div class="nav-item ${_activeSection === 'comm' ? 'active' : ''}" onclick="switchSection('comm')">
           <span class="nav-icon">💬</span><span>التواصل</span>
         </div>
@@ -169,7 +166,6 @@ function switchSection(name) {
   if (name === 'subscribers') renderSubscribers();
   if (name === 'groups')      renderGroups();
   if (name === 'fees')        renderFees();
-  if (name === 'attendance')  loadAttStats();
   if (name === 'comm')        { _commSelected.clear(); renderComm(); }
   if (name === 'prog-stats')  renderProgStats();
   if (name === 'logs')        loadLogs();
@@ -1284,65 +1280,6 @@ function renderFees() {
     </tr>`;
   }).join('');
 }
-
-/* ══════════════════════════════════════════
-   ATTENDANCE STATS (Program Level - Read Only)
-══════════════════════════════════════════ */
-async function loadAttStats() {
-  if (!_currentProg) {
-    document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>ادخل برنامجاً لعرض إحصائيات التحضير</p></div>`;
-    return;
-  }
-  document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
-  try {
-    const allAtt = await sbRead(TB.ATTENDANCE, `programId=eq.${_currentProg.id}`);
-    if (!allAtt.length) {
-      document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>لا توجد بيانات تحضير بعد لهذا البرنامج</p></div>`;
-      return;
-    }
-    const total   = new Set(_progSubs.map(s => s.studentId)).size || 1;
-    const present = allAtt.filter(a => a.status === 'حاضر').length;
-    const absent  = allAtt.filter(a => a.status === 'غائب').length;
-    const late    = allAtt.filter(a => a.status === 'متأخر').length;
-    const sessions = [...new Set(allAtt.map(a => a.date))].length || 1;
-    const avgPct  = Math.round((present + late) / (sessions * total) * 100) || 0;
-    const dates   = [...new Set(allAtt.map(a => a.date))].sort().slice(-4).reverse();
-
-    document.getElementById('att-stats-body').innerHTML = `
-      <div class="att-stat-row">
-        <div class="att-stat-card"><div class="asv">${avgPct}%</div><div class="asl">متوسط الحضور</div></div>
-        <div class="att-stat-card"><div class="asv">${sessions}</div><div class="asl">جلسات مسجلة</div></div>
-        <div class="att-stat-card"><div class="asv">${present}</div><div class="asl">حاضر</div></div>
-        <div class="att-stat-card"><div class="asv">${absent}</div><div class="asl">غائب</div></div>
-        <div class="att-stat-card"><div class="asv">${late}</div><div class="asl">متأخر</div></div>
-      </div>
-      ${dates.length ? `
-      <div class="table-card"><div class="tbl-wrap"><table>
-        <thead><tr><th>التاريخ</th><th>حاضر</th><th>غائب</th><th>متأخر</th><th>نسبة الحضور</th></tr></thead>
-        <tbody>${dates.map(date => {
-          const da = allAtt.filter(a => a.date === date);
-          const dp = da.filter(a => a.status === 'حاضر').length;
-          const dab= da.filter(a => a.status === 'غائب').length;
-          const dl = da.filter(a => a.status === 'متأخر').length;
-          const pct= total > 0 ? Math.round((dp + dl) / total * 100) : 0;
-          return `<tr>
-            <td>${fmtDate(date)}</td><td>${dp}</td><td>${dab}</td><td>${dl}</td>
-            <td>
-              <div style="display:flex;align-items:center;gap:6px">
-                <div class="bar-track" style="width:80px;height:10px">
-                  <div class="bar-fill" style="width:${pct}%;background:${pct>=80?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'}"></div>
-                </div>
-                <span style="font-size:.8rem">${pct}%</span>
-              </div>
-            </td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div></div>` : ''}`;
-  } catch(e) {
-    document.getElementById('att-stats-body').innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر تحميل بيانات التحضير</p></div>`;
-  }
-}
-
 
 /* ══════════════════════════════════════════
    PROGRAM STATISTICS
