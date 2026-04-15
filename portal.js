@@ -64,12 +64,16 @@ let _reasons  = [];
 let _users    = [];     // admin only
 let _activeSection = 'home';
 
-// attendance state
-let _attSubs  = [];     // subscriptions for selected program+group
-let _attData  = {};     // { studentId: status }
-let _attSelProg = null;
-let _attSelGroup = '';
-let _attDate  = '';
+// attendance state — Matrix Edition
+let _attSubs       = [];      // subscriptions for selected program+group
+let _attSelProg    = null;
+let _attSelGroup   = '';
+let _attMatrix     = {};      // { "studentId-date": status }
+let _attDates      = [];      // sorted unique session dates
+let _attWeekGroups = [];      // [{ key, title, dates:[] }]
+let _attActiveWk   = '';      // currently expanded week key
+let _attDirtyDates = new Set(); // dates with unsaved changes
+let _attPickerCell = null;    // { studentId, date }
 
 // points state
 let _ptsSubs    = [];    // subscriptions for selected program
@@ -349,8 +353,9 @@ function onAttProgChange() {
   const groupSel = document.getElementById('att-group-sel');
   groupSel.innerHTML = '<option value="">-- اختر --</option>';
   groupSel.disabled = true;
-  document.getElementById('att-bulk-bar').style.display = 'none';
-  document.getElementById('att-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>اختر المجموعة والتاريخ</p></div>`;
+  const saveBtn = document.getElementById('att-save-btn');
+  if (saveBtn) saveBtn.style.display = 'none';
+  document.getElementById('att-body').innerHTML = `<div class="empty"><div class="ei">✅</div><p>اختر المجموعة لعرض مصفوفة التحضير</p></div>`;
   if (!_attSelProg) return;
 
   const groups = _attSelProg.groups.split('،').map(g => g.trim()).filter(Boolean);
@@ -362,120 +367,245 @@ function onAttProgChange() {
   groupSel.disabled = false;
 }
 
-async function loadAttTable() {
-  const progId  = parseInt(document.getElementById('att-prog-sel').value) || 0;
-  const group   = document.getElementById('att-group-sel').value;
-  const date    = document.getElementById('att-date').value;
-  if (!progId || !group || !date) return;
+async function loadAttMatrix() {
+  const progId = parseInt(document.getElementById('att-prog-sel').value) || 0;
+  const group  = document.getElementById('att-group-sel').value;
+  if (!progId || !group) return;
 
-  _attSelGroup = group; _attDate = date;
+  _attSelGroup = group;
   const body = document.getElementById('att-body');
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
 
   try {
-    // Load subscriptions
-    let subsRows;
-    if (group === 'الكل') {
-      subsRows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}`);
-    } else {
-      subsRows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}&groupName=eq.${encodeURIComponent(group)}`);
-      if (!subsRows.length) subsRows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}&groupName=eq.${encodeURIComponent(group)}`);
-    }
+    const subsRows = group === 'الكل'
+      ? await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}`)
+      : await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}&groupName=eq.${encodeURIComponent(group)}`);
     _attSubs = subsRows.map(r => ({ id: parseInt(r.id), studentId: parseInt(r.studentId), studentName: r.studentName || '' }));
 
-    // Load existing attendance for this date + group
     const groupFilter = group === 'الكل' ? '' : `&groupName=eq.${encodeURIComponent(group)}`;
-    const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}&date=eq.${date}${groupFilter}`);
-    _attData = {};
-    attRows.forEach(a => { _attData[parseInt(a.studentId)] = a.status; });
+    const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}${groupFilter}`);
 
-    renderAttTable();
-    document.getElementById('att-bulk-bar').style.display = 'flex';
+    _attMatrix = {};
+    attRows.forEach(a => { _attMatrix[`${parseInt(a.studentId)}-${a.date}`] = a.status; });
+
+    _attDates = [...new Set(attRows.map(a => a.date))].sort();
+    _attWeekGroups = groupDatesIntoWeeks(_attDates);
+    _attActiveWk   = _attWeekGroups.length ? _attWeekGroups[_attWeekGroups.length - 1].key : '';
+    _attDirtyDates.clear();
+
+    const saveBtn = document.getElementById('att-save-btn');
+    if (saveBtn) saveBtn.style.display = _attDates.length ? '' : 'none';
+    renderAttMatrix();
   } catch(e) {
     body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>خطأ: ${e.message}</p></div>`;
   }
 }
 
-const ATT_STATUSES = ['حاضر','متأخر بعذر','متأخر بغير عذر','غائب بعذر','غائب بغير عذر'];
+function groupDatesIntoWeeks(dates) {
+  const map = {};
+  dates.forEach(date => {
+    const d    = new Date(date + 'T00:00:00');
+    const yr   = d.getFullYear();
+    const jan1 = new Date(yr, 0, 1);
+    const wn   = Math.ceil(((d - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+    const key  = `${yr}-W${String(wn).padStart(2, '0')}`;
+    if (!map[key]) map[key] = { key, title: '', dates: [] };
+    map[key].dates.push(date);
+    const ds = map[key].dates;
+    map[key].title = ds.length > 1
+      ? `${fmtDateShort(ds[0])} – ${fmtDateShort(ds[ds.length - 1])}`
+      : fmtDateShort(ds[0]);
+  });
+  return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+}
 
-function renderAttTable() {
+const ATT_STATUSES = [
+  { id: 'حاضر',           color: '#22c55e', abbr: 'ح'  },
+  { id: 'متأخر بعذر',     color: '#0ea5e9', abbr: 'تع' },
+  { id: 'متأخر بغير عذر', color: '#f59e0b', abbr: 'ت'  },
+  { id: 'غائب بعذر',      color: '#f97316', abbr: 'غع' },
+  { id: 'غائب بغير عذر',  color: '#ef4444', abbr: 'غ'  },
+];
+const ATT_STATUS_IDS = ATT_STATUSES.map(s => s.id);
+
+function renderAttMatrix() {
   const body = document.getElementById('att-body');
+  const search = (document.getElementById('att-search')?.value || '').toLowerCase().trim();
+  const filtered = _attSubs.filter(s => !search || s.studentName.toLowerCase().includes(search));
+
   if (!_attSubs.length) {
     body.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب في هذه المجموعة</p></div>`;
     return;
   }
+  if (!_attDates.length) {
+    body.innerHTML = `<div class="empty"><div class="ei">📅</div><p>لا توجد جلسات بعد — اضغط "➕ جلسة جديدة" لإضافة أول جلسة</p></div>`;
+    return;
+  }
+  if (!filtered.length) {
+    body.innerHTML = `<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`;
+    return;
+  }
 
-  // تهيئة _attData لكل طالب بالقيمة الافتراضية إن لم تكن موجودة
-  // هذا يضمن أن حفظ لن يُحضّر أحداً لم يُعيَّن له وضع صريح
-  _attSubs.forEach(s => {
-    if (!Object.prototype.hasOwnProperty.call(_attData, s.studentId)) {
-      _attData[s.studentId] = 'حاضر';
+  // ── رأس الجدول ──
+  let hdr1 = `<th class="col-name" rowspan="2" style="background:var(--primary);color:var(--white);position:sticky;right:0;z-index:20">الطالب</th>`;
+  let hdr2 = '';
+
+  _attWeekGroups.forEach(wk => {
+    const isActive = wk.key === _attActiveWk;
+    const colspan  = isActive ? wk.dates.length : 1;
+    hdr1 += `<th class="att-week-hdr ${isActive ? 'active' : ''}" colspan="${colspan}"
+      onclick="toggleAttWeek('${wk.key}')" style="cursor:pointer">
+      ${isActive ? '▾' : '▸'} ${esc(wk.title)}
+    </th>`;
+    if (isActive) {
+      wk.dates.forEach(d => {
+        const isNew = _attDirtyDates.has(d) && !Object.keys(_attMatrix).some(k => k.endsWith('-' + d));
+        hdr2 += `<th class="att-date-hdr${isNew ? ' new-session' : ''}">${fmtDateShort(d)}</th>`;
+      });
+    } else {
+      hdr2 += `<th class="att-week-summary" onclick="toggleAttWeek('${wk.key}')" style="cursor:pointer;font-size:.72rem;color:var(--muted)">ملخص</th>`;
     }
   });
 
-  const search = document.getElementById('att-search')?.value?.toLowerCase() || '';
-  const filtered = _attSubs.filter(s => s.studentName.toLowerCase().includes(search));
+  // ── صفوف الطلاب ──
+  const rows = filtered.map(s => {
+    let cells = '';
+    _attWeekGroups.forEach(wk => {
+      const isActive = wk.key === _attActiveWk;
+      if (isActive) {
+        wk.dates.forEach(date => {
+          const status = _attMatrix[`${s.studentId}-${date}`] || null;
+          const dirty  = _attDirtyDates.has(date) ? ' dirty' : '';
+          const dotCls = status ? 's-' + status.replace(/ /g, '-') : 's-none';
+          const abbr   = status ? (ATT_STATUSES.find(a => a.id === status)?.abbr || '؟') : '+';
+          cells += `<td class="att-cell${dirty}" onclick="openAttPicker(${s.studentId},'${date}')">
+            <div class="att-dot ${dotCls}" title="${esc(status || 'لم يُسجَّل')}">${abbr}</div>
+          </td>`;
+        });
+      } else {
+        const present = wk.dates.filter(d => {
+          const st = _attMatrix[`${s.studentId}-${d}`];
+          return st && !st.startsWith('غائب');
+        }).length;
+        const total = wk.dates.length;
+        const clr = present === 0 ? 'var(--danger)' : present === total ? 'var(--success)' : 'var(--warning)';
+        cells += `<td class="att-week-summary" onclick="toggleAttWeek('${wk.key}')" style="cursor:pointer">
+          <span style="font-weight:700;color:${clr}">${present}</span>
+          <span style="color:var(--muted);font-size:.72rem"> / ${total}</span>
+        </td>`;
+      }
+    });
+    return `<tr><td class="col-name" style="position:sticky;right:0;z-index:10;background:var(--white)">${esc(s.studentName)}</td>${cells}</tr>`;
+  }).join('');
 
-  const opts = ATT_STATUSES.map(s => `<option>${s}</option>`).join('');
-  body.innerHTML = `
-    <div class="table-card">
-      <div class="att-wrapper">
-        <table class="att-table">
-          <thead><tr>
-            <th><input type="checkbox" id="att-all-chk" onchange="toggleAllAtt(this)"></th>
-            <th>الطالب</th><th>الحالة</th>
-          </tr></thead>
-          <tbody>
-            ${filtered.map(s => {
-              const status = _attData[s.studentId] || 'حاضر';
-              return `<tr id="att-row-${s.studentId}">
-                <td><input type="checkbox" class="att-chk" data-id="${s.studentId}"></td>
-                <td class="name-cell">${esc(s.studentName)}</td>
-                <td>
-                  <select onchange="_attData[${s.studentId}]=this.value" id="att-sel-${s.studentId}">
-                    ${ATT_STATUSES.map(st => `<option ${st===status?'selected':''}>${st}</option>`).join('')}
-                  </select>
-                </td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+  body.innerHTML = `<div class="att-matrix-wrap">
+    <table class="att-matrix">
+      <thead>
+        <tr>${hdr1}</tr>
+        <tr>${hdr2}</tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
-function filterAttTable() { renderAttTable(); }
-
-function toggleAllAtt(chk) {
-  document.querySelectorAll('.att-chk').forEach(c => c.checked = chk.checked);
+function toggleAttWeek(key) {
+  _attActiveWk = (_attActiveWk === key) ? '' : key;
+  renderAttMatrix();
 }
 
-function applyBulkAtt() {
-  const status = document.getElementById('att-bulk-status').value;
-  const checked = [...document.querySelectorAll('.att-chk:checked')];
-  if (!checked.length) { toast('حدد طلاباً أولاً', 'warning'); return; }
-  checked.forEach(c => {
-    const id = parseInt(c.dataset.id);
-    _attData[id] = status;
-    const sel = document.getElementById(`att-sel-${id}`);
-    if (sel) sel.value = status;
-  });
-  toast(`تم تطبيق "${status}" على ${checked.length} طالب`);
+function openAttPicker(studentId, date) {
+  _attPickerCell = { studentId, date };
+  const s = _attSubs.find(s => s.studentId === studentId);
+  document.getElementById('att-picker-title').textContent =
+    `${s?.studentName || ''} — ${fmtDate(date)}`;
+  const current = _attMatrix[`${studentId}-${date}`] || null;
+  document.getElementById('att-picker-body').innerHTML = `
+    ${ATT_STATUSES.map(st => `
+      <button class="att-picker-btn" onclick="setAttStatus('${st.id}')"
+        style="background:${st.id === current ? st.color + '22' : '#f8faff'};border-color:${st.id === current ? st.color : 'transparent'}">
+        <div class="dot-preview" style="background:${st.color}"></div>
+        <span>${esc(st.id)}</span>
+        ${st.id === current ? '<span style="margin-right:auto;font-size:.72rem;color:var(--muted)">✓ الحالي</span>' : ''}
+      </button>`).join('')}
+    <button class="att-picker-clear" onclick="setAttStatus(null)">🗑 مسح الحالة</button>`;
+  document.getElementById('m-att-picker').style.display = 'flex';
 }
 
-async function saveAttendance() {
-  if (!_attSelProg || !_attSelGroup || !_attDate) { toast('بيانات التحضير غير مكتملة', 'error'); return; }
+function closeAttPicker() { document.getElementById('m-att-picker').style.display = 'none'; }
+
+function setAttStatus(status) {
+  if (!_attPickerCell) return;
+  const { studentId, date } = _attPickerCell;
+  const key = `${studentId}-${date}`;
+  if (status) _attMatrix[key] = status;
+  else delete _attMatrix[key];
+  _attDirtyDates.add(date);
+  const saveBtn = document.getElementById('att-save-btn');
+  if (saveBtn) saveBtn.style.display = '';
+  closeAttPicker();
+  renderAttMatrix();
+}
+
+function addAttSession() {
+  if (!_attSelProg || !_attSelGroup) { toast('اختر برنامجًا ومجموعة أولاً', 'warning'); return; }
+  document.getElementById('att-new-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('m-att-session').style.display = 'flex';
+}
+
+function closeAddSession() { document.getElementById('m-att-session').style.display = 'none'; }
+
+function confirmAddSession() {
+  const date = document.getElementById('att-new-date').value;
+  if (!date) { toast('اختر تاريخاً', 'warning'); return; }
+  if (_attDates.includes(date)) { toast('هذا التاريخ موجود بالفعل', 'warning'); closeAddSession(); return; }
+  _attDates = [..._attDates, date].sort();
+  _attWeekGroups = groupDatesIntoWeeks(_attDates);
+  const wk = _attWeekGroups.find(w => w.dates.includes(date));
+  if (wk) _attActiveWk = wk.key;
+  _attDirtyDates.add(date);
+  const saveBtn = document.getElementById('att-save-btn');
+  if (saveBtn) saveBtn.style.display = '';
+  closeAddSession();
+  renderAttMatrix();
+  toast(`تمت إضافة جلسة ${fmtDate(date)} — سجّل الحضور ثم احفظ`);
+}
+
+async function saveAttendanceMatrix() {
+  if (!_attSelProg || !_attSelGroup) { toast('بيانات غير مكتملة', 'error'); return; }
+  if (!_attDirtyDates.size) { toast('لا توجد تعديلات لحفظها', 'warning'); return; }
+  const btn = document.getElementById('att-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحفظ…'; }
+
   try {
-    const records = _attSubs.map(s => ({
-      programId: _attSelProg.id, groupName: _attSelGroup,
-      studentId: s.studentId, studentName: s.studentName,
-      date: _attDate, status: _attData[s.studentId] || 'حاضر'
-    }));
-    // Upsert using delete + insert
-    await fetch(`${SB_URL}/attendance?programId=eq.${_attSelProg.id}&date=eq.${_attDate}&groupName=eq.${encodeURIComponent(_attSelGroup)}`, { method: 'DELETE', headers: _h() });
-    for (const rec of records) { await sbInsert(TB.ATTENDANCE, rec); }
+    for (const date of _attDirtyDates) {
+      await fetch(
+        `${SB_URL}/attendance?programId=eq.${_attSelProg.id}&date=eq.${date}&groupName=eq.${encodeURIComponent(_attSelGroup)}`,
+        { method: 'DELETE', headers: _h() }
+      );
+      for (const s of _attSubs) {
+        const status = _attMatrix[`${s.studentId}-${date}`];
+        if (status) {
+          await sbInsert(TB.ATTENDANCE, {
+            programId: _attSelProg.id, groupName: _attSelGroup,
+            studentId: s.studentId, studentName: s.studentName,
+            date, status
+          });
+        }
+      }
+    }
+    _attDirtyDates.clear();
+    if (btn) {
+      btn.textContent = '✅ تم الحفظ';
+      btn.disabled = false;
+      setTimeout(() => { btn.textContent = '💾 حفظ'; }, 2000);
+    }
     toast('تم حفظ التحضير ✅');
-  } catch(e) { toast('خطأ: ' + e.message, 'error'); }
+    document.querySelectorAll('.att-cell.dirty').forEach(el => el.classList.remove('dirty'));
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 حفظ'; }
+    toast('خطأ: ' + e.message, 'error');
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -2342,6 +2472,10 @@ function fmtDate(d) {
 function fmtDatetime(d) {
   if (!d) return '';
   try { const dt = new Date(d); if (isNaN(dt)) return ''; return dt.toLocaleString('ar-SA', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); } catch { return ''; }
+}
+function fmtDateShort(d) {
+  if (!d) return '';
+  try { const dt = new Date(d + 'T00:00:00'); if (isNaN(dt)) return d; return dt.toLocaleDateString('ar-SA', { day:'numeric', month:'short' }); } catch { return d; }
 }
 
 let _toastTimer;

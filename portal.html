@@ -95,28 +95,23 @@
     <!-- ══ ATTENDANCE ══ -->
     <section class="section" id="section-attendance">
       <div class="page-hdr">
-        <div class="page-title">التحضير <span class="page-sub">قسم النظام</span></div>
+        <div class="page-title">التحضير <span class="page-sub">مصفوفة الجلسات</span></div>
+        <div class="hdr-actions">
+          <button class="btn btn-gold" onclick="addAttSession()">➕ جلسة جديدة</button>
+          <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ</button>
+        </div>
       </div>
       <div class="prog-select-bar">
         <label>البرنامج:</label>
         <select id="att-prog-sel" onchange="onAttProgChange()"><option value="">-- اختر --</option></select>
         <label>المجموعة:</label>
-        <select id="att-group-sel" onchange="loadAttTable()" disabled><option value="">-- اختر --</option></select>
-        <label>التاريخ:</label>
-        <input type="date" id="att-date" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem" onchange="loadAttTable()">
-      </div>
-      <div id="att-bulk-bar" style="display:none" class="att-bulk-bar">
-        <span style="font-size:.83rem;color:var(--muted)">تحضير جماعي للمحددين:</span>
-        <select id="att-bulk-status">
-          <option>حاضر</option><option>متأخر بعذر</option>
-          <option>متأخر بغير عذر</option><option>غائب بعذر</option><option>غائب بغير عذر</option>
-        </select>
-        <button class="btn btn-sm btn-primary" onclick="applyBulkAtt()">تطبيق</button>
-        <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:140px" oninput="filterAttTable()">
-        <button class="btn btn-sm btn-success" onclick="saveAttendance()">💾 حفظ</button>
+        <select id="att-group-sel" onchange="loadAttMatrix()" disabled><option value="">-- اختر --</option></select>
+        <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…"
+          oninput="renderAttMatrix()"
+          style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:140px">
       </div>
       <div id="att-body">
-        <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة والتاريخ لعرض جدول التحضير</p></div>
+        <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة لعرض مصفوفة التحضير</p></div>
       </div>
     </section>
 
@@ -724,6 +719,35 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeM('m-bulkpts')">إلغاء</button>
       <button class="btn btn-gold" id="bulk-save-btn" onclick="saveBulkPoints()">✅ تسجيل للجميع</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Attendance Status Picker -->
+<div class="modal-overlay" id="m-att-picker" style="display:none" onclick="if(event.target===this)closeAttPicker()">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-hdr">
+      <span class="modal-title" id="att-picker-title">تحديد حالة التحضير</span>
+      <button class="modal-close" onclick="closeAttPicker()">✕</button>
+    </div>
+    <div class="modal-body" id="att-picker-body" style="padding:12px 16px"></div>
+  </div>
+</div>
+
+<!-- Modal: Add New Session -->
+<div class="modal-overlay" id="m-att-session" style="display:none" onclick="if(event.target===this)closeAddSession()">
+  <div class="modal" style="max-width:300px">
+    <div class="modal-hdr">
+      <span class="modal-title">➕ إضافة جلسة جديدة</span>
+      <button class="modal-close" onclick="closeAddSession()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <label class="form-label">تاريخ الجلسة</label>
+      <input type="date" id="att-new-date" class="form-control" style="width:100%;margin-top:6px">
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="closeAddSession()">إلغاء</button>
+        <button class="btn btn-primary" onclick="confirmAddSession()">إضافة</button>
+      </div>
     </div>
   </div>
 </div>
