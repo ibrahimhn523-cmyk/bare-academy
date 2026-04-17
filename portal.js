@@ -84,11 +84,11 @@ let _statsTotalSessions = 0;
 
 // ── حالات التحضير ──
 const ATT_STATUSES = [
-  { id: 'حاضر',           color: '#22c55e', abbr: 'ح'  },
-  { id: 'متأخر بعذر',     color: '#0ea5e9', abbr: 'تع' },
-  { id: 'متأخر بغير عذر', color: '#f59e0b', abbr: 'ت'  },
-  { id: 'غائب بعذر',      color: '#f97316', abbr: 'غع' },
-  { id: 'غائب بغير عذر',  color: '#ef4444', abbr: 'غ'  },
+  { id: 'حاضر',           color: '#22c55e', light:'#f0fdf4', textColor:'#166534', abbr:'ح',  icon:'✓' },
+  { id: 'متأخر بعذر',     color: '#0ea5e9', light:'#f0f9ff', textColor:'#0c4a6e', abbr:'تع', icon:'◷' },
+  { id: 'متأخر بغير عذر', color: '#f59e0b', light:'#fffbeb', textColor:'#92400e', abbr:'ت',  icon:'◷' },
+  { id: 'غائب بعذر',      color: '#f97316', light:'#fff7ed', textColor:'#9a3412', abbr:'غع', icon:'✕' },
+  { id: 'غائب بغير عذر',  color: '#ef4444', light:'#fef2f2', textColor:'#991b1b', abbr:'غ',  icon:'✕' },
 ];
 
 // points state
@@ -478,98 +478,87 @@ function attNextWeek() {
 }
 
 function renderAttMatrix() {
-  const body   = document.getElementById('att-body');
+  const body = document.getElementById('att-body');
   if (!body) return;
-  const search   = (document.getElementById('att-search')?.value || '').toLowerCase().trim();
+  const search = (document.getElementById('att-search')?.value||'').toLowerCase().trim();
   const filtered = _attSubs.filter(s => !search || s.studentName.toLowerCase().includes(search));
 
-  if (!_attSubs.length) { body.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب في هذه المجموعة</p></div>`; return; }
-  if (!_attDates.length) { body.innerHTML = `<div class="empty"><div class="ei">📅</div><p>لا توجد جلسات — اضغط "➕ جلسة جديدة"</p></div>`; return; }
-  if (!filtered.length)  { body.innerHTML = `<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`; return; }
+  if (!_attSubs.length) { body.innerHTML=`<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب في هذه المجموعة</p></div>`; return; }
+  if (!_attDates.length) { body.innerHTML=`<div class="empty"><div class="ei">📅</div><p>لا توجد جلسات — اضغط "➕ جلسة جديدة"</p></div>`; return; }
+  if (!filtered.length)  { body.innerHTML=`<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`; return; }
 
+  const canPrev = _attWkIdx > 0;
+  const canNext = _attWkIdx < _attWeekGroups.length - 1;
   const activeWk = _attWeekGroups[_attWkIdx];
-  const canPrev  = _attWkIdx > 0;
-  const canNext  = _attWkIdx < _attWeekGroups.length - 1;
 
-  // ── شريط تنقل الأسابيع ──
-  const weekNav = `
-    <div class="att-week-nav">
-      <button class="att-nav-btn" onclick="attNextWeek()" ${canNext?'':'disabled'}>&#x276E;</button>
-      <span class="att-nav-title">${esc(activeWk?.title||'')}</span>
-      <button class="att-nav-btn" onclick="attPrevWeek()" ${canPrev?'':'disabled'}>&#x276F;</button>
-    </div>`;
+  const weekNav = `<div class="att-week-nav"><div class="att-nav-pill">
+    <button class="att-nav-btn" onclick="attNextWeek()" ${canNext?'':'disabled'}>&#x276E;</button>
+    <span class="att-nav-title">${esc(activeWk?.title||'')}</span>
+    <button class="att-nav-btn" onclick="attPrevWeek()" ${canPrev?'':'disabled'}>&#x276F;</button>
+  </div></div>`;
 
-  // ── رأس الجدول ──
-  let hdr1 = `<th class="att-col-name" rowspan="2">الطالب</th>`;
-  let hdr2 = '';
+  // Single-row thead
+  let hdrCells = `<th class="att-th-name">الطالب</th>`;
   _attWeekGroups.forEach((wk, idx) => {
     const isActive = wk.key === _attActiveWk;
-    hdr1 += `<th class="att-week-hdr ${isActive?'active':''}" colspan="${isActive ? wk.dates.length : 1}"
-      onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
-      ${esc(wk.title)}
-    </th>`;
     if (isActive) {
-      wk.dates.forEach(d => {
-        const isNew = _attDirtyDates.has(d) && !Object.keys(_attMatrix).some(k=>k.endsWith('-'+d));
-        hdr2 += `<th class="att-date-hdr${isNew?' new-session':''}">${fmtDateShort(d)}</th>`;
-      });
+      hdrCells += `<th class="att-wk-th att-wk-th-active" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
+        <div class="att-wk-title att-wk-title-active">${esc(wk.title)}</div>
+        <div class="att-wk-days">${wk.dates.map(d=>`<div class="att-wk-day">${fmtDateShort(d)}</div>`).join('')}</div>
+      </th>`;
     } else {
-      hdr2 += `<th class="att-week-sum" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()" style="cursor:pointer">ملخص</th>`;
+      hdrCells += `<th class="att-wk-th" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
+        <div class="att-wk-title">${esc(wk.title)}</div>
+      </th>`;
     }
   });
 
-  // ── صفوف الطلاب ──
+  // Tbody
   const rows = filtered.map(s => {
-    let cells = '';
-    _attWeekGroups.forEach(wk => {
+    let cells = `<td class="att-td-name">${esc(s.studentName)}</td>`;
+    _attWeekGroups.forEach((wk, idx) => {
       if (wk.key === _attActiveWk) {
-        wk.dates.forEach(date => {
-          const status = _attMatrix[`${s.studentId}-${date}`] || null;
-          const dirty  = _attDirtyDates.has(date) ? ' dirty' : '';
+        const dayBtns = wk.dates.map(date => {
+          const status = _attMatrix[`${s.studentId}-${date}`]||null;
+          const dirty  = _attDirtyDates.has(date) ? ' dirty':'';
+          const st     = status ? ATT_STATUSES.find(a=>a.id===status) : null;
           const dotCls = status ? 's-'+status.replace(/ /g,'-') : 's-none';
-          const abbr   = status ? (ATT_STATUSES.find(a=>a.id===status)?.abbr||'؟') : '+';
-          cells += `<td class="att-cell${dirty}" onclick="openAttPicker(${s.studentId},'${date}')">
-            <div class="att-dot ${dotCls}" title="${esc(status||'لم يُسجَّل')}">${abbr}</div>
-          </td>`;
-        });
+          return `<button class="att-day-btn${dirty}" onclick="openAttPicker(${s.studentId},'${date}')" title="${esc(status||'لم يُسجَّل')}">
+            <div class="att-dot ${dotCls}">${st?.abbr||''}</div>
+          </button>`;
+        }).join('');
+        cells += `<td class="att-td-active"><div class="att-day-flex">${dayBtns}</div></td>`;
       } else {
         const present = wk.dates.filter(d=>{ const st=_attMatrix[`${s.studentId}-${d}`]; return st&&!st.startsWith('غائب'); }).length;
         const total   = wk.dates.length;
         const clr = present===0?'var(--danger)':present===total?'var(--success)':'var(--warning)';
-        cells += `<td class="att-week-sum" onclick="_attWkIdx=${_attWeekGroups.indexOf(wk)};_attActiveWk='${wk.key}';renderAttMatrix()" style="cursor:pointer">
-          <span style="font-weight:700;color:${clr}">${present}</span>
-          <span style="color:var(--muted);font-size:.72rem"> / ${total}</span>
+        cells += `<td class="att-td-sum" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
+          <div><div class="att-sum-count" style="color:${clr}">${present}<span class="att-sum-total"> / ${total}</span></div>
+          <div class="att-sum-label">حاضر</div></div>
         </td>`;
       }
     });
-    return `<tr><td class="att-col-name">${esc(s.studentName)}</td>${cells}</tr>`;
+    return `<tr class="att-row">${cells}</tr>`;
   }).join('');
 
-  body.innerHTML = `
-    ${weekNav}
-    <div class="att-matrix-wrap">
-      <table class="att-matrix">
-        <thead><tr>${hdr1}</tr><tr>${hdr2}</tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+  body.innerHTML = `${weekNav}<div class="att-matrix-wrap"><table class="att-matrix"><thead><tr>${hdrCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 function openAttPicker(studentId, date) {
   _attPickerCell = { studentId, date };
   const s = _attSubs.find(s => s.studentId === studentId);
   document.getElementById('att-picker-title').textContent = `${s?.studentName||''} — ${fmtDate(date)}`;
-  const current = _attMatrix[`${studentId}-${date}`] || null;
+  const current = _attMatrix[`${studentId}-${date}`]||null;
   document.getElementById('att-picker-body').innerHTML = `
-    ${ATT_STATUSES.map(st => `
+    ${ATT_STATUSES.map(st=>`
       <button class="att-picker-btn" onclick="setAttStatus('${st.id}')"
-        style="background:${st.id===current?st.color+'22':'#f8faff'};border-color:${st.id===current?st.color:'transparent'}">
-        <div class="att-dot-preview" style="background:${st.color}"></div>
+        style="background:${st.light};color:${st.textColor};border-color:${st.id===current?st.color:'transparent'}">
+        <div class="att-picker-icon" style="background:${st.color}">${st.icon}</div>
         <span>${esc(st.id)}</span>
-        ${st.id===current?'<span style="margin-right:auto;font-size:.72rem;color:var(--muted)">✓ الحالي</span>':''}
+        ${st.id===current?'<span class="att-picker-check">✓ الحالي</span>':''}
       </button>`).join('')}
-    <button class="att-picker-clear" onclick="setAttStatus(null)">🗑 مسح الحالة</button>`;
-  document.getElementById('m-att-picker').style.display = 'flex';
+    <button class="att-picker-clear" onclick="setAttStatus(null)">🗑 مسح الحالة الحالية</button>`;
+  document.getElementById('m-att-picker').style.display='flex';
 }
 function closeAttPicker() { document.getElementById('m-att-picker').style.display='none'; }
 
@@ -676,31 +665,31 @@ async function renderAttStats() {
     const entries = Object.values(sMap).sort((a,b)=>((b.present+b.late)-(a.present+a.late)));
     _statsAllEntries   = entries;
     _statsTotalSessions = totalSessions;
-    const totalAtt  = entries.reduce((s,e)=>s+e.present+e.late,0);
-    const avgPct    = Math.round(totalAtt/(totalSessions*entries.length)*100);
-    const topPresent= [...entries].sort((a,b)=>(b.present+b.late)-(a.present+a.late))[0];
-    const topAbsent = [...entries].sort((a,b)=>b.absent-a.absent)[0];
-    const groups    = [...new Set(entries.map(e=>e.group).filter(Boolean))].sort();
+    const totalPresent = entries.reduce((s,e)=>s+e.present,0);
+    const totalLate    = entries.reduce((s,e)=>s+e.late,0);
+    const totalAbsent  = entries.reduce((s,e)=>s+e.absent,0);
     body.innerHTML = `
-      <div class="att-kpi-row">
-        <div class="att-kpi-card att-kpi-blue"><div class="att-kpi-lbl">إجمالي الجلسات</div><div class="att-kpi-val">${sessions.length}</div></div>
-        <div class="att-kpi-card att-kpi-green"><div class="att-kpi-lbl">متوسط الحضور</div><div class="att-kpi-val">${avgPct}%</div></div>
-        <div class="att-kpi-card att-kpi-gold"><div class="att-kpi-lbl">أعلى حضور</div>
-          <div class="att-kpi-val" style="font-size:.9rem">${esc(topPresent?.name||'—')}</div>
-          <div style="font-size:.75rem;color:var(--muted)">${(topPresent?.present||0)+(topPresent?.late||0)} / ${sessions.length}</div>
+      <div class="att-stats-grid">
+        <div class="att-stat-card att-stat-green">
+          <div class="att-stat-body">
+            <div><p class="att-stat-lbl">إجمالي الحضور</p><h3 class="att-stat-val">${totalPresent}</h3></div>
+            <div class="att-stat-icon" style="color:var(--success)">✓</div>
+          </div>
         </div>
-        <div class="att-kpi-card" style="background:#fff0f0;border-color:#fecaca">
-          <div class="att-kpi-lbl" style="color:#b91c1c">أكثر غياباً</div>
-          <div class="att-kpi-val" style="font-size:.9rem;color:#b91c1c">${esc(topAbsent?.name||'—')}</div>
-          <div style="font-size:.75rem;color:var(--muted)">${topAbsent?.absent||0} يوم</div>
+        <div class="att-stat-card att-stat-yellow">
+          <div class="att-stat-body">
+            <div><p class="att-stat-lbl">إجمالي التأخير</p><h3 class="att-stat-val">${totalLate}</h3></div>
+            <div class="att-stat-icon" style="color:var(--warning)">◷</div>
+          </div>
+        </div>
+        <div class="att-stat-card att-stat-red">
+          <div class="att-stat-body">
+            <div><p class="att-stat-lbl">إجمالي الغياب</p><h3 class="att-stat-val">${totalAbsent}</h3></div>
+            <div class="att-stat-icon" style="color:var(--danger)">✕</div>
+          </div>
         </div>
       </div>
-      ${groups.length>1?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center">
-        <span style="font-size:.8rem;color:var(--muted)">المجموعة:</span>
-        <button class="btn btn-sm btn-primary" onclick="filterStatsTable(this,'__all__')">الكل</button>
-        ${groups.map(g=>`<button class="btn btn-sm btn-outline" onclick="filterStatsTable(this,'${esc(g)}')">${esc(g)}</button>`).join('')}
-      </div>`:''}
-      <div id="att-stats-table">${buildStatsTable(entries,sessions.length)}</div>`;
+      <div id="att-stats-table" style="margin-top:20px">${buildStatsTable(entries,sessions.length)}</div>`;
   } catch(e) {
     body.innerHTML=`<div class="empty"><div class="ei">⚠️</div><p>خطأ: ${e.message}</p></div>`;
   }
@@ -752,21 +741,19 @@ function renderAttLog(rows) {
   if (!rows.length) { body.innerHTML=`<div class="empty"><div class="ei">📜</div><p>لا توجد عمليات مسجّلة بعد</p></div>`; return; }
   body.innerHTML = rows.map(r => {
     const col = s => ATT_STATUSES.find(a=>a.id===s)?.color||'#94a3b8';
-    const oldDot = r.oldStatus
-      ? `<span class="att-log-dot" style="background:${col(r.oldStatus)}" title="${esc(r.oldStatus)}"></span>`
-      : `<span class="att-log-dot" style="background:var(--border)" title="لم يُسجَّل"></span>`;
-    const newDot = `<span class="att-log-dot" style="background:${col(r.newStatus)}" title="${esc(r.newStatus)}"></span>`;
-    return `<div class="att-log-entry">
-      <div class="att-log-avatar">${esc(r.studentName?.[0]||'؟')}</div>
-      <div class="att-log-info">
-        <div class="att-log-name">${esc(r.studentName||'')}</div>
-        <div class="att-log-meta">
-          <span>📅 ${fmtDate(r.date)}</span>
-          <span>${oldDot} ← ${newDot}</span>
-          <span style="color:var(--muted);font-size:.75rem">بواسطة ${esc(r.recordedBy||'')}</span>
+    const newColor = col(r.newStatus);
+    return `<div class="att-log-card">
+      <div class="att-log-left">
+        <div class="att-log-icon-wrap"><span class="att-log-icon">◷</span></div>
+        <div>
+          <h4 class="att-log-name">${esc(r.studentName||'')}</h4>
+          <p class="att-log-sub">${fmtDate(r.date)} · بواسطة ${esc(r.recordedBy||'')}</p>
         </div>
       </div>
-      <div class="att-log-time">${fmtDatetime(r.recordedAt)}</div>
+      <div class="att-log-right">
+        <span class="att-log-time">${fmtDatetime(r.recordedAt)}</span>
+        <span class="att-log-badge" style="background:${newColor}22;color:${newColor}">${esc(r.newStatus||'')}</span>
+      </div>
     </div>`;
   }).join('');
 }
