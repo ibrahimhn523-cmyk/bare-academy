@@ -84,11 +84,11 @@ let _statsTotalSessions = 0;
 
 // ── حالات التحضير ──
 const ATT_STATUSES = [
-  { id: 'حاضر',           color: '#22c55e', light:'#f0fdf4', textColor:'#166534', abbr:'ح',  icon:'✓' },
-  { id: 'متأخر بعذر',     color: '#0ea5e9', light:'#f0f9ff', textColor:'#0c4a6e', abbr:'تع', icon:'◷' },
-  { id: 'متأخر بغير عذر', color: '#f59e0b', light:'#fffbeb', textColor:'#92400e', abbr:'ت',  icon:'◷' },
-  { id: 'غائب بعذر',      color: '#f97316', light:'#fff7ed', textColor:'#9a3412', abbr:'غع', icon:'✕' },
-  { id: 'غائب بغير عذر',  color: '#ef4444', light:'#fef2f2', textColor:'#991b1b', abbr:'غ',  icon:'✕' },
+  { id: 'حاضر',           color: '#10b981', light:'#ecfdf5', textColor:'#065f46', abbr:'ح',  icon:'✓',  present: true  },
+  { id: 'متأخر بعذر',     color: '#0ea5e9', light:'#f0f9ff', textColor:'#0c4a6e', abbr:'تع', icon:'◷',  present: true  },
+  { id: 'متأخر بغير عذر', color: '#fbbf24', light:'#fffbeb', textColor:'#78350f', abbr:'ت',  icon:'◷',  present: true  },
+  { id: 'غائب بعذر',      color: '#fb923c', light:'#fff7ed', textColor:'#9a3412', abbr:'غع', icon:'✕',  present: false },
+  { id: 'غائب بغير عذر',  color: '#f43f5e', light:'#fff1f2', textColor:'#881337', abbr:'غ',  icon:'✕',  present: false },
 ];
 
 // points state
@@ -529,7 +529,7 @@ function renderAttMatrix() {
         }).join('');
         cells += `<td class="att-td-active"><div class="att-day-flex">${dayBtns}</div></td>`;
       } else {
-        const present = wk.dates.filter(d=>{ const st=_attMatrix[`${s.studentId}-${d}`]; return st&&!st.startsWith('غائب'); }).length;
+        const present = wk.dates.filter(d=>{ const st=_attMatrix[`${s.studentId}-${d}`]; return ATT_STATUSES.find(a=>a.id===st)?.present; }).length;
         const total   = wk.dates.length;
         const clr = present===0?'var(--danger)':present===total?'var(--success)':'var(--warning)';
         cells += `<td class="att-td-sum" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
@@ -657,8 +657,9 @@ async function renderAttStats() {
     allAtt.forEach(a => {
       const id = parseInt(a.studentId);
       if (!sMap[id]) sMap[id] = { name:a.studentName, group:a.groupName, present:0, late:0, absent:0 };
+      const stDef = ATT_STATUSES.find(x=>x.id===a.status);
       if (a.status==='حاضر') sMap[id].present++;
-      else if (a.status?.startsWith('متأخر')) sMap[id].late++;
+      else if (stDef?.present) sMap[id].late++;   // متأخر بعذر / متأخر بغير عذر
       else sMap[id].absent++;
     });
     _attSubs.forEach(s=>{ if(!sMap[s.studentId]) sMap[s.studentId]={ name:s.studentName, group:_attSelGroup, present:0, late:0, absent:0 }; });
