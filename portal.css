@@ -735,3 +735,134 @@ tr.row-selected { background:rgba(193,157,46,.06); }
   0%   { transform: translateY(0); }
   100% { transform: translateY(-50%); }
 }
+
+/* ══ QUICK ATTENDANCE (تحضير سريع) ══ */
+
+/* شارة "جديد" في القائمة الجانبية */
+.nav-badge-new {
+  display:inline-block; background:var(--gold); color:#1a1000;
+  font-size:.6rem; font-weight:800; padding:1px 6px;
+  border-radius:20px; vertical-align:middle; margin-right:4px;
+  letter-spacing:.02em;
+}
+
+/* شارة في رأس الصفحة */
+.aq-badge-new {
+  display:inline-block; background:linear-gradient(135deg,var(--gold),#d4af37);
+  color:#1a1000; font-size:.65rem; font-weight:800;
+  padding:2px 10px; border-radius:20px; vertical-align:middle;
+  margin-right:6px; letter-spacing:.03em;
+  box-shadow:0 2px 6px rgba(193,157,46,.35);
+}
+
+/* ── شريط الأدوات العلوي ── */
+.aq-toolbar {
+  background:var(--white); border-radius:var(--radius);
+  box-shadow:var(--shadow); border:1.5px solid var(--border);
+  padding:14px 18px; margin-bottom:16px;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+}
+
+.aq-selects {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap; flex:1;
+}
+
+.aq-select {
+  padding:8px 12px; border:1.5px solid var(--border); border-radius:8px;
+  font-family:inherit; font-size:.83rem; color:var(--primary);
+  background:var(--white); cursor:pointer; min-width:140px;
+  transition:border-color .15s;
+}
+.aq-select:focus { outline:none; border-color:var(--primary); }
+.aq-select:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── شريط الملخص الإحصائي ── */
+.aq-summary {
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.aq-sum-item {
+  display:flex; flex-direction:column; align-items:center;
+  padding:6px 14px; border-radius:8px;
+  font-weight:800; font-size:1.05rem; line-height:1;
+  min-width:60px;
+}
+.aq-sum-item small { font-size:.65rem; font-weight:500; margin-top:3px; opacity:.8; }
+.aq-sum-total   { background:#f1f5f9; color:var(--primary); }
+.aq-sum-present { background:#ecfdf5; color:#065f46; }
+.aq-sum-late    { background:#fffbeb; color:#78350f; }
+.aq-sum-absent  { background:#fff1f2; color:#881337; }
+.aq-sum-pct     { background:linear-gradient(135deg,var(--primary),var(--primary2)); color:#fff;
+                   min-width:70px; }
+
+/* ── قائمة الطلاب ── */
+.aq-list {
+  display:flex; flex-direction:column; gap:10px;
+}
+
+/* ── صف الطالب الواحد ── */
+.aq-row {
+  background:var(--white); border-radius:12px;
+  border:1.5px solid var(--border);
+  box-shadow:0 1px 4px rgba(0,0,0,.05);
+  padding:12px 16px;
+  display:flex; align-items:center; gap:14px;
+  transition:border-color .15s, box-shadow .15s;
+}
+.aq-row:hover { border-color:rgba(45,54,81,.2); box-shadow:0 3px 10px rgba(0,0,0,.08); }
+.aq-row.aq-row-recorded { border-right:4px solid var(--success); }
+
+/* ── أفاتار الطالب ── */
+.aq-avatar {
+  width:38px; height:38px; border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--primary2));
+  color:#fff; font-weight:800; font-size:.88rem;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+
+/* ── معلومات الطالب ── */
+.aq-student-info {
+  flex:1; min-width:0;
+}
+.aq-name {
+  font-weight:700; font-size:.88rem; color:var(--primary);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.aq-status-label {
+  font-size:.73rem; margin-top:2px; font-weight:600;
+}
+
+/* ── أزرار الحالة المضمّنة ── */
+.aq-btns {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.aq-status-btn {
+  width:36px; height:36px; border-radius:50%;
+  border:2px solid; font-family:inherit;
+  font-size:.72rem; font-weight:800;
+  cursor:pointer; transition:all .15s;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.aq-status-btn:hover { transform:scale(1.15); filter:brightness(1.1); }
+.aq-status-btn:active { transform:scale(0.93); }
+.aq-status-btn.aq-status-active {
+  box-shadow:0 0 0 3px rgba(255,255,255,.6), 0 0 0 5px currentColor;
+  transform:scale(1.08);
+}
+
+/* ── حالة "غير مسجّل" تحت الصف ── */
+.aq-unrecorded .aq-name { color:#94a3b8; }
+.aq-unrecorded .aq-avatar { background:#e2e8f0; color:#94a3b8; }
+
+/* ── Footer count bar ── */
+.aq-footer {
+  margin-top:8px; padding:10px 16px;
+  background:var(--white); border-radius:10px;
+  border:1.5px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:.78rem; color:var(--muted);
+}
+.aq-footer strong { color:var(--primary); }

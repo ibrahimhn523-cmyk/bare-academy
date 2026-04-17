@@ -70,6 +70,11 @@
         </div>
       </div>
 
+      <!-- ⚡ تحضير سريع (النسخة الجديدة) -->
+      <div class="nav-sub-item" id="nav-att-quick" onclick="switchSection('att-quick')">
+        <span class="nav-icon">⚡</span><span>تحضير سريع <span class="nav-badge-new">جديد</span></span>
+      </div>
+
       <div class="nav-sub-item" id="nav-points" onclick="switchSection('points')">
         <span class="nav-icon">⭐</span><span>النقاط</span>
       </div>
@@ -106,6 +111,46 @@
       </div>
       <div class="kpi-row" id="home-kpi"></div>
       <div class="cards-grid" id="home-recent"></div>
+    </section>
+
+    <!-- ══ ATTENDANCE QUICK ══ -->
+    <section class="section" id="section-att-quick">
+      <!-- رأس الصفحة -->
+      <div class="page-hdr">
+        <div>
+          <div class="page-title">تحضير سريع <span class="aq-badge-new">نسخة جديدة</span></div>
+          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">نقرة واحدة لكل طالب — بدون نوافذ</div>
+        </div>
+        <div class="hdr-actions">
+          <button class="btn btn-success" id="aq-save-btn" onclick="saveQuickAtt()" style="display:none">💾 حفظ الجلسة</button>
+        </div>
+      </div>
+
+      <!-- شريط الاختيار -->
+      <div class="aq-toolbar">
+        <div class="aq-selects">
+          <select id="aq-prog-sel" onchange="onAqProgChange()" class="aq-select">
+            <option value="">📚 اختر البرنامج</option>
+          </select>
+          <select id="aq-group-sel" onchange="loadQuickAtt()" class="aq-select" disabled>
+            <option value="">👥 اختر المجموعة</option>
+          </select>
+          <input type="date" id="aq-date" class="aq-select" onchange="loadQuickAtt()">
+        </div>
+        <!-- شريط الملخص اللحظي -->
+        <div class="aq-summary" id="aq-summary" style="display:none">
+          <div class="aq-sum-item aq-sum-total"><span id="aq-sum-total">0</span><small>إجمالي</small></div>
+          <div class="aq-sum-item aq-sum-present"><span id="aq-sum-present">0</span><small>حاضر</small></div>
+          <div class="aq-sum-item aq-sum-late"><span id="aq-sum-late">0</span><small>متأخر</small></div>
+          <div class="aq-sum-item aq-sum-absent"><span id="aq-sum-absent">0</span><small>غائب</small></div>
+          <div class="aq-sum-item aq-sum-pct"><span id="aq-sum-pct">-</span><small>نسبة الحضور</small></div>
+        </div>
+      </div>
+
+      <!-- قائمة الطلاب -->
+      <div id="aq-body">
+        <div class="empty"><div class="ei">⚡</div><p>اختر البرنامج والمجموعة لبدء التحضير</p></div>
+      </div>
     </section>
 
     <!-- ══ ATTENDANCE ══ -->

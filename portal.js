@@ -257,7 +257,7 @@ function parseDays(d) {
 }
 
 function populateProgSelects() {
-  const ids = ['att-prog-sel','pts-prog-sel','cult-prog-sel','sports-prog-sel','lb-prog-sel','cult-modal-prog','sports-modal-prog','ss-prog-sel'];
+  const ids = ['att-prog-sel','aq-prog-sel','pts-prog-sel','cult-prog-sel','sports-prog-sel','lb-prog-sel','cult-modal-prog','sports-modal-prog','ss-prog-sel'];
   ids.forEach(id => {
     const el = document.getElementById(id); if (!el) return;
     const cur = el.value;
@@ -272,6 +272,7 @@ function populateProgSelects() {
 const SECTION_LABELS = {
   home:'الرئيسية', attendance:'التحضير',
   'att-matrix':'التحضير — المصفوفة', 'att-stats':'التحضير — الإحصائيات', 'att-log':'التحضير — السجل',
+  'att-quick':'⚡ تحضير سريع',
   points:'النقاط',
   cultural:'الثقافي', sports:'الرياضي', 'sport-stats':'إحصائيات البطولة',
   leaderboard:'الصدارة', admin:'الإدارة'
@@ -281,6 +282,7 @@ function switchSection(name) {
   // ── حارس الصلاحيات ──
   const _SECTION_PERMS = {
     attendance   : 'attendance',
+    'att-quick'  : 'attendance',
     points       : 'points',
     cultural     : 'cultural',
     sports       : 'sports',
@@ -396,6 +398,163 @@ async function loadHome() {
     }
   } catch(e) {
     kpi.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر التحميل</p></div>`;
+  }
+}
+
+/* ══════════════════════════════════════════
+   QUICK ATTENDANCE — التحضير السريع
+══════════════════════════════════════════ */
+let _aqSubs    = [];
+let _aqData    = {};   // { studentId: status }
+let _aqSelProg = null;
+let _aqSelGroup= '';
+let _aqDirty   = false;
+
+function onAqProgChange() {
+  const progId = parseInt(document.getElementById('aq-prog-sel').value) || 0;
+  _aqSelProg   = _progs.find(p => p.id === progId) || null;
+  const grpSel = document.getElementById('aq-group-sel');
+  grpSel.innerHTML = '<option value="">👥 اختر المجموعة</option>';
+  grpSel.disabled  = true;
+  document.getElementById('aq-body').innerHTML = `<div class="empty"><div class="ei">👥</div><p>اختر المجموعة</p></div>`;
+  document.getElementById('aq-summary').style.display = 'none';
+  if (!_aqSelProg) return;
+  const groups = _aqSelProg.groups.split('،').map(g => g.trim()).filter(Boolean);
+  grpSel.innerHTML = '<option value="">👥 اختر المجموعة</option>' +
+    (groups.length ? groups : ['الكل']).map(g => `<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  grpSel.disabled = false;
+}
+
+async function loadQuickAtt() {
+  const progId = parseInt(document.getElementById('aq-prog-sel').value) || 0;
+  const group  = document.getElementById('aq-group-sel').value;
+  const date   = document.getElementById('aq-date').value;
+  if (!progId || !group || !date) return;
+
+  _aqSelGroup = group;
+  const body  = document.getElementById('aq-body');
+  body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
+
+  try {
+    // جلب الطلاب
+    const subsRows = group === 'الكل'
+      ? await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}`)
+      : await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}&groupName=eq.${encodeURIComponent(group)}`);
+    _aqSubs = subsRows.map(r => ({ studentId: parseInt(r.id), realStudentId: parseInt(r.studentId), studentName: r.studentName || '' }));
+
+    // جلب التحضير الموجود لهذا اليوم
+    const groupFilter = group === 'الكل' ? '' : `&groupName=eq.${encodeURIComponent(group)}`;
+    const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}&date=eq.${date}${groupFilter}`);
+    _aqData = {};
+    attRows.forEach(a => { _aqData[parseInt(a.studentId)] = a.status; });
+    _aqDirty = false;
+
+    renderQuickAtt();
+  } catch(e) {
+    body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>خطأ: ${e.message}</p></div>`;
+  }
+}
+
+function renderQuickAtt() {
+  const body = document.getElementById('aq-body');
+  if (!_aqSubs.length) {
+    body.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب</p></div>`; return;
+  }
+
+  // ── الملخص اللحظي ──
+  const total   = _aqSubs.length;
+  const present = _aqSubs.filter(s => ATT_STATUSES.find(a => a.id === _aqData[s.realStudentId])?.present).length;
+  const absent  = _aqSubs.filter(s => { const st = _aqData[s.realStudentId]; return st && ATT_STATUSES.find(a=>a.id===st)?.present===false; }).length;
+  const late    = _aqSubs.filter(s => { const st = _aqData[s.realStudentId]; return st && st !== 'حاضر' && ATT_STATUSES.find(a=>a.id===st)?.present; }).length;
+  const unmarked= total - present - absent - late;
+  const pct     = total ? Math.round((present + late) / total * 100) : 0;
+
+  document.getElementById('aq-summary').style.display = 'flex';
+  document.getElementById('aq-sum-total').textContent   = total;
+  document.getElementById('aq-sum-present').textContent = present;
+  document.getElementById('aq-sum-late').textContent    = late;
+  document.getElementById('aq-sum-absent').textContent  = absent;
+  document.getElementById('aq-sum-pct').textContent     = pct + '%';
+
+  const saveBtn = document.getElementById('aq-save-btn');
+  if (saveBtn) saveBtn.style.display = _aqDirty ? '' : 'none';
+
+  // ── قائمة الطلاب ──
+  const rows = _aqSubs.map((s, i) => {
+    const status  = _aqData[s.realStudentId] || null;
+    const stDef   = status ? ATT_STATUSES.find(a=>a.id===status) : null;
+    const rowCls  = status ? 'aq-row-recorded' : '';
+    const initials= s.studentName.trim().split(' ').slice(0,2).map(w=>w[0]).join('');
+    const avatarBg= stDef ? stDef.color : '#e2e8f0';
+    const avatarTx= stDef ? '#fff'      : '#94a3b8';
+
+    const btns = ATT_STATUSES.map(st => `
+      <button class="aq-status-btn ${status===st.id ? 'aq-status-active' : ''}"
+        style="background:${status===st.id ? st.color : 'transparent'};color:${status===st.id ? '#fff' : st.color};border-color:${st.color}"
+        onclick="setAqStatus(${s.realStudentId},'${st.id}')"
+        title="${esc(st.id)}">
+        ${st.abbr}
+      </button>`).join('');
+
+    return `<div class="aq-row ${rowCls}" id="aq-row-${s.realStudentId}">
+      <div class="aq-avatar" style="background:${avatarBg};color:${avatarTx}">${initials}</div>
+      <div class="aq-student-info">
+        <div class="aq-name">${esc(s.studentName)}</div>
+        ${stDef
+          ? `<div class="aq-status-label" style="color:${stDef.color}">${esc(status)}</div>`
+          : `<div class="aq-status-label" style="color:var(--muted)">لم يُحضَّر بعد</div>`}
+      </div>
+      <div class="aq-btns">${btns}</div>
+    </div>`;
+  }).join('');
+
+  const recorded = total - unmarked;
+  body.innerHTML = `<div class="aq-list">${rows}</div>
+    <div class="aq-footer">
+      <span>تم تسجيل <strong>${recorded}</strong> من أصل <strong>${total}</strong> طالب</span>
+      ${unmarked > 0 ? `<span style="color:var(--warning);font-weight:700">⚠ ${unmarked} لم يُسجَّل بعد</span>` : '<span style="color:var(--success);font-weight:700">✓ اكتمل التحضير</span>'}
+    </div>`;
+}
+
+function setAqStatus(studentId, status) {
+  if (_aqData[studentId] === status) {
+    delete _aqData[studentId]; // إلغاء عند الضغط مرتين
+  } else {
+    _aqData[studentId] = status;
+  }
+  _aqDirty = true;
+  renderQuickAtt();
+}
+
+async function saveQuickAtt() {
+  const progId = parseInt(document.getElementById('aq-prog-sel').value) || 0;
+  const date   = document.getElementById('aq-date').value;
+  if (!progId || !_aqSelGroup || !date) { toast('بيانات غير مكتملة','error'); return; }
+
+  const btn = document.getElementById('aq-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ جاري الحفظ…'; }
+
+  try {
+    // حذف القديم وإدراج الجديد
+    await fetch(`${SB_URL}/attendance?programId=eq.${progId}&date=eq.${date}&groupName=eq.${encodeURIComponent(_aqSelGroup)}`,
+      { method: 'DELETE', headers: _h() });
+
+    for (const s of _aqSubs) {
+      const status = _aqData[s.realStudentId];
+      if (status) {
+        await sbInsert(TB.ATTENDANCE, {
+          programId: progId, groupName: _aqSelGroup,
+          studentId: s.realStudentId, studentName: s.studentName,
+          date, status, recordedBy: _user?.username || '', recordedAt: new Date().toISOString()
+        });
+      }
+    }
+    _aqDirty = false;
+    if (btn) { btn.textContent = '✅ تم الحفظ'; btn.disabled = false; setTimeout(() => { btn.textContent = '💾 حفظ الجلسة'; btn.style.display='none'; }, 2000); }
+    toast(`تم حفظ تحضير ${fmtDate(date)} ✅`);
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = '💾 حفظ الجلسة'; }
+    toast('خطأ: ' + e.message, 'error');
   }
 }
 
