@@ -9,7 +9,6 @@ const TB = {
   SUBSCRIPTIONS : 'subscriptions',
   PAYMENTS      : 'payments',
   PROGRAMS      : 'programs',
-  ATTENDANCE    : 'attendance',
   SETTINGS      : 'settings',
   LOGS          : 'logs'
 };
@@ -82,9 +81,6 @@ let _progs       = [];
 let _allSubs     = [];   // all subscriptions (for student card + sub counts on programs page)
 let _allPayments = [];   // all payments (for student card)
 let _progSubs    = [];   // subscriptions for current program
-let _attSorted      = [];    // cached sorted attendance rows for filter/search
-let _attSessions    = 0;     // total sessions count for percentage calc
-let _attActiveGroup = 'all'; // currently selected group filter
 let _progPays    = [];   // payments for current program
 let _context     = 'academy';
 let _currentProg = null;
@@ -144,9 +140,6 @@ function renderSidebar() {
         <div class="nav-item ${_activeSection === 'fees' ? 'active' : ''}" onclick="switchSection('fees')">
           <span class="nav-icon">💰</span><span>الرسوم</span>
         </div>
-        <div class="nav-item ${_activeSection === 'attendance' ? 'active' : ''}" onclick="switchSection('attendance')">
-          <span class="nav-icon">✅</span><span>التحضير</span>
-        </div>
         <div class="nav-item ${_activeSection === 'comm' ? 'active' : ''}" onclick="switchSection('comm')">
           <span class="nav-icon">💬</span><span>التواصل</span>
         </div>
@@ -172,7 +165,6 @@ function switchSection(name) {
   if (name === 'subscribers') renderSubscribers();
   if (name === 'groups')      renderGroups();
   if (name === 'fees')        renderFees();
-  if (name === 'attendance')  loadAttStats();
   if (name === 'comm')        { _commSelected.clear(); renderComm(); }
   if (name === 'prog-stats')  renderProgStats();
   if (name === 'logs')        loadLogs();
@@ -1286,214 +1278,6 @@ function renderFees() {
       </td>
     </tr>`;
   }).join('');
-}
-
-/* ══════════════════════════════════════════
-   ATTENDANCE STATS
-══════════════════════════════════════════ */
-async function loadAttStats() {
-  const kpiRow  = document.getElementById('att-kpi-row');
-  const stuBody = document.getElementById('att-students-body');
-  const sesBody = document.getElementById('att-sessions-body');
-
-  if (!_currentProg) {
-    stuBody.innerHTML = `<div class="empty"><div class="ei">✅</div><p>ادخل برنامجًا لعرض إحصائيات التحضير</p></div>`;
-    if (kpiRow) kpiRow.innerHTML = '';
-    if (sesBody) sesBody.innerHTML = '';
-    return;
-  }
-
-  stuBody.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
-  if (kpiRow) kpiRow.innerHTML = '';
-  if (sesBody) sesBody.innerHTML = '';
-  _attActiveGroup = 'all';
-
-  try {
-    const allAtt = await sbRead(TB.ATTENDANCE, `programId=eq.${_currentProg.id}`);
-
-    if (!allAtt.length) {
-      stuBody.innerHTML = `<div class="empty"><div class="ei">✅</div><p>لا توجد بيانات تحضير بعد لهذا البرنامج</p></div>`;
-      return;
-    }
-
-    // -- الجلسات (تواريخ فريدة) --
-    const sessions      = [...new Set(allAtt.map(a => a.date))].sort();
-    const totalSessions = sessions.length;
-
-    // -- بناء sMap من allAtt مباشرة --
-    const sMap = {};
-    allAtt.forEach(a => {
-      const id = parseInt(a.studentId);
-      if (!sMap[id]) {
-        sMap[id] = { name: a.studentName || String(id), group: a.groupName || '', present: 0, late: 0, absent: 0 };
-      }
-      const st = a.status || '';
-      if      (st === 'حاضر')          sMap[id].present++;
-      else if (st.startsWith('متأخر')) sMap[id].late++;
-      else                                   sMap[id].absent++;
-    });
-
-    // إضافة المشتركين الذين ليس لهم سجل تحضير
-    _progSubs.forEach(s => {
-      const id = parseInt(s.studentId);
-      if (!sMap[id]) sMap[id] = { name: s.studentName || '', group: s.groupName || '', present: 0, late: 0, absent: 0 };
-    });
-
-    const studentEntries = Object.entries(sMap);
-    const totalStudents  = studentEntries.length;
-
-    // -- KPI --
-    const totalAttended = studentEntries.reduce((a, [, s]) => a + s.present + s.late, 0);
-    const avgPct = totalSessions && totalStudents
-      ? Math.round(totalAttended / (totalSessions * totalStudents) * 100) : 0;
-
-    let topPresent = { name: '—', days: 0 };
-    let topAbsent  = { name: '—', days: 0 };
-    studentEntries.forEach(([, s]) => {
-      if (s.present + s.late > topPresent.days) topPresent = { name: s.name, days: s.present + s.late };
-      if (s.absent > topAbsent.days)            topAbsent  = { name: s.name, days: s.absent };
-    });
-
-    if (kpiRow) kpiRow.innerHTML = `
-      <div class="kpi-card kpi-blue">
-        <div class="kpi-lbl">إجمالي الجلسات</div>
-        <div class="kpi-val">${totalSessions}</div>
-      </div>
-      <div class="kpi-card kpi-green">
-        <div class="kpi-lbl">متوسط الحضور</div>
-        <div class="kpi-val">${avgPct}%</div>
-      </div>
-      <div class="kpi-card kpi-gold">
-        <div class="kpi-lbl">أعلى حضور</div>
-        <div class="kpi-val" style="font-size:.9rem;line-height:1.3">${esc(topPresent.name)}</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${topPresent.days} / ${totalSessions} يوم</div>
-      </div>
-      <div class="kpi-card" style="background:#fff0f0;border-color:#fecaca">
-        <div class="kpi-lbl" style="color:#b91c1c">غياب متكرر</div>
-        <div class="kpi-val" style="font-size:.9rem;line-height:1.3;color:#b91c1c">${esc(topAbsent.name)}</div>
-        <div style="font-size:.75rem;color:var(--muted);margin-top:2px">${topAbsent.days} يوم غياب</div>
-      </div>`;
-
-    // -- حفظ البيانات للفلترة --
-    _attSessions = totalSessions;
-    _attSorted = studentEntries
-      .map(([id, s]) => ({ id: parseInt(id), ...s }))
-      .sort((a, b) => {
-        const pa = totalSessions ? (a.present + a.late) / totalSessions : 0;
-        const pb = totalSessions ? (b.present + b.late) / totalSessions : 0;
-        return pa - pb;
-      });
-
-    // -- شريط الفلترة --
-    const uniqueGroups = [...new Set(_attSorted.map(s => s.group).filter(Boolean))].sort();
-    stuBody.innerHTML = `
-      <div class="filter-bar" style="gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="att-search" placeholder="🔍 بحث باسم الطالب…"
-          oninput="filterAttTable()"
-          style="flex:1;min-width:180px;max-width:280px;padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:.85rem">
-        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-          <span style="font-size:.8rem;color:var(--muted)">المجموعة:</span>
-          <button class="btn btn-sm btn-primary" data-attgrp="__all__" onclick="setAttGroup('all')">الكل</button>
-          ${uniqueGroups.map(g => `
-            <button class="btn btn-sm btn-outline" data-attgrp="${esc(g)}" onclick="setAttGroup('${esc(g)}')">${esc(g)}</button>
-          `).join('')}
-        </div>
-      </div>
-      <div id="att-table-wrap"></div>`;
-
-    renderAttTable(_attSorted);
-
-
-    // -- آخر 5 جلسات --
-    const lastFive = sessions.slice(-5).reverse();
-    if (lastFive.length && sesBody) {
-      const totalStu = totalStudents || 1;
-      sesBody.innerHTML = `
-        <div style="margin:20px 0 8px;font-size:.9rem;font-weight:700;color:var(--muted)">ℹ️ آخر الجلسات</div>
-        <div class="table-card"><div class="tbl-wrap"><table>
-          <thead><tr>
-            <th>التاريخ</th><th>✅ حاضر</th>
-            <th>⚠️ متأخر</th><th>❌ غائب</th>
-            <th>نسبة الحضور</th>
-          </tr></thead>
-          <tbody>${lastFive.map(date => {
-            const da  = allAtt.filter(a => a.date === date);
-            const dp  = da.filter(a => a.status === 'حاضر').length;
-            const dl  = da.filter(a => a.status.startsWith('متأخر')).length;
-            const dab = da.filter(a => a.status.startsWith('غائب')).length;
-            const pct = Math.round((dp + dl) / totalStu * 100);
-            const color = pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
-            return `<tr>
-              <td style="font-weight:600">${fmtDate(date)}</td>
-              <td style="color:var(--success);text-align:center">${dp}</td>
-              <td style="color:var(--warning);text-align:center">${dl}</td>
-              <td style="color:var(--danger);text-align:center">${dab}</td>
-              <td><div style="display:flex;align-items:center;gap:6px">
-                <div class="bar-track" style="width:72px;height:8px">
-                  <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
-                </div>
-                <span style="font-size:.8rem;font-weight:700;color:${color}">${pct}%</span>
-              </div></td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table></div></div>`;
-    }
-
-  } catch(e) {
-    stuBody.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر التحميل: ${e.message}</p></div>`;
-  }
-}
-
-/* ── مساعدات فلترة التحضير ── */
-function setAttGroup(group) {
-  _attActiveGroup = group;
-  document.querySelectorAll('[data-attgrp]').forEach(btn => {
-    const g = btn.dataset.attgrp;
-    const active = (group === 'all' && g === '__all__') || g === group;
-    btn.className = 'btn btn-sm ' + (active ? 'btn-primary' : 'btn-outline');
-  });
-  filterAttTable();
-}
-
-function filterAttTable() {
-  const search = (document.getElementById('att-search')?.value || '').trim();
-  const filtered = _attSorted.filter(s => {
-    const matchName  = !search || s.name.includes(search);
-    const matchGroup = _attActiveGroup === 'all' || s.group === _attActiveGroup;
-    return matchName && matchGroup;
-  });
-  renderAttTable(filtered);
-}
-
-function renderAttTable(rows) {
-  const wrap = document.getElementById('att-table-wrap');
-  if (!wrap) return;
-  if (!rows.length) {
-    wrap.innerHTML = `<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`;
-    return;
-  }
-  const ts = _attSessions || 1;
-  wrap.innerHTML = `
-    <div class="table-card"><div class="tbl-wrap"><table>
-      <thead><tr>
-        <th>الطالب</th><th>المجموعة</th>
-        <th>✅ حاضر</th><th>⚠️ متأخر</th><th>❌ غائب</th>
-        <th>النسبة</th><th style="min-width:90px">الحضور</th>
-      </tr></thead>
-      <tbody>${rows.map(s => {
-        const pct   = _attSessions ? Math.round((s.present + s.late) / _attSessions * 100) : null;
-        const color = pct === null ? 'var(--muted)' : pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)';
-        return `<tr>
-          <td style="font-weight:600">${esc(s.name)}</td>
-          <td style="font-size:.8rem;color:var(--muted)">${esc(s.group || '—')}</td>
-          <td style="color:var(--success);text-align:center;font-weight:600">${s.present}</td>
-          <td style="color:var(--warning);text-align:center;font-weight:600">${s.late}</td>
-          <td style="color:var(--danger);text-align:center;font-weight:600">${s.absent}</td>
-          <td style="font-weight:700;color:${color}">${pct === null ? '—' : pct + '%'}</td>
-          <td>${pct === null ? '' : `<div class="bar-track" style="width:80px;height:8px"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>`}</td>
-        </tr>`;
-      }).join('')}</tbody>
-    </table></div></div>`;
 }
 
 /* ══════════════════════════════════════════
