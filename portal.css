@@ -304,6 +304,159 @@ tbody tr:hover { background:#f8faff; }
 }
 .prog-select-bar select:focus { outline:none; border-color:var(--gold2); }
 
+/* ══ SIDEBAR — Attendance sub-nav ══ */
+.nav-att-arrow {
+  margin-right:auto; font-size:.7rem; opacity:.65;
+  transition:transform .25s ease;
+}
+.nav-att-sub-item {
+  display:flex; align-items:center; gap:10px;
+  padding:8px 16px 8px 32px;
+  color:rgba(255,255,255,.55);
+  cursor:pointer; font-size:.83rem;
+  border-radius:8px; margin:1px 8px;
+  transition:background .15s, color .15s;
+}
+.nav-att-sub-item:hover  { background:rgba(255,255,255,.07); color:var(--white); }
+.nav-att-sub-item.active { color:var(--gold2); background:rgba(212,175,55,.14); }
+
+/* ══ ATTENDANCE MATRIX ══ */
+.att-week-nav {
+  display:flex; align-items:center; justify-content:center;
+  gap:12px; margin-bottom:14px; direction:ltr;
+}
+.att-nav-btn {
+  width:34px; height:34px; border-radius:50%;
+  background:var(--primary); color:var(--white);
+  border:none; cursor:pointer; font-size:.95rem; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition:background .15s, transform .1s;
+}
+.att-nav-btn:hover:not(:disabled) { background:var(--gold); transform:scale(1.1); }
+.att-nav-btn:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; }
+.att-nav-title { font-size:.9rem; font-weight:700; color:var(--primary); min-width:170px; text-align:center; }
+
+.att-matrix-wrap { overflow-x:auto; border-radius:var(--radius); box-shadow:var(--shadow); }
+.att-matrix { border-collapse:collapse; width:100%; background:var(--white); }
+
+.att-col-name {
+  position:sticky; right:0; z-index:10;
+  background:var(--white); min-width:155px; max-width:200px;
+  text-align:right; padding:10px 14px;
+  font-weight:600; font-size:.82rem;
+  border-left:2px solid var(--border); white-space:nowrap;
+  box-shadow:-2px 0 8px rgba(0,0,0,.05);
+}
+.att-matrix thead .att-col-name { background:var(--primary); color:var(--white); }
+
+.att-week-hdr {
+  cursor:pointer; user-select:none;
+  background:var(--primary); color:var(--white);
+  padding:9px 14px; text-align:center;
+  font-size:.8rem; font-weight:700;
+  border-left:1px solid rgba(255,255,255,.12);
+  white-space:nowrap; transition:background .18s;
+}
+.att-week-hdr:hover { background:var(--primary2); }
+.att-week-hdr.active { background:var(--gold); color:#1a1000; }
+
+.att-date-hdr {
+  background:var(--primary2); color:var(--white);
+  padding:7px 10px; text-align:center; font-size:.75rem;
+  min-width:62px; white-space:nowrap;
+  border-left:1px solid rgba(255,255,255,.08);
+}
+.att-date-hdr.new-session { background:rgba(193,157,46,.3); color:var(--gold2); }
+
+.att-week-sum {
+  background:#f4f6fb; text-align:center;
+  padding:7px 10px; font-size:.75rem; min-width:68px;
+  border-left:1px solid var(--border);
+}
+
+.att-matrix tbody tr { border-bottom:1px solid var(--border); }
+.att-matrix tbody tr:hover td:not(.att-col-name) { background:#f5f8ff; }
+.att-matrix tbody tr:hover .att-col-name { background:#f0f4ff; }
+
+.att-cell {
+  text-align:center; padding:8px 5px;
+  border-left:1px solid var(--border);
+  cursor:pointer; transition:background .12s;
+}
+.att-cell:hover { background:rgba(193,157,46,.09) !important; }
+.att-cell.dirty .att-dot { outline:2px solid var(--gold); outline-offset:2px; }
+
+.att-dot {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:30px; height:30px; border-radius:50%;
+  font-size:.68rem; font-weight:800; color:#fff;
+  transition:transform .1s; margin:auto;
+}
+.att-dot:hover { transform:scale(1.18); }
+.att-dot.s-حاضر             { background:var(--success); }
+.att-dot.s-متأخر-بعذر       { background:#0ea5e9; }
+.att-dot.s-متأخر-بغير-عذر   { background:var(--warning); color:#3d2500; }
+.att-dot.s-غائب-بعذر        { background:#f97316; }
+.att-dot.s-غائب-بغير-عذر    { background:var(--danger); }
+.att-dot.s-none { background:transparent; border:2px dashed #cbd5e1; color:#c8d3e0; }
+
+/* ══ ATTENDANCE PICKER ══ */
+.att-picker-btn {
+  display:flex; align-items:center; gap:12px;
+  width:100%; padding:11px 14px; border-radius:10px;
+  border:2px solid transparent; margin-bottom:8px;
+  font-family:inherit; font-size:.88rem; font-weight:700;
+  background:#f8faff; cursor:pointer; transition:all .15s;
+}
+.att-picker-btn:hover { transform:scale(1.02); }
+.att-dot-preview { width:26px; height:26px; border-radius:50%; flex-shrink:0; }
+.att-picker-clear {
+  width:100%; padding:8px; color:var(--muted);
+  font-size:.83rem; background:none; border:none;
+  cursor:pointer; font-family:inherit;
+}
+.att-picker-clear:hover { color:var(--danger); }
+
+/* ══ ATTENDANCE STATS ══ */
+.att-kpi-row  { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.att-kpi-card {
+  flex:1; min-width:130px; background:var(--white);
+  border-radius:var(--radius); padding:14px 16px;
+  box-shadow:var(--shadow); border:1.5px solid var(--border);
+}
+.att-kpi-lbl { font-size:.75rem; color:var(--muted); margin-bottom:4px; }
+.att-kpi-val { font-size:1.4rem; font-weight:800; color:var(--primary); }
+.att-kpi-blue  { border-color:#bfdbfe; background:#eff6ff; }
+.att-kpi-green { border-color:#bbf7d0; background:#f0fdf4; }
+.att-kpi-gold  { border-color:var(--gold2); background:#fffbeb; }
+
+/* ══ ATTENDANCE LOG ══ */
+.att-log-entry {
+  display:flex; align-items:flex-start; gap:12px;
+  background:var(--white); border-radius:var(--radius);
+  padding:13px 16px; margin-bottom:9px;
+  box-shadow:var(--shadow); border:1px solid var(--border);
+  transition:box-shadow .15s;
+}
+.att-log-entry:hover { box-shadow:0 4px 14px rgba(0,0,0,.09); }
+.att-log-avatar {
+  width:36px; height:36px; border-radius:50%; flex-shrink:0;
+  background:linear-gradient(135deg,var(--primary),var(--gold));
+  color:#fff; font-size:.9rem; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+}
+.att-log-info { flex:1; min-width:0; }
+.att-log-name { font-weight:700; font-size:.88rem; color:var(--primary); margin-bottom:4px; }
+.att-log-meta {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  font-size:.78rem; color:var(--muted);
+}
+.att-log-dot {
+  display:inline-block; width:13px; height:13px;
+  border-radius:50%; vertical-align:middle; flex-shrink:0;
+}
+.att-log-time { font-size:.74rem; color:var(--muted); white-space:nowrap; margin-top:2px; }
+
 .modal-overlay {
   position:fixed; inset:0; z-index:1000;
   background:rgba(0,0,0,.45); backdrop-filter:blur(4px);

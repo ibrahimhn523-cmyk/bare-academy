@@ -51,6 +51,25 @@
         <span class="nav-icon">🏠</span><span>الرئيسية</span>
       </div>
       <div class="nav-section-label">قسم النظام</div>
+
+      <!-- ✅ التحضير — قابل للطي -->
+      <div class="nav-item" id="nav-attendance" onclick="toggleAttNav()">
+        <span class="nav-icon">✅</span>
+        <span>التحضير</span>
+        <span class="nav-att-arrow" id="nav-att-arrow">▸</span>
+      </div>
+      <div id="nav-att-sub" class="nav-att-sub-wrap" style="display:none">
+        <div class="nav-att-sub-item" id="nav-att-matrix" onclick="switchAttPage('matrix')">
+          <span class="nav-icon">📋</span><span>المصفوفة</span>
+        </div>
+        <div class="nav-att-sub-item" id="nav-att-stats" onclick="switchAttPage('stats')">
+          <span class="nav-icon">📊</span><span>الإحصائيات</span>
+        </div>
+        <div class="nav-att-sub-item" id="nav-att-log" onclick="switchAttPage('log')">
+          <span class="nav-icon">📜</span><span>السجل</span>
+        </div>
+      </div>
+
       <div class="nav-sub-item" id="nav-points" onclick="switchSection('points')">
         <span class="nav-icon">⭐</span><span>النقاط</span>
       </div>
@@ -87,6 +106,59 @@
       </div>
       <div class="kpi-row" id="home-kpi"></div>
       <div class="cards-grid" id="home-recent"></div>
+    </section>
+
+    <!-- ══ ATTENDANCE ══ -->
+    <section class="section" id="section-attendance">
+
+      <!-- SUB-PAGE: MATRIX -->
+      <div id="att-page-matrix">
+        <div class="page-hdr">
+          <div class="page-title">التحضير <span class="page-sub">مصفوفة الجلسات</span></div>
+          <div class="hdr-actions">
+            <button class="btn btn-gold" onclick="addAttSession()">➕ جلسة جديدة</button>
+            <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ</button>
+          </div>
+        </div>
+        <div class="prog-select-bar">
+          <label>البرنامج:</label>
+          <select id="att-prog-sel" onchange="onAttProgChange()"><option value="">-- اختر --</option></select>
+          <label>المجموعة:</label>
+          <select id="att-group-sel" onchange="loadAttMatrix()" disabled><option value="">-- اختر --</option></select>
+          <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" oninput="renderAttMatrix()"
+            style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:140px">
+        </div>
+        <div id="att-body">
+          <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة لعرض مصفوفة التحضير</p></div>
+        </div>
+      </div>
+
+      <!-- SUB-PAGE: STATS -->
+      <div id="att-page-stats" style="display:none">
+        <div class="page-hdr">
+          <div class="page-title">التحضير <span class="page-sub">إحصائيات</span></div>
+          <button class="btn btn-refresh" onclick="renderAttStats()">🔄 تحديث</button>
+        </div>
+        <div id="att-stats-body">
+          <div class="empty"><div class="ei">📊</div><p>افتح المصفوفة أولاً واختر البرنامج والمجموعة</p></div>
+        </div>
+      </div>
+
+      <!-- SUB-PAGE: LOG -->
+      <div id="att-page-log" style="display:none">
+        <div class="page-hdr">
+          <div class="page-title">التحضير <span class="page-sub">سجل العمليات</span></div>
+          <button class="btn btn-refresh" onclick="loadAttLog()">🔄 تحديث</button>
+        </div>
+        <div class="prog-select-bar" style="margin-bottom:12px">
+          <input type="text" id="att-log-search" placeholder="🔍 بحث باسم الطالب…" oninput="filterAttLog()"
+            style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:200px">
+        </div>
+        <div id="att-log-body">
+          <div class="empty"><div class="ei">📜</div><p>افتح المصفوفة أولاً واختر البرنامج</p></div>
+        </div>
+      </div>
+
     </section>
 
     <!-- ══ POINTS ══ -->
@@ -693,6 +765,35 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeM('m-bulkpts')">إلغاء</button>
       <button class="btn btn-gold" id="bulk-save-btn" onclick="saveBulkPoints()">✅ تسجيل للجميع</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Attendance Status Picker -->
+<div class="modal-overlay" id="m-att-picker" style="display:none" onclick="if(event.target===this)closeAttPicker()">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-hdr">
+      <span class="modal-title" id="att-picker-title">تحديد حالة التحضير</span>
+      <button class="modal-close" onclick="closeAttPicker()">✕</button>
+    </div>
+    <div class="modal-body" id="att-picker-body" style="padding:12px 16px"></div>
+  </div>
+</div>
+
+<!-- Modal: Add New Session -->
+<div class="modal-overlay" id="m-att-session" style="display:none" onclick="if(event.target===this)closeAddSession()">
+  <div class="modal" style="max-width:300px">
+    <div class="modal-hdr">
+      <span class="modal-title">➕ إضافة جلسة جديدة</span>
+      <button class="modal-close" onclick="closeAddSession()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px">
+      <label class="form-label">تاريخ الجلسة</label>
+      <input type="date" id="att-new-date" class="form-control" style="width:100%;margin-top:6px">
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline" onclick="closeAddSession()">إلغاء</button>
+        <button class="btn btn-primary" onclick="confirmAddSession()">إضافة</button>
+      </div>
     </div>
   </div>
 </div>
