@@ -55,10 +55,13 @@
       <!-- ✅ التحضير — قابل للطي -->
       <div class="nav-item" id="nav-attendance" onclick="toggleAttNav()">
         <span class="nav-icon">✅</span>
-        <span>التحضير</span>
+        <span>تحضير الطلاب</span>
         <span class="nav-att-arrow" id="nav-att-arrow">▸</span>
       </div>
       <div id="nav-att-sub" class="nav-att-sub-wrap" style="display:none">
+        <div class="nav-att-sub-item" id="nav-att-programs" onclick="switchAttPage('programs')">
+          <span class="nav-icon">📚</span><span>البرامج</span>
+        </div>
         <div class="nav-att-sub-item" id="nav-att-matrix" onclick="switchAttPage('matrix')">
           <span class="nav-icon">📋</span><span>المصفوفة</span>
         </div>
@@ -156,53 +159,80 @@
     <!-- ══ ATTENDANCE ══ -->
     <section class="section" id="section-attendance">
 
-      <!-- SUB-PAGE: MATRIX -->
-      <div id="att-page-matrix">
+      <!-- ── Breadcrumbs ── -->
+      <nav class="att-bc" id="att-breadcrumbs" style="display:none">
+        <span class="att-bc-item" onclick="switchAttPage('programs')">✅ تحضير الطلاب</span>
+        <span class="att-bc-sep">‹</span>
+        <span class="att-bc-item att-bc-active" id="att-bc-prog" style="display:none"></span>
+        <span class="att-bc-sep" id="att-bc-sep2" style="display:none">‹</span>
+        <span class="att-bc-item att-bc-active" id="att-bc-group" style="display:none"></span>
+      </nav>
+
+      <!-- SUB-PAGE: PROGRAMS -->
+      <div id="att-page-programs">
         <div class="page-hdr">
-          <div class="page-title">التحضير <span class="page-sub">مصفوفة الجلسات</span></div>
+          <div class="page-title">تحضير الطلاب <span class="page-sub">اختر البرنامج</span></div>
+        </div>
+        <div id="att-prog-cards" class="att-drill-grid">
+          <div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>
+        </div>
+      </div>
+
+      <!-- SUB-PAGE: GROUPS -->
+      <div id="att-page-groups" style="display:none">
+        <div class="page-hdr">
+          <div class="page-title" id="att-groups-title">المجموعات <span class="page-sub">اختر المجموعة</span></div>
+        </div>
+        <div id="att-group-cards" class="att-drill-grid"></div>
+      </div>
+
+      <!-- SUB-PAGE: MATRIX -->
+      <div id="att-page-matrix" style="display:none">
+        <div class="page-hdr">
+          <div>
+            <div class="page-title" id="att-matrix-title">مصفوفة التحضير</div>
+          </div>
           <div class="hdr-actions">
+            <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" oninput="renderAttMatrix()"
+              style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:150px">
             <button class="btn btn-gold" onclick="addAttSession()">➕ جلسة جديدة</button>
             <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ</button>
           </div>
         </div>
-        <div class="prog-select-bar">
-          <label>البرنامج:</label>
-          <select id="att-prog-sel" onchange="onAttProgChange()"><option value="">-- اختر --</option></select>
-          <label>المجموعة:</label>
-          <select id="att-group-sel" onchange="loadAttMatrix()" disabled><option value="">-- اختر --</option></select>
-          <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" oninput="renderAttMatrix()"
-            style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:140px">
-        </div>
         <div id="att-body">
-          <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة لعرض مصفوفة التحضير</p></div>
+          <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة أولاً</p></div>
         </div>
       </div>
 
       <!-- SUB-PAGE: STATS -->
       <div id="att-page-stats" style="display:none">
         <div class="page-hdr">
-          <div class="page-title">التحضير <span class="page-sub">إحصائيات</span></div>
+          <div class="page-title" id="att-stats-title">الإحصائيات</div>
           <button class="btn btn-refresh" onclick="renderAttStats()">🔄 تحديث</button>
         </div>
         <div id="att-stats-body">
-          <div class="empty"><div class="ei">📊</div><p>افتح المصفوفة أولاً واختر البرنامج والمجموعة</p></div>
+          <div class="empty"><div class="ei">📊</div><p>اختر مجموعة من المصفوفة أولاً</p></div>
         </div>
       </div>
 
       <!-- SUB-PAGE: LOG -->
       <div id="att-page-log" style="display:none">
         <div class="page-hdr">
-          <div class="page-title">التحضير <span class="page-sub">سجل العمليات</span></div>
-          <button class="btn btn-refresh" onclick="loadAttLog()">🔄 تحديث</button>
-        </div>
-        <div class="prog-select-bar" style="margin-bottom:12px">
-          <input type="text" id="att-log-search" placeholder="🔍 بحث باسم الطالب…" oninput="filterAttLog()"
-            style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.82rem;min-width:200px">
+          <div class="page-title" id="att-log-title">سجل العمليات</div>
+          <div class="hdr-actions">
+            <input type="text" id="att-log-search" placeholder="🔍 بحث باسم الطالب…" oninput="filterAttLog()"
+              style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:180px">
+            <button class="btn btn-refresh" onclick="loadAttLog()">🔄 تحديث</button>
+          </div>
         </div>
         <div id="att-log-body">
-          <div class="empty"><div class="ei">📜</div><p>افتح المصفوفة أولاً واختر البرنامج</p></div>
+          <div class="empty"><div class="ei">📜</div><p>اختر مجموعة من المصفوفة أولاً</p></div>
         </div>
       </div>
+
+      <!-- hidden dropdowns kept for backward compat -->
+      <select id="att-prog-sel"  style="display:none"><option value="">--</option></select>
+      <select id="att-group-sel" style="display:none"><option value="">--</option></select>
 
     </section>
 

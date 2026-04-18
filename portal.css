@@ -736,6 +736,78 @@ tr.row-selected { background:rgba(193,157,46,.06); }
   100% { transform: translateY(-50%); }
 }
 
+/* ══ ATTENDANCE DRILL-DOWN NAVIGATION ══ */
+
+/* ── Breadcrumbs ── */
+.att-bc {
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  background:var(--white); border-radius:10px;
+  border:1.5px solid var(--border); box-shadow:var(--shadow);
+  padding:10px 16px; margin-bottom:16px;
+  font-size:.82rem;
+}
+.att-bc-item {
+  color:var(--primary); font-weight:600; cursor:default;
+}
+.att-bc-link {
+  color:var(--primary); font-weight:600; cursor:pointer;
+  text-decoration:underline; text-underline-offset:2px;
+}
+.att-bc-link:hover { color:var(--gold2); }
+.att-bc-active { color:var(--gold2); font-weight:800; cursor:default; }
+.att-bc-item:first-child { cursor:pointer; }
+.att-bc-item:first-child:hover { color:var(--gold2); }
+.att-bc-sep { color:var(--muted); font-size:.9rem; }
+
+/* ── Drill-down Card Grid ── */
+.att-drill-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+  gap:16px;
+}
+
+/* ── Drill-down Card ── */
+.att-drill-card {
+  background:var(--white); border-radius:14px;
+  border:1.5px solid var(--border); box-shadow:var(--shadow);
+  padding:20px 20px 20px 16px;
+  display:flex; align-items:center; gap:16px;
+  cursor:pointer; transition:all .18s;
+  position:relative; overflow:hidden;
+}
+.att-drill-card::before {
+  content:''; position:absolute; right:0; top:0; bottom:0;
+  width:4px; background:var(--primary);
+  border-radius:0 14px 14px 0;
+  transition:width .18s;
+}
+.att-drill-card:hover { border-color:var(--primary); box-shadow:0 6px 20px rgba(45,54,81,.14); transform:translateY(-2px); }
+.att-drill-card:hover::before { width:6px; background:var(--gold); }
+.att-drill-card:active { transform:translateY(0); }
+
+.att-drill-group::before { background:var(--gold); }
+
+.att-drill-icon {
+  width:48px; height:48px; border-radius:12px;
+  background:rgba(45,54,81,.07);
+  display:flex; align-items:center; justify-content:center;
+  font-size:1.4rem; flex-shrink:0;
+}
+.att-drill-card:hover .att-drill-icon { background:rgba(45,54,81,.12); }
+
+.att-drill-info { flex:1; min-width:0; }
+.att-drill-name {
+  font-weight:700; font-size:.95rem; color:var(--primary);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.att-drill-meta { font-size:.75rem; color:var(--muted); margin-top:3px; }
+
+.att-drill-arrow {
+  font-size:1.3rem; color:var(--muted);
+  transition:color .18s, transform .18s;
+}
+.att-drill-card:hover .att-drill-arrow { color:var(--gold); transform:translateX(-3px); }
+
 /* ══ QUICK ATTENDANCE (تحضير سريع) ══ */
 
 /* شارة "جديد" في القائمة الجانبية */

@@ -66,7 +66,7 @@ let _users    = [];     // admin only
 let _activeSection = 'home';
 
 // ── Attendance state ──
-let _attSubPage    = 'matrix';
+let _attSubPage    = 'programs';
 let _attNavOpen    = false;
 let _attSubs       = [];
 let _attSelProg    = null;
@@ -270,8 +270,12 @@ function populateProgSelects() {
    NAVIGATION
 ══════════════════════════════════════════ */
 const SECTION_LABELS = {
-  home:'الرئيسية', attendance:'التحضير',
-  'att-matrix':'التحضير — المصفوفة', 'att-stats':'التحضير — الإحصائيات', 'att-log':'التحضير — السجل',
+  home:'الرئيسية', attendance:'تحضير الطلاب',
+  'att-programs':'تحضير الطلاب — البرامج',
+  'att-groups'  :'تحضير الطلاب — المجموعات',
+  'att-matrix'  :'تحضير الطلاب — المصفوفة',
+  'att-stats'   :'تحضير الطلاب — الإحصائيات',
+  'att-log'     :'تحضير الطلاب — سجل العمليات',
   'att-quick':'⚡ تحضير سريع',
   points:'النقاط',
   cultural:'الثقافي', sports:'الرياضي', 'sport-stats':'إحصائيات البطولة',
@@ -311,7 +315,7 @@ function switchSection(name) {
 
   if (name === 'sport-stats') loadSportStats();
   if (name === 'admin') admTab('users');
-  if (name === 'attendance') { openAttNav(); switchAttPage(_attSubPage || 'matrix', false); }
+  if (name === 'attendance') { openAttNav(); switchAttPage(_attSubPage || 'programs', false); }
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
 }
 
@@ -341,7 +345,7 @@ function switchAttPage(page, alsoSwitch = true) {
     if (sec) sec.classList.add('active');
   }
   _attSubPage = page;
-  ['matrix','stats','log'].forEach(p => {
+  ['programs','groups','matrix','stats','log'].forEach(p => {
     const el = document.getElementById('att-page-' + p);
     if (el) el.style.display = p === page ? '' : 'none';
   });
@@ -349,9 +353,46 @@ function switchAttPage(page, alsoSwitch = true) {
   const navEl = document.getElementById('nav-att-' + page);
   if (navEl) navEl.classList.add('active');
   const lbl = document.getElementById('tb-section');
-  if (lbl) lbl.textContent = SECTION_LABELS['att-' + page] || 'التحضير';
-  if (page === 'stats') renderAttStats();
-  if (page === 'log')   loadAttLog();
+  if (lbl) lbl.textContent = SECTION_LABELS['att-' + page] || 'تحضير الطلاب';
+  updateAttBreadcrumbs(page);
+  if (page === 'programs') renderAttPrograms();
+  if (page === 'groups')   renderAttGroups();
+  if (page === 'stats')    renderAttStats();
+  if (page === 'log')      loadAttLog();
+}
+
+/* ── Breadcrumbs ── */
+function updateAttBreadcrumbs(page) {
+  const bc     = document.getElementById('att-breadcrumbs');
+  const bcProg = document.getElementById('att-bc-prog');
+  const bcGrp  = document.getElementById('att-bc-group');
+  const bcSep2 = document.getElementById('att-bc-sep2');
+  if (!bc) return;
+  if (page === 'programs') { bc.style.display = 'none'; return; }
+  bc.style.display = 'flex';
+  // prog crumb
+  if (_attSelProg) {
+    bcProg.textContent = _attSelProg.name;
+    bcProg.style.display = '';
+    bcProg.className = (page === 'groups') ? 'att-bc-item att-bc-active' : 'att-bc-item att-bc-link';
+    bcProg.onclick = (page === 'groups') ? null : () => switchAttPage('groups');
+  } else { bcProg.style.display = 'none'; }
+  // group crumb
+  if (_attSelGroup && page !== 'groups') {
+    bcGrp.textContent = _attSelGroup;
+    bcGrp.style.display = '';
+    bcSep2.style.display = '';
+    bcGrp.className = 'att-bc-item att-bc-active';
+  } else { bcGrp.style.display = 'none'; bcSep2.style.display = 'none'; }
+  // update matrix/stats/log titles with context
+  const ctx = _attSelProg
+    ? (_attSelGroup ? `${_attSelProg.name} · ${_attSelGroup}` : _attSelProg.name)
+    : '';
+  const titles = { matrix:'مصفوفة التحضير', stats:'الإحصائيات', log:'سجل العمليات' };
+  if (titles[page]) {
+    const el = document.getElementById('att-' + page + '-title');
+    if (el) el.innerHTML = `${titles[page]} <span class="page-sub">${esc(ctx)}</span>`;
+  }
 }
 
 function toggleSidebar() {
@@ -559,6 +600,74 @@ async function saveQuickAtt() {
 }
 
 /* ══════════════════════════════════════════
+   ATTENDANCE — DRILL-DOWN NAVIGATION
+══════════════════════════════════════════ */
+
+/* لوحة البرامج */
+function renderAttPrograms() {
+  const container = document.getElementById('att-prog-cards');
+  if (!container) return;
+  if (!_progs.length) {
+    container.innerHTML = `<div class="empty"><div class="ei">📚</div><p>لا توجد برامج متاحة</p></div>`;
+    return;
+  }
+  container.innerHTML = _progs.map(p => {
+    const groups = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
+    const grpCount = groups.length || 1;
+    return `<div class="att-drill-card" onclick="selectAttProg(${p.id})">
+      <div class="att-drill-icon">📚</div>
+      <div class="att-drill-info">
+        <div class="att-drill-name">${esc(p.name)}</div>
+        <div class="att-drill-meta">${grpCount} ${grpCount === 1 ? 'مجموعة' : 'مجموعات'}</div>
+      </div>
+      <span class="att-drill-arrow">‹</span>
+    </div>`;
+  }).join('');
+}
+
+function selectAttProg(progId) {
+  _attSelProg  = _progs.find(p => p.id === progId) || null;
+  _attSelGroup = '';
+  _attMatrix   = {}; _attDates = []; _attWeekGroups = []; _attDirtyDates.clear();
+  if (!_attSelProg) return;
+  switchAttPage('groups');
+}
+
+/* لوحة المجموعات */
+function renderAttGroups() {
+  const container = document.getElementById('att-group-cards');
+  const titleEl   = document.getElementById('att-groups-title');
+  if (!container || !_attSelProg) return;
+  if (titleEl) titleEl.innerHTML = `${esc(_attSelProg.name)} <span class="page-sub">اختر المجموعة</span>`;
+
+  const groups = (_attSelProg.groups || '').split('،').map(g => g.trim()).filter(Boolean);
+  if (!groups.length) {
+    // لا توجد مجموعات — انتقل مباشرة للمصفوفة
+    selectAttGroup('الكل'); return;
+  }
+  // إضافة خيار "الكل" أولاً
+  const allGroups = ['الكل', ...groups];
+  container.innerHTML = allGroups.map(g => {
+    const isAll = g === 'الكل';
+    return `<div class="att-drill-card att-drill-group" onclick="selectAttGroup('${esc(g)}')">
+      <div class="att-drill-icon">${isAll ? '🏫' : '👥'}</div>
+      <div class="att-drill-info">
+        <div class="att-drill-name">${esc(g)}</div>
+        <div class="att-drill-meta">${isAll ? 'عرض جميع الطلاب' : 'مجموعة منفصلة'}</div>
+      </div>
+      <span class="att-drill-arrow">‹</span>
+    </div>`;
+  }).join('');
+}
+
+function selectAttGroup(groupName) {
+  _attSelGroup = groupName;
+  _attMatrix   = {}; _attDates = []; _attWeekGroups = []; _attDirtyDates.clear();
+  switchAttPage('matrix');
+  loadAttMatrix();
+}
+
+/* ══════════════════════════════════════════
    ATTENDANCE SECTION
 ══════════════════════════════════════════ */
 function onAttProgChange() {
@@ -582,11 +691,14 @@ function onAttProgChange() {
 }
 
 async function loadAttMatrix() {
-  const progId = parseInt(document.getElementById('att-prog-sel').value) || 0;
-  const group  = document.getElementById('att-group-sel').value;
-  if (!progId || !group) return;
-  _attSelGroup = group;
+  if (!_attSelProg || !_attSelGroup) return;
+  const progId = _attSelProg.id;
+  const group  = _attSelGroup;
   const body   = document.getElementById('att-body');
+  if (!body) return;
+  // تحديث عنوان المصفوفة
+  const titleEl = document.getElementById('att-matrix-title');
+  if (titleEl) titleEl.innerHTML = `مصفوفة التحضير <span class="page-sub">${esc(_attSelProg.name)} · ${esc(group)}</span>`;
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
   try {
     const subsRows = group === 'الكل'
