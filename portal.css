@@ -795,6 +795,25 @@ tr.row-selected { background:rgba(193,157,46,.06); }
 .att-bc-item:first-child:hover { color:var(--gold2); }
 .att-bc-sep { color:var(--muted); font-size:.9rem; }
 
+/* ── Schedule Bar (أسفل عنوان المصفوفة) ── */
+.att-schedule-bar {
+  display:flex; align-items:center; flex-wrap:wrap; gap:6px;
+  font-size:.76rem; color:var(--muted); margin-top:4px;
+}
+.att-sched-day {
+  background:rgba(45,54,81,.08); color:var(--primary);
+  padding:2px 8px; border-radius:20px; font-weight:700; font-size:.72rem;
+}
+.att-sched-meta { font-size:.72rem; color:var(--muted); }
+
+/* ── Day tags in program cards ── */
+.att-prog-days { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.att-prog-day-tag {
+  background:rgba(193,157,46,.12); color:#78350f;
+  padding:2px 7px; border-radius:12px; font-size:.68rem; font-weight:700;
+}
+.att-prog-day-warn { background:rgba(239,68,68,.1); color:var(--danger); }
+
 /* ── Drill-down Card Grid ── */
 .att-drill-grid {
   display:grid;

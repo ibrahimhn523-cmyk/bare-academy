@@ -191,12 +191,12 @@
         <div class="page-hdr">
           <div>
             <div class="page-title" id="att-matrix-title">مصفوفة التحضير</div>
+            <div class="att-schedule-bar" id="att-schedule-bar" style="display:none"></div>
           </div>
           <div class="hdr-actions">
             <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" oninput="renderAttMatrix()"
               style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:150px">
-            <button class="btn btn-gold" onclick="addAttSession()">➕ جلسة جديدة</button>
-            <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ</button>
+            <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ التحضير</button>
           </div>
         </div>
         <div id="att-body">
@@ -858,23 +858,7 @@
   </div>
 </div>
 
-<!-- Modal: Add New Session -->
-<div class="modal-overlay" id="m-att-session" style="display:none" onclick="if(event.target===this)closeAddSession()">
-  <div class="modal" style="max-width:300px">
-    <div class="modal-hdr">
-      <span class="modal-title">➕ إضافة جلسة جديدة</span>
-      <button class="modal-close" onclick="closeAddSession()">✕</button>
-    </div>
-    <div class="modal-body" style="padding:16px 20px">
-      <label class="form-label">تاريخ الجلسة</label>
-      <input type="date" id="att-new-date" class="form-control" style="width:100%;margin-top:6px">
-      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-outline" onclick="closeAddSession()">إلغاء</button>
-        <button class="btn btn-primary" onclick="confirmAddSession()">إضافة</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- modal الجلسة اليدوية محذوف — التواريخ تُولَّد تلقائياً من جدول البرنامج -->
 
 <script src="./portal.js"></script>
 </body>

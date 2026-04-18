@@ -612,13 +612,20 @@ function renderAttPrograms() {
     return;
   }
   container.innerHTML = _progs.map(p => {
-    const groups = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
-    const grpCount = groups.length || 1;
+    const groups    = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
+    const grpCount  = groups.length || 1;
+    const hasSchedule = p.startDate && p.days?.length;
+    const dayTags   = hasSchedule
+      ? p.days.map(d => `<span class="att-prog-day-tag">${d}</span>`).join('')
+      : `<span class="att-prog-day-tag att-prog-day-warn">لم يُضبط الجدول</span>`;
     return `<div class="att-drill-card" onclick="selectAttProg(${p.id})">
       <div class="att-drill-icon">📚</div>
       <div class="att-drill-info">
         <div class="att-drill-name">${esc(p.name)}</div>
-        <div class="att-drill-meta">${grpCount} ${grpCount === 1 ? 'مجموعة' : 'مجموعات'}</div>
+        <div class="att-drill-meta">${grpCount} ${grpCount === 1 ? 'مجموعة' : 'مجموعات'}
+          ${hasSchedule ? `· منذ ${fmtDateShort(p.startDate)}` : ''}
+        </div>
+        <div class="att-prog-days">${dayTags}</div>
       </div>
       <span class="att-drill-arrow">‹</span>
     </div>`;
@@ -696,31 +703,75 @@ async function loadAttMatrix() {
   const group  = _attSelGroup;
   const body   = document.getElementById('att-body');
   if (!body) return;
-  // تحديث عنوان المصفوفة
+
   const titleEl = document.getElementById('att-matrix-title');
   if (titleEl) titleEl.innerHTML = `مصفوفة التحضير <span class="page-sub">${esc(_attSelProg.name)} · ${esc(group)}</span>`;
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
+
+  /* ── توليد أيام البرنامج تلقائياً من startDate حتى اليوم ── */
+  const autoDate = generateProgramDates(_attSelProg.startDate, _attSelProg.days);
+  if (!autoDate.length) {
+    body.innerHTML = `<div class="empty"><div class="ei">📅</div>
+      <p>لم يُضبط جدول البرنامج (تاريخ البداية وأيام الأسبوع).<br>
+      يرجى تحديث البرنامج من الإدارة.</p></div>`;
+    return;
+  }
+
   try {
+    /* جلب المشتركين */
     const subsRows = group === 'الكل'
       ? await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}`)
       : await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${progId}&groupName=eq.${encodeURIComponent(group)}`);
     _attSubs = subsRows.map(r => ({ id: parseInt(r.id), studentId: parseInt(r.studentId), studentName: r.studentName || '' }));
 
+    /* جلب بيانات التحضير المسجّلة */
     const groupFilter = group === 'الكل' ? '' : `&groupName=eq.${encodeURIComponent(group)}`;
     const attRows = await sbRead(TB.ATTENDANCE, `programId=eq.${progId}${groupFilter}`);
     _attMatrix = {};
     attRows.forEach(a => { _attMatrix[`${parseInt(a.studentId)}-${a.date}`] = a.status; });
-    _attDates      = [...new Set(attRows.map(a => a.date))].sort();
+
+    /* التواريخ = كل أيام البرنامج (مولّدة تلقائياً) */
+    _attDates      = autoDate;
     _attWeekGroups = groupDatesIntoWeeks(_attDates);
     _attWkIdx      = Math.max(0, _attWeekGroups.length - 1);
     _attActiveWk   = _attWeekGroups[_attWkIdx]?.key || '';
     _attDirtyDates.clear();
+
+    /* عرض مؤشر جدول البرنامج */
+    const bar = document.getElementById('att-schedule-bar');
+    if (bar) {
+      const dayLabels = (_attSelProg.days || []).map(d =>
+        `<span class="att-sched-day">${d}</span>`).join('');
+      bar.innerHTML = `📅 أيام البرنامج: ${dayLabels}
+        <span class="att-sched-meta">· ${autoDate.length} يوم منذ ${fmtDateShort(_attSelProg.startDate)}</span>`;
+      bar.style.display = '';
+    }
+
     const saveBtn = document.getElementById('att-save-btn');
-    if (saveBtn) saveBtn.style.display = _attDates.length ? '' : 'none';
+    if (saveBtn) saveBtn.style.display = 'none'; // يظهر فقط عند وجود تعديل
     renderAttMatrix();
   } catch(e) {
     body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>خطأ: ${e.message}</p></div>`;
   }
+}
+
+/* ─ توليد تواريخ البرنامج تلقائياً من startDate حتى اليوم بناءً على أيام الأسبوع ─ */
+const DAY_NUMBERS = {
+  'الأحد':0,'الاثنين':1,'الثلاثاء':2,'الأربعاء':3,'الخميس':4,'الجمعة':5,'السبت':6
+};
+function generateProgramDates(startDate, days) {
+  if (!startDate || !days?.length) return [];
+  const dayNums = days.map(d => DAY_NUMBERS[d]).filter(n => n !== undefined);
+  if (!dayNums.length) return [];
+  const dates = [];
+  const cur   = new Date(startDate + 'T00:00:00');
+  const today = new Date(); today.setHours(23, 59, 59, 0);
+  while (cur <= today) {
+    if (dayNums.includes(cur.getDay()))
+      dates.push(cur.toISOString().split('T')[0]);
+    cur.setDate(cur.getDate() + 1);
+  }
+  return dates;
 }
 
 function groupDatesIntoWeeks(dates) {
@@ -875,27 +926,7 @@ function setAttStatus(status) {
   if (_attSubPage === 'stats') renderAttStats();
 }
 
-function addAttSession() {
-  if (!_attSelProg || !_attSelGroup) { toast('اختر برنامجًا ومجموعة أولاً','warning'); return; }
-  document.getElementById('att-new-date').value = new Date().toISOString().split('T')[0];
-  document.getElementById('m-att-session').style.display = 'flex';
-}
-function closeAddSession() { document.getElementById('m-att-session').style.display='none'; }
-function confirmAddSession() {
-  const date = document.getElementById('att-new-date').value;
-  if (!date) { toast('اختر تاريخاً','warning'); return; }
-  if (_attDates.includes(date)) { toast('هذا التاريخ موجود بالفعل','warning'); closeAddSession(); return; }
-  _attDates = [..._attDates, date].sort();
-  _attWeekGroups = groupDatesIntoWeeks(_attDates);
-  const wkIdx = _attWeekGroups.findIndex(w => w.dates.includes(date));
-  if (wkIdx >= 0) { _attWkIdx = wkIdx; _attActiveWk = _attWeekGroups[wkIdx].key; }
-  _attDirtyDates.add(date);
-  const saveBtn = document.getElementById('att-save-btn');
-  if (saveBtn) saveBtn.style.display = '';
-  closeAddSession();
-  renderAttMatrix();
-  toast(`تمت إضافة جلسة ${fmtDate(date)} — سجّل الحضور ثم احفظ`);
-}
+/* addAttSession / confirmAddSession محذوفتان — التواريخ تُولَّد تلقائياً من جدول البرنامج */
 
 async function saveAttendanceMatrix() {
   if (!_attSelProg || !_attSelGroup) { toast('بيانات غير مكتملة','error'); return; }
