@@ -316,134 +316,170 @@ tbody tr:hover { background:#f8faff; }
 .nav-att-sub-item.active { color:var(--gold2); background:rgba(212,175,55,.14); }
 
 /* ══ WEEK NAVIGATOR ══ */
-.att-week-nav { display:flex; justify-content:center; margin-bottom:16px; direction:ltr; }
-.att-nav-pill {
-  display:flex; align-items:center;
-  background:var(--white); border-radius:12px;
-  border:1.5px solid var(--border); box-shadow:0 1px 3px rgba(0,0,0,.08);
-  padding:4px; gap:2px;
-}
-.att-nav-btn {
-  width:32px; height:32px; border-radius:8px;
-  border:none; cursor:pointer; font-size:.9rem; font-weight:700;
-  display:flex; align-items:center; justify-content:center;
-  background:transparent; color:var(--primary); transition:background .15s;
-}
-.att-nav-btn:hover:not(:disabled) { background:#f3f4f6; }
-.att-nav-btn:disabled { opacity:.2; cursor:not-allowed; }
-.att-nav-title { font-size:.88rem; font-weight:700; color:var(--primary); min-width:140px; text-align:center; padding:0 8px; }
-
 /* ══ MATRIX TABLE ══ */
-.att-matrix-wrap { background:var(--white); border-radius:24px; box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05); border:1.5px solid var(--border); overflow:hidden; }
+.att-matrix-wrap {
+  background:var(--white); border-radius:20px;
+  box-shadow:0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -2px rgba(0,0,0,.05);
+  border:1.5px solid var(--border); overflow:hidden;
+}
 .att-matrix { border-collapse:collapse; width:100%; }
 
+/* عمود اسم الطالب (ثابت عند التمرير) */
 .att-th-name {
-  position:sticky; right:0; z-index:10; background:#f9fafb;
-  padding:16px; text-align:right; min-width:140px;
-  font-weight:700; font-size:.85rem; color:#374151;
-  border-left:1px solid var(--border);
-  box-shadow:-2px 0 6px rgba(0,0,0,.05);
+  position:sticky; right:0; z-index:12; background:var(--primary2);
+  padding:14px 16px; text-align:right; min-width:150px;
+  font-weight:700; font-size:.82rem; color:rgba(255,255,255,.9);
+  border-left:2px solid rgba(255,255,255,.12);
+  box-shadow:-2px 0 8px rgba(0,0,0,.1);
 }
 
-.att-wk-th {
-  cursor:pointer; border-left:1px solid #f3f4f6;
-  transition:background .15s; min-width:80px;
-  vertical-align:top;
+/* ── رأس الأسبوع (صف 1 من الـ thead) ── */
+.att-wk-hdr {
+  cursor:pointer; min-width:72px;
+  background:var(--primary); color:rgba(255,255,255,.75);
+  border-left:1px solid rgba(255,255,255,.1);
+  transition:background .15s; vertical-align:middle;
 }
-.att-wk-th-active { min-width:auto; }
+.att-wk-hdr:hover { background:#3a4566; }
+.att-wk-hdr-active {
+  background:var(--primary2); color:var(--white);
+  border-bottom:2px solid var(--gold);
+}
+.att-wk-hdr-inner {
+  display:flex; align-items:center; justify-content:center;
+  gap:6px; padding:10px 12px; font-size:.78rem; font-weight:700;
+  white-space:nowrap;
+}
+.att-wk-toggle { font-size:.7rem; opacity:.7; }
 
-.att-wk-title {
-  padding:10px 12px; text-align:center;
-  font-size:.78rem; font-weight:700; color:#9ca3af;
+/* ── رأس اليوم (صف 2 من الـ thead) — الأسبوع النشط ── */
+.att-day-hdr {
+  background:rgba(255,255,255,.06); border-left:1px solid rgba(255,255,255,.08);
+  padding:7px 10px; text-align:center; min-width:64px;
 }
-.att-wk-title-active { color:var(--primary); background:rgba(10,25,77,.04); }
+.att-day-hdr-name {
+  font-size:.72rem; font-weight:700; color:var(--gold2);
+}
+.att-day-hdr-date {
+  font-size:.65rem; color:rgba(255,255,255,.6); margin-top:2px;
+}
+.att-day-dirty .att-day-hdr-name { color:#fde68a; }
+.att-day-dirty .att-day-hdr-date { color:#fde68a; }
 
-.att-wk-days {
-  display:flex; border-top:1px solid #f3f4f6;
+/* ── رأس "ملخص" — الأسبوع المطوي ── */
+.att-sum-hdr {
+  background:rgba(255,255,255,.04); color:rgba(255,255,255,.5);
+  font-size:.7rem; font-weight:600; text-align:center;
+  padding:10px 8px; cursor:pointer; border-left:1px solid rgba(255,255,255,.08);
+  transition:background .15s;
 }
-.att-wk-day {
-  flex:1; min-width:52px; padding:6px 4px;
-  text-align:center; font-size:.7rem; color:#6b7280;
-  font-weight:500; background:var(--white);
-}
+.att-sum-hdr:hover { background:rgba(255,255,255,.1); color:var(--white); }
 
 /* ══ MATRIX ROWS ══ */
 .att-row { border-bottom:1px solid #f3f4f6; transition:background .12s; }
-.att-row:hover { background:#f1f5f9; }
+.att-row:hover { background:#f8faff; }
 .att-row:hover .att-td-name { background:#f1f5f9; }
-.att-row:hover .att-td-sum  { background:#edf2f7; }
 
 .att-td-name {
   position:sticky; right:0; z-index:5; background:var(--white);
-  padding:10px 16px; font-weight:500; font-size:.84rem; color:#374151;
-  border-left:1px solid var(--border);
+  padding:10px 16px; font-weight:600; font-size:.84rem; color:#1f2937;
+  border-left:2px solid var(--border);
   box-shadow:-2px 0 6px rgba(0,0,0,.04); white-space:nowrap;
 }
 
-.att-td-active { background:var(--white); padding:0; border-left:1px solid #f3f4f6; }
-.att-day-flex { display:flex; height:52px; }
-.att-day-btn {
-  flex:1; display:flex; align-items:center; justify-content:center;
-  border:none; background:transparent; cursor:pointer;
-  border-left:1px solid #f9fafb; transition:background .12s;
+/* ── خلية يوم نشط ── */
+.att-cell {
+  text-align:center; padding:8px 6px; border-left:1px solid #f3f4f6;
+  cursor:pointer; transition:background .12s;
 }
-.att-day-btn:last-child { border-left:none; }
-.att-day-btn:hover { background:rgba(193,157,46,.08); }
-.att-day-btn.dirty .att-dot { outline:2px solid var(--gold); outline-offset:2px; }
+.att-cell:hover { background:rgba(193,157,46,.06); }
+.att-cell.dirty .att-dot { outline:2px solid var(--gold); outline-offset:2px; }
 
+/* ── الدائرة الملونة ── */
 .att-dot {
-  width:32px; height:32px; border-radius:50%;
+  width:34px; height:34px; border-radius:50%; margin:0 auto;
   display:flex; align-items:center; justify-content:center;
-  font-size:.65rem; font-weight:800; color:#fff;
-  transition:transform .1s; box-shadow:0 1px 3px rgba(0,0,0,.15);
+  font-size:.66rem; font-weight:800; color:#fff;
+  transition:transform .12s; box-shadow:0 2px 6px rgba(0,0,0,.18);
+  cursor:pointer;
 }
-.att-dot:hover { transform:scale(1.12); }
+.att-dot:hover { transform:scale(1.18); }
 .att-dot.s-حاضر             { background:#10b981; }
 .att-dot.s-متأخر-بعذر       { background:#0ea5e9; }
 .att-dot.s-متأخر-بغير-عذر   { background:#fbbf24; color:#3d2500; }
 .att-dot.s-غائب-بعذر        { background:#fb923c; }
 .att-dot.s-غائب-بغير-عذر    { background:#f43f5e; }
-.att-dot.s-none { background:transparent; border:2px dashed #d1d5db; color:#d1d5db; width:28px; height:28px; box-shadow:none; }
+.att-dot.s-none {
+  background:transparent; border:2px dashed #d1d5db;
+  color:#d1d5db; width:28px; height:28px; box-shadow:none;
+}
 
-.att-td-sum {
-  cursor:pointer; padding:0; border-left:1px solid #f3f4f6;
-  background:#f9fafb; transition:background .12s; min-width:72px;
-}
-.att-td-sum:hover { background:#f3f4f6; }
-.att-td-sum > div {
-  height:52px; display:flex; flex-direction:column;
+/* ── خلية ملخص الأسبوع المطوي ── */
+.att-cell-sum {
+  cursor:pointer; text-align:center;
+  background:#f9fafb; border-left:1px solid #f3f4f6;
+  transition:background .12s; min-width:70px;
+  display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:2px;
+  padding:8px 4px;
 }
-.att-sum-count { font-size:.88rem; font-weight:800; line-height:1; }
-.att-sum-total { font-size:.72rem; color:#9ca3af; font-weight:400; }
-.att-sum-label { font-size:.65rem; color:#9ca3af; }
+.att-cell-sum:hover { background:#f0f4ff; }
+.att-sum-count { font-size:.9rem; font-weight:800; line-height:1; }
+.att-sum-denom { font-size:.7rem; color:#9ca3af; font-weight:400; }
+.att-sum-label { font-size:.63rem; color:#9ca3af; }
 
 /* ══ STATUS PICKER MODAL ══ */
+
+/* رأس النافذة: مستويان */
+.att-picker-hdr {
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:16px 20px 12px; border-bottom:1px solid var(--border);
+  gap:10px;
+}
+.att-picker-hdr-text {
+  display:flex; flex-direction:column; gap:3px;
+}
+.att-picker-sub {
+  font-size:.78rem; color:var(--muted); font-weight:600;
+}
+
+/* أزرار الحالة: دائرة + اسم + سهم */
 .att-picker-btn {
   display:flex; align-items:center; gap:14px;
-  width:100%; padding:14px 16px; border-radius:16px;
-  border:2px solid transparent; margin-bottom:10px;
-  font-family:inherit; font-size:.9rem; font-weight:700;
-  cursor:pointer; transition:transform .15s, box-shadow .15s;
+  width:100%; padding:13px 16px; border-radius:14px;
+  border:2px solid transparent; margin-bottom:8px;
+  font-family:inherit; font-size:.88rem; font-weight:700;
+  cursor:pointer; transition:transform .15s, border-color .12s;
+  background:var(--white); color:var(--primary);
   text-align:right;
 }
-.att-picker-btn:hover  { transform:scale(1.02); }
+.att-picker-btn:hover  { transform:translateX(-2px); background:#f8faff; }
 .att-picker-btn:active { transform:scale(0.97); }
+.att-picker-btn-active { background:#f0fdf4 !important; }
+
 .att-picker-icon {
-  width:48px; height:48px; border-radius:12px; flex-shrink:0;
+  width:44px; height:44px; border-radius:12px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
-  color:#fff; font-size:1.3rem; font-weight:800;
-  box-shadow:0 4px 10px rgba(0,0,0,.2);
+  color:#fff; font-size:1.2rem; font-weight:800;
+  box-shadow:0 3px 8px rgba(0,0,0,.18);
 }
-.att-picker-check { margin-right:auto; font-size:.72rem; opacity:.7; font-weight:500; }
+.att-picker-label { flex:1; text-align:right; }
+.att-picker-arrow {
+  font-size:.9rem; color:var(--muted);
+  transition:color .15s, transform .15s;
+}
+.att-picker-btn:hover .att-picker-arrow { color:var(--primary); transform:translateX(-3px); }
+.att-picker-check { font-size:.7rem; color:var(--success); font-weight:800; }
+
 .att-picker-clear {
   width:100%; padding:10px; color:#9ca3af;
-  font-size:.84rem; background:none; border:none;
+  font-size:.82rem; background:none; border:none;
   cursor:pointer; font-family:inherit; margin-top:4px;
+  border-radius:10px; transition:background .12s, color .12s;
 }
-.att-picker-clear:hover { color:var(--danger); }
+.att-picker-clear:hover { background:#fff1f2; color:var(--danger); }
 
-/* Modal override for attendance picker */
+/* Modal override */
 #m-att-picker .modal { border-radius:24px !important; }
 
 /* ══ STATS PAGE ══ */

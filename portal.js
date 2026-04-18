@@ -741,13 +741,6 @@ function groupDatesIntoWeeks(dates) {
   return Object.values(map).sort((a,b) => a.key.localeCompare(b.key));
 }
 
-function attPrevWeek() {
-  if (_attWkIdx > 0) { _attWkIdx--; _attActiveWk = _attWeekGroups[_attWkIdx]?.key||''; renderAttMatrix(); }
-}
-function attNextWeek() {
-  if (_attWkIdx < _attWeekGroups.length - 1) { _attWkIdx++; _attActiveWk = _attWeekGroups[_attWkIdx]?.key||''; renderAttMatrix(); }
-}
-
 function renderAttMatrix() {
   const body = document.getElementById('att-body');
   if (!body) return;
@@ -758,91 +751,128 @@ function renderAttMatrix() {
   if (!_attDates.length) { body.innerHTML=`<div class="empty"><div class="ei">📅</div><p>لا توجد جلسات — اضغط "➕ جلسة جديدة"</p></div>`; return; }
   if (!filtered.length)  { body.innerHTML=`<div class="empty"><div class="ei">🔍</div><p>لا توجد نتائج مطابقة</p></div>`; return; }
 
-  const canPrev = _attWkIdx > 0;
-  const canNext = _attWkIdx < _attWeekGroups.length - 1;
-  const activeWk = _attWeekGroups[_attWkIdx];
+  /* ── thead: صفّان
+     صف 1 → رأس الأسبوع (قابل للنقر للطي/الفتح)
+     صف 2 → اليوم + التاريخ (للأسبوع النشط) أو "ملخص" (للمطوي)
+  ── */
+  let hdrRow1 = `<th class="att-th-name" rowspan="2">الطالب</th>`;
+  let hdrRow2 = ``;
 
-  const weekNav = `<div class="att-week-nav"><div class="att-nav-pill">
-    <button class="att-nav-btn" onclick="attNextWeek()" ${canNext?'':'disabled'}>&#x276E;</button>
-    <span class="att-nav-title">${esc(activeWk?.title||'')}</span>
-    <button class="att-nav-btn" onclick="attPrevWeek()" ${canPrev?'':'disabled'}>&#x276F;</button>
-  </div></div>`;
-
-  // Single-row thead
-  let hdrCells = `<th class="att-th-name">الطالب</th>`;
   _attWeekGroups.forEach((wk, idx) => {
     const isActive = wk.key === _attActiveWk;
+    const toggle   = `_attWkIdx=${idx};_attActiveWk=_attActiveWk==='${wk.key}'?'':('${wk.key}');renderAttMatrix()`;
+    const colspan  = isActive ? wk.dates.length : 1;
+
+    hdrRow1 += `<th class="att-wk-hdr${isActive?' att-wk-hdr-active':''}"
+      colspan="${colspan}" onclick="${toggle}"
+      title="${isActive?'انقر لطي هذا الأسبوع':'انقر لفتح هذا الأسبوع'}">
+      <div class="att-wk-hdr-inner">
+        <span class="att-wk-toggle">${isActive?'▾':'▸'}</span>
+        <span>${esc(wk.title)}</span>
+      </div>
+    </th>`;
+
     if (isActive) {
-      hdrCells += `<th class="att-wk-th att-wk-th-active" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
-        <div class="att-wk-title att-wk-title-active">${esc(wk.title)}</div>
-        <div class="att-wk-days">${wk.dates.map(d=>`<div class="att-wk-day">${fmtDateShort(d)}</div>`).join('')}</div>
-      </th>`;
+      wk.dates.forEach(d => {
+        const dirty = _attDirtyDates.has(d);
+        hdrRow2 += `<th class="att-day-hdr${dirty?' att-day-dirty':''}">
+          <div class="att-day-hdr-name">${dayName(d)}</div>
+          <div class="att-day-hdr-date">${fmtDateShort(d)}</div>
+        </th>`;
+      });
     } else {
-      hdrCells += `<th class="att-wk-th" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
-        <div class="att-wk-title">${esc(wk.title)}</div>
-      </th>`;
+      hdrRow2 += `<th class="att-sum-hdr" onclick="${toggle}">ملخص</th>`;
     }
   });
 
-  // Tbody
+  /* ── tbody ── */
   const rows = filtered.map(s => {
     let cells = `<td class="att-td-name">${esc(s.studentName)}</td>`;
     _attWeekGroups.forEach((wk, idx) => {
       if (wk.key === _attActiveWk) {
-        const dayBtns = wk.dates.map(date => {
-          const status = _attMatrix[`${s.studentId}-${date}`]||null;
-          const dirty  = _attDirtyDates.has(date) ? ' dirty':'';
-          const st     = status ? ATT_STATUSES.find(a=>a.id===status) : null;
-          const dotCls = status ? 's-'+status.replace(/ /g,'-') : 's-none';
-          return `<button class="att-day-btn${dirty}" onclick="openAttPicker(${s.studentId},'${date}')" title="${esc(status||'لم يُسجَّل')}">
-            <div class="att-dot ${dotCls}">${st?.abbr||''}</div>
-          </button>`;
-        }).join('');
-        cells += `<td class="att-td-active"><div class="att-day-flex">${dayBtns}</div></td>`;
+        /* الأسبوع النشط: عمود لكل يوم */
+        wk.dates.forEach(date => {
+          const status = _attMatrix[`${s.studentId}-${date}`] || null;
+          const dirty  = _attDirtyDates.has(date) ? ' dirty' : '';
+          const st     = status ? ATT_STATUSES.find(a => a.id === status) : null;
+          const dotCls = status ? 's-' + status.replace(/ /g, '-') : 's-none';
+          cells += `<td class="att-cell${dirty}" onclick="openAttPicker(${s.studentId},'${date}')">
+            <div class="att-dot ${dotCls}" title="${esc(status||'لم يُسجَّل')}">${st?.abbr||'+'}</div>
+          </td>`;
+        });
       } else {
-        const present = wk.dates.filter(d=>{ const st=_attMatrix[`${s.studentId}-${d}`]; return ATT_STATUSES.find(a=>a.id===st)?.present; }).length;
-        const total   = wk.dates.length;
-        const clr = present===0?'var(--danger)':present===total?'var(--success)':'var(--warning)';
-        cells += `<td class="att-td-sum" onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()">
-          <div><div class="att-sum-count" style="color:${clr}">${present}<span class="att-sum-total"> / ${total}</span></div>
-          <div class="att-sum-label">حاضر</div></div>
+        /* الأسبوع المطوي: عمود ملخص واحد
+           Loop على أيام الأسبوع → احسب الحالات التي تُعدّ حضوراً فعلياً */
+        const present = wk.dates.filter(d => {
+          const st = _attMatrix[`${s.studentId}-${d}`];
+          return ATT_STATUSES.find(a => a.id === st)?.present;
+        }).length;
+        const total = wk.dates.length;
+        const clr   = present === 0 ? 'var(--danger)'
+                    : present === total ? 'var(--success)'
+                    : 'var(--warning)';
+        const toggle = `onclick="_attWkIdx=${idx};_attActiveWk='${wk.key}';renderAttMatrix()"`;
+        cells += `<td class="att-cell-sum" ${toggle}>
+          <div class="att-sum-count" style="color:${clr}">${present}<span class="att-sum-denom"> / ${total}</span></div>
+          <div class="att-sum-label">حاضر</div>
         </td>`;
       }
     });
     return `<tr class="att-row">${cells}</tr>`;
   }).join('');
 
-  body.innerHTML = `${weekNav}<div class="att-matrix-wrap"><table class="att-matrix"><thead><tr>${hdrCells}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  body.innerHTML = `<div class="att-matrix-wrap"><table class="att-matrix">
+    <thead>
+      <tr>${hdrRow1}</tr>
+      <tr>${hdrRow2}</tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
 }
 
 function openAttPicker(studentId, date) {
   _attPickerCell = { studentId, date };
-  const s = _attSubs.find(s => s.studentId === studentId);
-  document.getElementById('att-picker-title').textContent = `${s?.studentName||''} — ${fmtDate(date)}`;
-  const current = _attMatrix[`${studentId}-${date}`]||null;
+  const s   = _attSubs.find(s => s.studentId === studentId);
+  const wk  = _attWeekGroups.find(w => w.dates.includes(date));
+  const day = dayName(date);
+
+  /* رأس النافذة: اسم الطالب (مستوى 1) + اليوم · الأسبوع (مستوى 2) */
+  document.getElementById('att-picker-title').textContent = s?.studentName || '';
+  const subEl = document.getElementById('att-picker-sub');
+  if (subEl) subEl.textContent = `${day}  ·  ${wk?.title || fmtDate(date)}`;
+
+  const current = _attMatrix[`${studentId}-${date}`] || null;
+
+  /* قائمة رأسية: دائرة لونية + اسم الحالة + أيقونة سهم */
   document.getElementById('att-picker-body').innerHTML = `
-    ${ATT_STATUSES.map(st=>`
-      <button class="att-picker-btn" onclick="setAttStatus('${st.id}')"
-        style="background:${st.light};color:${st.textColor};border-color:${st.id===current?st.color:'transparent'}">
+    ${ATT_STATUSES.map(st => `
+      <button class="att-picker-btn${st.id === current ? ' att-picker-btn-active' : ''}"
+        onclick="setAttStatus('${st.id}')"
+        style="border-color:${st.id === current ? st.color : 'transparent'};background:${st.id === current ? st.color + '18' : 'var(--white)'}">
         <div class="att-picker-icon" style="background:${st.color}">${st.icon}</div>
-        <span>${esc(st.id)}</span>
-        ${st.id===current?'<span class="att-picker-check">✓ الحالي</span>':''}
+        <span class="att-picker-label">${esc(st.id)}</span>
+        <span class="att-picker-arrow">←</span>
+        ${st.id === current ? '<span class="att-picker-check">✓</span>' : ''}
       </button>`).join('')}
-    <button class="att-picker-clear" onclick="setAttStatus(null)">🗑 مسح الحالة الحالية</button>`;
-  document.getElementById('m-att-picker').style.display='flex';
+    <button class="att-picker-clear" onclick="setAttStatus(null)">🗑 مسح الحالة</button>`;
+  document.getElementById('m-att-picker').style.display = 'flex';
 }
-function closeAttPicker() { document.getElementById('m-att-picker').style.display='none'; }
+function closeAttPicker() { document.getElementById('m-att-picker').style.display = 'none'; }
 
 function setAttStatus(status) {
   if (!_attPickerCell) return;
   const { studentId, date } = _attPickerCell;
   const key = `${studentId}-${date}`;
+  /* تحديث كائن البيانات */
   if (status) _attMatrix[key] = status; else delete _attMatrix[key];
   _attDirtyDates.add(date);
   const saveBtn = document.getElementById('att-save-btn');
   if (saveBtn) saveBtn.style.display = '';
   closeAttPicker();
+  /* إعادة رسم المصفوفة */
   renderAttMatrix();
+  /* إعادة حساب الإحصائيات فوراً إذا كانت الصفحة ظاهرة */
+  if (_attSubPage === 'stats') renderAttStats();
 }
 
 function addAttSession() {
@@ -1037,6 +1067,10 @@ function filterAttLog() {
 function fmtDateShort(dateStr) {
   if (!dateStr) return '';
   return new Date(dateStr+'T00:00:00').toLocaleDateString('ar-SA',{day:'numeric',month:'short'});
+}
+function dayName(dateStr) {
+  const names = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  return names[new Date(dateStr+'T00:00:00').getDay()] || '';
 }
 
 /* ══════════════════════════════════════════

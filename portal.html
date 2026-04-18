@@ -847,8 +847,11 @@
 <!-- Modal: Attendance Status Picker -->
 <div class="modal-overlay" id="m-att-picker" style="display:none" onclick="if(event.target===this)closeAttPicker()">
   <div class="modal" style="max-width:340px">
-    <div class="modal-hdr">
-      <span class="modal-title" id="att-picker-title">تحديد حالة التحضير</span>
+    <div class="modal-hdr att-picker-hdr">
+      <div class="att-picker-hdr-text">
+        <span class="modal-title" id="att-picker-title">تحديد حالة التحضير</span>
+        <span class="att-picker-sub" id="att-picker-sub"></span>
+      </div>
       <button class="modal-close" onclick="closeAttPicker()">✕</button>
     </div>
     <div class="modal-body" id="att-picker-body" style="padding:12px 16px"></div>
