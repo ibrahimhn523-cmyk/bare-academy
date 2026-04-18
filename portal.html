@@ -860,6 +860,61 @@
 
 <!-- modal الجلسة اليدوية محذوف — التواريخ تُولَّد تلقائياً من جدول البرنامج -->
 
+<!-- Modal: إعدادات جدول التحضير -->
+<div class="modal-overlay" id="m-att-settings" style="display:none" onclick="if(event.target===this)closeAttSettings()">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-hdr">
+      <div>
+        <div class="modal-title">⚙️ إعدادات جدول التحضير</div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:2px" id="att-set-prog-name"></div>
+      </div>
+      <button class="modal-close" onclick="closeAttSettings()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:18px">
+      <input type="hidden" id="att-set-prog-id">
+
+      <!-- تاريخ البداية -->
+      <div>
+        <label class="form-label">📅 تاريخ بداية البرنامج</label>
+        <input type="date" id="att-set-start" class="form-control"
+          oninput="updateAttSettingsPreview()" style="margin-top:6px;width:100%">
+      </div>
+
+      <!-- عدد الأسابيع -->
+      <div>
+        <label class="form-label">🔢 عدد أسابيع البرنامج</label>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
+          <input type="number" id="att-set-weeks" min="1" max="104" value="12"
+            class="form-control" style="width:100px"
+            oninput="updateAttSettingsPreview()">
+          <span style="font-size:.82rem;color:var(--muted)">أسبوع</span>
+        </div>
+      </div>
+
+      <!-- أيام الأسبوع -->
+      <div>
+        <label class="form-label">📆 أيام الحضور الأسبوعية</label>
+        <div id="att-set-days" class="day-picker" style="margin-top:10px">
+          <div class="day-chip" data-day="الأحد"    onclick="toggleAttDay(this)">الأحد</div>
+          <div class="day-chip" data-day="الاثنين"  onclick="toggleAttDay(this)">الاثنين</div>
+          <div class="day-chip" data-day="الثلاثاء" onclick="toggleAttDay(this)">الثلاثاء</div>
+          <div class="day-chip" data-day="الأربعاء" onclick="toggleAttDay(this)">الأربعاء</div>
+          <div class="day-chip" data-day="الخميس"  onclick="toggleAttDay(this)">الخميس</div>
+          <div class="day-chip" data-day="الجمعة"   onclick="toggleAttDay(this)">الجمعة</div>
+          <div class="day-chip" data-day="السبت"    onclick="toggleAttDay(this)">السبت</div>
+        </div>
+      </div>
+
+      <!-- معاينة -->
+      <div class="att-set-preview" id="att-set-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeAttSettings()">إلغاء</button>
+      <button class="btn btn-primary" id="att-set-save-btn" onclick="saveAttSettings()">💾 حفظ الإعدادات</button>
+    </div>
+  </div>
+</div>
+
 <script src="./portal.js"></script>
 </body>
 </html>

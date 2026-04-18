@@ -218,7 +218,8 @@ async function loadPrograms() {
   _progs = rows.map(r => ({
     id: parseInt(r.id), name: r.name || '', startDate: r.startDate || '',
     endDate: r.endDate || '', fullFee: parseFloat(r.fullFee) || 0,
-    groups: r.groups || '', days: parseDays(r.days), status: r.status || 'نشط'
+    groups: r.groups || '', days: parseDays(r.days), status: r.status || 'نشط',
+    numWeeks: parseInt(r.num_weeks) || 0
   }));
 }
 
@@ -623,11 +624,11 @@ function renderAttPrograms() {
       <div class="att-drill-info">
         <div class="att-drill-name">${esc(p.name)}</div>
         <div class="att-drill-meta">${grpCount} ${grpCount === 1 ? 'مجموعة' : 'مجموعات'}
-          ${hasSchedule ? `· منذ ${fmtDateShort(p.startDate)}` : ''}
+          ${hasSchedule ? `· ${p.numWeeks} أسبوع · منذ ${fmtDateShort(p.startDate)}` : ''}
         </div>
         <div class="att-prog-days">${dayTags}</div>
       </div>
-      <span class="att-drill-arrow">‹</span>
+      <button class="att-settings-btn" onclick="openAttSettings(${p.id},event)" title="إعدادات الجدول">⚙️</button>
     </div>`;
   }).join('');
 }
@@ -665,6 +666,83 @@ function renderAttGroups() {
       <span class="att-drill-arrow">‹</span>
     </div>`;
   }).join('');
+}
+
+/* ══════════════════════════════════════════
+   إعدادات جدول التحضير (لكل برنامج)
+══════════════════════════════════════════ */
+const ALL_DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+function openAttSettings(progId, e) {
+  if (e) e.stopPropagation(); // منع فتح البرنامج عند النقر على الإعدادات
+  const p = _progs.find(x => x.id === progId);
+  if (!p) return;
+
+  document.getElementById('att-set-prog-id').value  = p.id;
+  document.getElementById('att-set-prog-name').textContent = p.name;
+  document.getElementById('att-set-start').value    = p.startDate || '';
+  document.getElementById('att-set-weeks').value    = p.numWeeks  || 12;
+
+  // تمييز الأيام المحددة
+  document.querySelectorAll('#att-set-days .day-chip').forEach(chip => {
+    chip.classList.toggle('on', p.days.includes(chip.dataset.day));
+  });
+
+  document.getElementById('att-set-preview').textContent = '';
+  updateAttSettingsPreview();
+  document.getElementById('m-att-settings').style.display = 'flex';
+}
+
+function closeAttSettings() {
+  document.getElementById('m-att-settings').style.display = 'none';
+}
+
+function toggleAttDay(chip) {
+  chip.classList.toggle('on');
+  updateAttSettingsPreview();
+}
+
+function updateAttSettingsPreview() {
+  const start    = document.getElementById('att-set-start').value;
+  const weeks    = parseInt(document.getElementById('att-set-weeks').value) || 0;
+  const selDays  = [...document.querySelectorAll('#att-set-days .day-chip.on')].map(c => c.dataset.day);
+  const prev     = document.getElementById('att-set-preview');
+  if (!start || !selDays.length || !weeks) { prev.textContent = ''; return; }
+  const count    = generateProgramDates(start, selDays, weeks).length;
+  prev.textContent = `← ${count} يوم حضور على مدى ${weeks} أسبوع`;
+}
+
+async function saveAttSettings() {
+  const progId   = parseInt(document.getElementById('att-set-prog-id').value);
+  const start    = document.getElementById('att-set-start').value;
+  const weeks    = parseInt(document.getElementById('att-set-weeks').value) || 12;
+  const selDays  = [...document.querySelectorAll('#att-set-days .day-chip.on')].map(c => c.dataset.day);
+
+  if (!start)           { toast('حدد تاريخ البداية', 'warning'); return; }
+  if (!selDays.length)  { toast('اختر يوماً واحداً على الأقل', 'warning'); return; }
+  if (weeks < 1 || weeks > 104) { toast('عدد الأسابيع بين 1 و 104', 'warning'); return; }
+
+  const btn = document.getElementById('att-set-save-btn');
+  btn.disabled = true; btn.textContent = '⏳ جاري الحفظ…';
+  try {
+    await fetch(`${SB_URL}/programs?id=eq.${progId}`, {
+      method: 'PATCH',
+      headers: _h(),
+      body: JSON.stringify({ startDate: start, days: JSON.stringify(selDays), num_weeks: weeks })
+    });
+    // تحديث الـ cache
+    const p = _progs.find(x => x.id === progId);
+    if (p) { p.startDate = start; p.days = selDays; p.numWeeks = weeks; }
+    toast('تم حفظ إعدادات الجدول ✅');
+    closeAttSettings();
+    renderAttPrograms(); // تحديث بطاقة البرنامج
+    // إذا كان هذا البرنامج مفتوحاً في المصفوفة → أعد التحميل
+    if (_attSelProg?.id === progId) loadAttMatrix();
+  } catch(e) {
+    toast('خطأ: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '💾 حفظ الإعدادات';
+  }
 }
 
 function selectAttGroup(groupName) {
@@ -709,7 +787,7 @@ async function loadAttMatrix() {
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
 
   /* ── توليد أيام البرنامج تلقائياً من startDate حتى اليوم ── */
-  const autoDate = generateProgramDates(_attSelProg.startDate, _attSelProg.days);
+  const autoDate = generateProgramDates(_attSelProg.startDate, _attSelProg.days, _attSelProg.numWeeks);
   if (!autoDate.length) {
     body.innerHTML = `<div class="empty"><div class="ei">📅</div>
       <p>لم يُضبط جدول البرنامج (تاريخ البداية وأيام الأسبوع).<br>
@@ -759,14 +837,21 @@ async function loadAttMatrix() {
 const DAY_NUMBERS = {
   'الأحد':0,'الاثنين':1,'الثلاثاء':2,'الأربعاء':3,'الخميس':4,'الجمعة':5,'السبت':6
 };
-function generateProgramDates(startDate, days) {
+function generateProgramDates(startDate, days, numWeeks) {
   if (!startDate || !days?.length) return [];
   const dayNums = days.map(d => DAY_NUMBERS[d]).filter(n => n !== undefined);
   if (!dayNums.length) return [];
-  const dates = [];
-  const cur   = new Date(startDate + 'T00:00:00');
-  const today = new Date(); today.setHours(23, 59, 59, 0);
-  while (cur <= today) {
+  const dates  = [];
+  const cur    = new Date(startDate + 'T00:00:00');
+  const today  = new Date(); today.setHours(23, 59, 59, 0);
+  // نهاية المدة = startDate + numWeeks أسبوع (أو اليوم إذا لم يُحدَّد)
+  let limit = today;
+  if (numWeeks > 0) {
+    const endByWeeks = new Date(startDate + 'T00:00:00');
+    endByWeeks.setDate(endByWeeks.getDate() + numWeeks * 7);
+    limit = endByWeeks < today ? endByWeeks : today;
+  }
+  while (cur <= limit) {
     if (dayNums.includes(cur.getDay()))
       dates.push(cur.toISOString().split('T')[0]);
     cur.setDate(cur.getDate() + 1);

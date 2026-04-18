@@ -814,6 +814,36 @@ tr.row-selected { background:rgba(193,157,46,.06); }
 }
 .att-prog-day-warn { background:rgba(239,68,68,.1); color:var(--danger); }
 
+/* ── زر إعدادات البرنامج ── */
+.att-settings-btn {
+  flex-shrink:0; width:34px; height:34px; border-radius:8px;
+  border:1.5px solid var(--border); background:var(--white);
+  font-size:.9rem; cursor:pointer; transition:all .15s;
+  display:flex; align-items:center; justify-content:center;
+}
+.att-settings-btn:hover { background:var(--primary); border-color:var(--primary); filter:brightness(1.1); }
+
+/* ── Day Picker (modal الإعدادات) ── */
+.day-picker {
+  display:flex; flex-wrap:wrap; gap:8px;
+}
+.day-chip {
+  padding:7px 14px; border-radius:20px; font-size:.82rem; font-weight:700;
+  border:2px solid var(--border); background:var(--white); color:var(--muted);
+  cursor:pointer; transition:all .15s; user-select:none;
+}
+.day-chip:hover { border-color:var(--primary); color:var(--primary); }
+.day-chip.on {
+  background:var(--primary); border-color:var(--primary); color:#fff;
+}
+
+/* ── معاينة الإعداد ── */
+.att-set-preview {
+  font-size:.8rem; color:var(--gold2); font-weight:700;
+  background:rgba(193,157,46,.08); border-radius:8px;
+  padding:8px 12px; min-height:34px;
+}
+
 /* ── Drill-down Card Grid ── */
 .att-drill-grid {
   display:grid;
