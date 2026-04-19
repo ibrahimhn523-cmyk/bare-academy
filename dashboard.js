@@ -1372,7 +1372,8 @@ function calcEndFromSessions(startDate, sessionCount, progDays) {
 ══════════════════════════════════════════ */
 const COMM_VARS = [
   '{الاسم}', '{الجوال}', '{المبلغ_الكلي}', '{المدفوع}',
-  '{المتبقي}', '{بداية_الاشتراك}', '{نهاية_الاشتراك}', '{المجموعة}'
+  '{المتبقي}', '{بداية_الاشتراك}', '{نهاية_الاشتراك}', '{المجموعة}',
+  '{بداية_الاشتراك_هجري}', '{نهاية_الاشتراك_هجري}'
 ];
 
 const COMM_DEFAULT_TEMPLATES = [
@@ -1639,8 +1640,10 @@ function buildCommMsg(body, sub) {
     .replace(/{المبلغ_الكلي}/g,    due.toLocaleString()  + ' ريال')
     .replace(/{المدفوع}/g,         paid.toLocaleString() + ' ريال')
     .replace(/{المتبقي}/g,         rem.toLocaleString()  + ' ريال')
-    .replace(/{بداية_الاشتراك}/g,  fmtDate(sub.startDate))
-    .replace(/{نهاية_الاشتراك}/g,  fmtDate(sub.endDate))
+    .replace(/{بداية_الاشتراك}/g,        fmtDateBoth(sub.startDate))
+    .replace(/{نهاية_الاشتراك}/g,        fmtDateBoth(sub.endDate))
+    .replace(/{بداية_الاشتراك_هجري}/g,   fmtDateHijri(sub.startDate))
+    .replace(/{نهاية_الاشتراك_هجري}/g,   fmtDateHijri(sub.endDate))
     .replace(/{المجموعة}/g,        sub.groupName || '');
 }
 
@@ -1886,6 +1889,22 @@ function fmtDate(d) {
     if (isNaN(dt)) return d;
     return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
   } catch { return d; }
+}
+
+function fmtDateHijri(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
+    if (isNaN(dt)) return '';
+    return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'islamic-umalqura' });
+  } catch { return ''; }
+}
+
+function fmtDateBoth(d) {
+  const gr = fmtDate(d);
+  const hi = fmtDateHijri(d);
+  if (!gr) return '';
+  return hi ? `${gr} (${hi})` : gr;
 }
 
 function esc(s) {
