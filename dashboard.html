@@ -131,6 +131,9 @@
         <option value="3">≤ 3 أيام</option>
         <option value="5">≤ 5 أيام</option>
         <option value="7">≤ 7 أيام</option>
+        <option value="half-all">نصف مدة — كل</option>
+        <option value="half-soon">نصف مدة — قارب الانتهاء</option>
+        <option value="half-expired">نصف مدة — منتهي</option>
       </select>
       <select id="subs-sort" onchange="renderSubscribers()">
         <option value="alpha">أبجدي</option>
@@ -445,7 +448,7 @@
           <label>نوع الاشتراك</label>
           <select id="sub-type" onchange="onSubTypeChange()">
             <option value="كامل">كامل</option>
-            <option value="جزئي">جزئي</option>
+            <option value="جزئي">نصف مدة</option>
           </select>
         </div>
         <div class="fg">
@@ -519,7 +522,7 @@
             <label>نوع الاشتراك</label>
             <select id="bulk-type">
               <option value="كامل">كامل</option>
-              <option value="جزئي">جزئي</option>
+              <option value="جزئي">نصف مدة</option>
             </select>
           </div>
           <div class="fg">
@@ -716,14 +719,8 @@
     <div class="modal-body">
       <div id="wa-student-info" style="background:var(--bg);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.88rem"></div>
       <div class="fg" style="margin-bottom:14px">
-        <label>نوع الرسالة</label>
-        <select id="wa-type" onchange="onWaTypeChange()">
-          <option value="paid">✅ تم السداد</option>
-          <option value="subscribed">📋 تم الاشتراك</option>
-          <option value="reminder">⏰ تذكير بالسداد</option>
-          <option value="expiring">🔔 إعلام بقرب الانتهاء</option>
-          <option value="expired">🔄 إعلام بانتهاء الاشتراك</option>
-        </select>
+        <label>اختر قالباً</label>
+        <select id="wa-type" onchange="onWaTypeChange()"></select>
       </div>
       <div class="fg">
         <label>نص الرسالة <span style="font-size:.74rem;color:var(--muted)">(يمكنك التعديل)</span></label>

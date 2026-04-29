@@ -427,7 +427,7 @@ function openStudentCard(id) {
         <span class="badge b-${sub.status === 'نشط' ? 'active' : 'expired'}">${sub.status}</span>
       </div>
       <div class="sub-entry-meta">
-        <span>النوع: ${sub.subType}</span>
+        <span>النوع: ${fmtSubType(sub.subType)}</span>
         <span>البداية: ${fmtDate(sub.startDate)}</span>
         <span>النهاية: ${fmtDate(sub.endDate)}</span>
         <span>المدفوع: ${paid.toLocaleString()} ر.س | المتبقي: <strong style="color:${rem > 0 ? 'var(--danger)' : 'var(--success)'}">${rem.toLocaleString()} ر.س</strong></span>
@@ -692,7 +692,11 @@ function renderSubscribers() {
     d = d.filter(s => {
       if (!s.endDate) return false;
       const diff = Math.ceil((new Date(s.endDate + 'T00:00:00') - now) / 86400000);
-      if (durF === 'منتهي') return diff < 0;
+      const isHalf = s.subType === 'جزئي';
+      if (durF === 'منتهي')      return diff < 0;
+      if (durF === 'half-all')     return isHalf;
+      if (durF === 'half-soon')    return isHalf && diff >= 0 && diff <= 7;
+      if (durF === 'half-expired') return isHalf && diff < 0;
       return diff >= 0 && diff <= parseInt(durF);
     });
   }
@@ -718,7 +722,7 @@ function renderSubscribers() {
         <small style="color:var(--muted)" dir="ltr">${s.phone}</small>
       </td>
       <td>${s.groupName || '—'}</td>
-      <td>${s.subType}</td>
+      <td>${fmtSubType(s.subType)}</td>
       <td>${fmtDate(s.startDate)}</td>
       <td>${fmtDate(s.endDate)} ${statusBadge}</td>
       <td style="text-align:center">${s.sessionCount || '—'}</td>
@@ -1376,14 +1380,6 @@ const COMM_VARS = [
   '{بداية_الاشتراك_هجري}', '{نهاية_الاشتراك_هجري}'
 ];
 
-const COMM_DEFAULT_TEMPLATES = [
-  { name: '✅ تم السداد',              key: 'paid'       },
-  { name: '📋 تم الاشتراك',            key: 'subscribed' },
-  { name: '⏰ تذكير بالسداد',          key: 'reminder'   },
-  { name: '🔔 إعلام بقرب الانتهاء',    key: 'expiring'   },
-  { name: '🔄 إعلام بانتهاء الاشتراك', key: 'expired'    },
-];
-
 function renderComm() {
   if (_currentProg) {
     const el = document.getElementById('comm-prog-name');
@@ -1404,15 +1400,10 @@ function renderComm() {
   const groups = (_currentProg?.groups || '').split('،').map(s => s.trim()).filter(Boolean);
   const groupOpts = '<option value="">كل المجموعات</option>' + groups.map(g => `<option>${esc(g)}</option>`).join('');
 
-  // القوالب المخصصة من localStorage
+  // قوالب المستخدم من localStorage
   const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
   const tplOpts = `<option value="">— اختر قالباً —</option>
-    <optgroup label="القوالب الافتراضية">
-      ${COMM_DEFAULT_TEMPLATES.map(t => `<option value="default:${t.key}">${t.name}</option>`).join('')}
-    </optgroup>
-    ${saved.length ? `<optgroup label="قوالبي المخصصة">
-      ${saved.map((t, i) => `<option value="custom:${i}">${esc(t.name)}</option>`).join('')}
-    </optgroup>` : ''}`;
+    ${saved.map((t, i) => `<option value="custom:${i}">${esc(t.name)}</option>`).join('')}`;
 
   body.innerHTML = `
     <div class="filter-bar" style="margin-bottom:14px">
@@ -1573,10 +1564,7 @@ function onCommTplChange() {
     ? _progSubs.find(s => _commSelected.has(s.id))
     : _progSubs[0];
 
-  if (val.startsWith('default:')) {
-    const key = val.split(':')[1];
-    document.getElementById('comm-msg').value = sub ? buildWhatsAppMsg(key, sub) : '';
-  } else if (val.startsWith('custom:')) {
+  if (val.startsWith('custom:')) {
     const idx = parseInt(val.split(':')[1]);
     const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
     const tpl = saved[idx];
@@ -1739,22 +1727,8 @@ function renderCommTemplates() {
   const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
 
   body.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div style="font-weight:700;font-size:.95rem">القوالب الافتراضية</div>
-    </div>
-    ${COMM_DEFAULT_TEMPLATES.map(t => {
-      const sample = _progSubs[0] ? buildWhatsAppMsg(t.key, _progSubs[0]) : '(لا يوجد مشتركون لعرض النموذج)';
-      return `<div class="tpl-card">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="tpl-card-name">${t.name}</div>
-          <button class="btn btn-outline" style="font-size:.76rem;padding:4px 10px" onclick="useTplInSend('default:${t.key}')">استخدام ←</button>
-        </div>
-        <div class="tpl-card-body">${esc(sample)}</div>
-      </div>`;
-    }).join('')}
-
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px">
-      <div style="font-weight:700;font-size:.95rem">قوالبي المخصصة ${saved.length ? `<span class="comm-count-badge">${saved.length}</span>` : ''}</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 12px">
+      <div style="font-weight:700;font-size:.95rem">قوالبي ${saved.length ? `<span class="comm-count-badge">${saved.length}</span>` : ''}</div>
       <button class="btn btn-primary" onclick="openM('m-add-template')">➕ قالب جديد</button>
     </div>
     ${saved.length ? saved.map((t, i) => `
@@ -1768,7 +1742,7 @@ function renderCommTemplates() {
         </div>
         <div class="tpl-card-body">${esc(t.body)}</div>
       </div>`).join('')
-    : `<div class="empty" style="padding:30px"><div class="ei">📝</div><p>لا توجد قوالب مخصصة بعد</p></div>`}`;
+    : `<div class="empty" style="padding:30px"><div class="ei">📝</div><p>لا توجد قوالب بعد — أضف قالبك الأول</p></div>`}`;
 }
 
 function useTplInSend(val) {
@@ -1806,7 +1780,7 @@ function openWhatsApp(subId) {
   const s = _progSubs.find(x => x.id === subId); if (!s) return;
   _waSubId = subId;
 
-  const { paid, due, rem, payStatus } = getSubPayInfo(s);
+  const { rem } = getSubPayInfo(s);
   document.getElementById('wa-student-info').innerHTML =
     `<span>👤 <strong>${esc(s.studentName)}</strong></span>
      <span style="margin:0 12px;color:var(--muted)">|</span>
@@ -1814,57 +1788,25 @@ function openWhatsApp(subId) {
      <span style="margin:0 12px;color:var(--muted)">|</span>
      <span>💰 المتبقي: <strong style="color:var(--danger)">${rem.toLocaleString()} ر.س</strong></span>`;
 
+  // تعبئة قائمة القوالب من نفس مصدر قسم التواصل (localStorage)
+  const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
   const typeEl = document.getElementById('wa-type');
-  if (payStatus === 'مسدد')      typeEl.value = 'paid';
-  else if (payStatus === 'جزئي') typeEl.value = 'reminder';
-  else                           typeEl.value = 'subscribed';
+  typeEl.innerHTML = saved.length
+    ? '<option value="">— اختر قالباً —</option>' +
+      saved.map((t, i) => `<option value="${i}">${esc(t.name)}</option>`).join('')
+    : '<option value="">لا توجد قوالب — أضفها من قسم التواصل</option>';
 
-  onWaTypeChange();
+  document.getElementById('wa-msg').value = '';
   openM('m-whatsapp');
 }
 
 function onWaTypeChange() {
   const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
-  document.getElementById('wa-msg').value = buildWhatsAppMsg(document.getElementById('wa-type').value, s);
-}
-
-function buildWhatsAppMsg(type, s) {
-  const { paid, due, rem } = getSubPayInfo(s);
-  const name     = s.studentName;
-  const start    = fmtDate(s.startDate);
-  const end      = fmtDate(s.endDate);
-  const paidFmt  = paid.toLocaleString() + ' ريال';
-  const dueFmt   = due.toLocaleString()  + ' ريال';
-
-  // الايموجيات بـ Unicode escapes لضمان عدم تأثرها بالترميز
-  const e = {
-    plant   : '\uD83C\uDF3F', // 🌿
-    card    : '\uD83D\uDCB3', // 💳
-    person  : '\uD83D\uDC64', // 👤
-    money   : '\uD83D\uDCB0', // 💰
-    hourglass:'\u23F3',       // ⏳
-    handshake:'\uD83E\uDD1D', // 🤝
-    bell    : '\uD83D\uDD14', // 🔔
-    sprout  : '\uD83C\uDF31', // 🌱
-    calendar: '\uD83D\uDCC5', // 📅
-    arrows  : '\uD83D\uDD04', // 🔄
-    clock   : '\u23F0',       // ⏰
-    phone   : '\uD83D\uDCDE', // 📞
-  };
-
-  switch (type) {
-    case 'paid':
-      return `مساء الخير ${e.plant}\nتم استلام رسوم الاشتراك ${e.card}\n${e.person} الطالب: ${name}\n${e.money} المبلغ: ${paidFmt}\n\n${e.hourglass} مدة الاشتراك:\nمن ${start} إلى ${end}\n\nشكرًا لتعاونكم، وفي حال وجود أي استفسار يسعدنا تواصلكم معنا ${e.handshake}`;
-    case 'subscribed':
-      return `مساء الخير ${e.plant}\nنود إفادتكم بأنه تم تسجيل ابنكم في البرنامج بنجاح، على أن يتم استكمال سداد رسوم الاشتراك لاحقًا بإذن الله.\n\n${e.person} الطالب: ${name}\n${e.money} قيمة الرسوم: ${dueFmt}\n\n${e.hourglass} مدة الاشتراك:\nمن ${start} إلى ${end}\n\nنسعد بانضمام ابنكم معنا، ويسعدنا تواصلكم معنا في حال الرغبة في السداد أو وجود أي استفسار ${e.handshake}`;
-    case 'reminder':
-      return `مساء الخير ${e.plant}\nتذكير بسداد رسوم الاشتراك ${e.clock}\n\n${e.person} ${name} — ${e.money} ${dueFmt}\n${e.hourglass} من ${start} إلى ${end}\n\nشكرًا لتعاونكم، وللاستفسار تواصلوا معنا ${e.phone}`;
-    case 'expiring':
-      return `مساء الخير ${e.plant}\nنود إفادتكم بقرب انتهاء اشتراك ابنكم في البرنامج، حيث يتبقى على نهاية الاشتراك أيام قليلة.\n\n${e.person} الطالب: ${name}\n${e.hourglass} تاريخ نهاية الاشتراك: ${end}\n\nوللتجديد، نأمل إرسال كلمة «تجديد»، وسيتم التواصل معكم مباشرة بإذن الله ${e.bell}\n\nشاكرين تعاونكم، ويسعدنا استمرار ابنكم معنا ${e.sprout}`;
-    case 'expired':
-      return `مساء الخير ${e.plant}\nنود إفادتكم بانتهاء اشتراك ابنكم في البرنامج.\n\n${e.person} الطالب: ${name}\n${e.calendar} انتهى الاشتراك بتاريخ: ${end}\n\nوللتجديد، نأمل إرسال كلمة «تجديد»، وسيتم التواصل معكم مباشرة بإذن الله ${e.arrows}\n\nشكرًا لتعاونكم، ويسعدنا استمرار ابنكم معنا ${e.handshake}`;
-    default: return '';
-  }
+  const val = document.getElementById('wa-type').value;
+  if (val === '') { document.getElementById('wa-msg').value = ''; return; }
+  const saved = JSON.parse(localStorage.getItem('wa_templates') || '[]');
+  const tpl = saved[parseInt(val)];
+  if (tpl) document.getElementById('wa-msg').value = buildCommMsg(tpl.body, s);
 }
 
 function sendWhatsApp() {
@@ -1909,6 +1851,10 @@ function fmtDateBoth(d) {
 
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtSubType(t) {
+  return t === 'جزئي' ? 'نصف مدة' : (t || '');
 }
 
 function subStatus(endDate) {
