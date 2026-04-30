@@ -192,6 +192,33 @@ bare-academy/
 - **القرار:** ترك Google Sheets API الكاملة، استخدام Supabase Postgres.
 - **النتيجة:** تحسّن كبير في الأداء والقدرات. README متقادم لم يُحدّث ليعكس هذا.
 
+### ADR-004 — جدول `comm_log` لسجل رسائل التواصل
+- **التاريخ:** 2026-04-30
+- **السياق:** الحاجة لسجل دائم لكل رسالة واتساب مرسلة (للمراجعة، التدقيق، تتبّع التواصل مع أولياء الأمور).
+- **القرار:** جدول مستقل `comm_log` (بدل توسيع جدول `logs` العام المحدود بـ 150 سطراً).
+- **البدائل:**
+  - (أ) إعادة استخدام `logs` مع حقل `label` منظّم — مرفوض: محدود بـ 150 ولا يدعم استعلامات منظمة.
+  - (ب) جدول `whatsapp_log` خاص بواتساب — مرفوض: قد نضيف قنوات أخرى (SMS/إيميل) مستقبلاً.
+- **النتيجة:** جدول عام للتواصل بحقول snapshot للطالب (studentName, phone) لتفادي فقدان السياق عند تعديل بيانات الطالب لاحقاً. الحقل `sentBy` مهيّأ مسبقاً لربطه بمصادقة حقيقية في S4. **DDL في commit `67a42c6` ضمن رسالة الـ commit.**
+
+```sql
+CREATE TABLE comm_log (
+  id            BIGSERIAL PRIMARY KEY,
+  "programId"   BIGINT,
+  "studentId"   BIGINT,
+  "studentName" TEXT NOT NULL,
+  phone         TEXT,
+  "templateName" TEXT,
+  "messageText" TEXT,
+  "sendType"    TEXT NOT NULL DEFAULT 'single',
+  "sentBy"      TEXT NOT NULL DEFAULT 'admin',
+  "sentAt"      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_comm_log_program ON comm_log("programId");
+CREATE INDEX idx_comm_log_student ON comm_log("studentId");
+CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
+```
+
 ### ADR-003 — جدول `users` يدوي بدل Supabase Auth (سابق)
 - **التاريخ:** غير موثّق.
 - **السياق:** الرغبة في نظام صلاحيات granular مخصص.
@@ -268,6 +295,8 @@ bare-academy/
 | F1 | فلتر "نصف مدة" في قائمة المشتركين (كل / قارب الانتهاء / منتهي) + إعادة تسمية UI من "جزئي" إلى "نصف مدة" | ✅ | 2026-04-29 | `9d588ca` |
 | F2 | توحيد مصدر قوالب WhatsApp (📱 modal يقرأ من نفس localStorage كقسم التواصل) | ✅ | 2026-04-29 | `9d588ca` |
 | F3 | حذف القوالب الافتراضية المضمّنة بالكامل (`COMM_DEFAULT_TEMPLATES` و `buildWhatsAppMsg`) | ✅ | 2026-04-29 | `9d588ca` |
+| F5 | إصلاح ترميز الإيموجي في رابط واتساب (دالة `buildWaUrl` موحّدة + `normalize('NFC')` + تحذير URL طويل) | ✅ | 2026-04-30 | `d26dd92` |
+| F6 | سجل التواصل: جدول `comm_log` جديد + تبويب 📜 السجل + التقاط اسم القالب لكل إرسال (فردي/جماعي) | ✅ | 2026-04-30 | `67a42c6` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |

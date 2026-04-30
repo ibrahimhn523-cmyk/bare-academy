@@ -10,7 +10,8 @@ const TB = {
   PAYMENTS      : 'payments',
   PROGRAMS      : 'programs',
   SETTINGS      : 'settings',
-  LOGS          : 'logs'
+  LOGS          : 'logs',
+  COMM_LOG      : 'comm_log'
 };
 
 /* ── Supabase Helpers ── */
@@ -1391,10 +1392,13 @@ function renderComm() {
   // تمييز التبويب النشط
   document.getElementById('comm-tab-send-btn')?.classList.toggle('btn-primary', _commTab === 'send');
   document.getElementById('comm-tab-tpl-btn')?.classList.toggle('btn-primary', _commTab === 'templates');
+  document.getElementById('comm-tab-log-btn')?.classList.toggle('btn-primary', _commTab === 'log');
   document.getElementById('comm-tab-send-btn')?.classList.toggle('btn-outline', _commTab !== 'send');
   document.getElementById('comm-tab-tpl-btn')?.classList.toggle('btn-outline', _commTab !== 'templates');
+  document.getElementById('comm-tab-log-btn')?.classList.toggle('btn-outline', _commTab !== 'log');
 
   if (_commTab === 'templates') { renderCommTemplates(); return; }
+  if (_commTab === 'log')       { renderCommLog();       return; }
 
   // بناء الفلاتر
   const groups = (_currentProg?.groups || '').split('،').map(s => s.trim()).filter(Boolean);
@@ -1641,10 +1645,16 @@ function startBulkSend() {
   if (!templateBody.trim()) { toast('اكتب نص الرسالة أولاً', 'warning'); return; }
   if (!_commSelected.size)  { toast('حدد مشتركاً واحداً على الأقل', 'warning'); return; }
 
+  // التقاط اسم القالب المحدد (للسجل)
+  const tplSel = document.getElementById('comm-tpl-select');
+  const templateName = (tplSel?.value && tplSel.selectedOptions?.[0])
+    ? tplSel.selectedOptions[0].textContent
+    : 'بدون قالب';
+
   _commQueue = [..._commSelected]
     .map(id => _progSubs.find(s => s.id === id))
     .filter(Boolean)
-    .map(sub => ({ sub, msg: buildCommMsg(templateBody, sub) }));
+    .map(sub => ({ sub, msg: buildCommMsg(templateBody, sub), templateName }));
 
   _commQueueIdx = 0;
   _commPaused   = false;
@@ -1660,10 +1670,10 @@ function sendNextInQueue(delay) {
     resetCommSending();
     return;
   }
-  const { sub, msg } = _commQueue[_commQueueIdx];
-  const phone = (sub.phone || '').replace(/\D/g, '');
-  const intlPhone = phone.startsWith('0') ? '966' + phone.slice(1) : phone;
-  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  const { sub, msg, templateName } = _commQueue[_commQueueIdx];
+  window.open(buildWaUrl(sub.phone, msg), '_blank');
+
+  logCommSend({ sub, msg, templateName, sendType: 'bulk' });
 
   const nameEl  = document.getElementById('comm-current-name');
   const barEl   = document.getElementById('comm-progress-bar');
@@ -1745,6 +1755,97 @@ function renderCommTemplates() {
     : `<div class="empty" style="padding:30px"><div class="ei">📝</div><p>لا توجد قوالب بعد — أضف قالبك الأول</p></div>`}`;
 }
 
+/* ──────────────────────────────────────────
+   سجل التواصل — يجلب آخر 200 سجل للبرنامج الحالي
+────────────────────────────────────────── */
+let _commLogCache = [];
+
+async function renderCommLog() {
+  const body = document.getElementById('comm-body');
+  if (!body) return;
+
+  body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري تحميل السجل…</p></div>`;
+
+  try {
+    const qs = `programId=eq.${_currentProg?.id || 0}&order=sentAt.desc&limit=200`;
+    const rows = await fetch(`${SB_URL}/${TB.COMM_LOG}?select=*&${qs}`, { headers: _h() })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
+    _commLogCache = rows || [];
+  } catch (e) {
+    body.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذّر تحميل السجل: ${esc(e.message)}</p></div>`;
+    return;
+  }
+
+  drawCommLog();
+}
+
+function drawCommLog() {
+  const body = document.getElementById('comm-body');
+  if (!body) return;
+
+  body.innerHTML = `
+    <div class="filter-bar" style="margin-bottom:14px">
+      <input type="text" id="cl-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="drawCommLogTable()">
+      <select id="cl-type-filter" onchange="drawCommLogTable()">
+        <option value="">كل الأنواع</option>
+        <option value="single">فردي</option>
+        <option value="bulk">جماعي</option>
+      </select>
+      <button class="btn btn-refresh" onclick="renderCommLog()">🔄 تحديث</button>
+    </div>
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th><th>الطالب</th><th>الجوال</th><th>القالب</th><th>النوع</th>
+            </tr>
+          </thead>
+          <tbody id="cl-tbody"></tbody>
+        </table>
+      </div>
+      <div class="tbl-footer"><span id="cl-count">—</span></div>
+    </div>`;
+
+  drawCommLogTable();
+}
+
+function drawCommLogTable() {
+  const q     = (document.getElementById('cl-search')?.value || '').toLowerCase();
+  const tFilt = document.getElementById('cl-type-filter')?.value || '';
+  const tbody = document.getElementById('cl-tbody');
+  const cntEl = document.getElementById('cl-count');
+  if (!tbody) return;
+
+  let rows = [..._commLogCache];
+  if (tFilt) rows = rows.filter(r => r.sendType === tFilt);
+  if (q)     rows = rows.filter(r =>
+    (r.studentName || '').toLowerCase().includes(q) ||
+    (r.phone || '').includes(q)
+  );
+
+  if (cntEl) cntEl.textContent = `${rows.length} سجل`;
+
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="ei">📜</div><p>لا توجد سجلات</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const dt = r.sentAt
+      ? new Date(r.sentAt).toLocaleString('ar-SA', { year:'numeric', month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+      : '—';
+    const typeLabel = r.sendType === 'bulk' ? '📋 جماعي' : '📱 فردي';
+    return `<tr>
+      <td>${esc(dt)}</td>
+      <td>${esc(r.studentName || '—')}</td>
+      <td dir="ltr">${esc(r.phone || '—')}</td>
+      <td>${esc(r.templateName || '—')}</td>
+      <td>${typeLabel}</td>
+    </tr>`;
+  }).join('');
+}
+
 function useTplInSend(val) {
   _commTab = 'send';
   renderComm();
@@ -1809,13 +1910,62 @@ function onWaTypeChange() {
   if (tpl) document.getElementById('wa-msg').value = buildCommMsg(tpl.body, s);
 }
 
+/* ──────────────────────────────────────────
+   WhatsApp URL builder — UTF-8 + NFC
+   - NFC يدمج surrogate pairs المنفصلة (يحلّ ظهور �
+     عند بعض الإيموجي).
+   - encodeURIComponent يُنتج UTF-8 percent-encoded.
+   - URL طويل (>1500) قد يُقطع من المتصفح ويُفسد
+     آخر إيموجي — نحذّر المستخدم بدلاً من إرساله مكسوراً.
+────────────────────────────────────────── */
+function buildWaUrl(phone, msg) {
+  const digits   = (phone || '').replace(/\D/g, '');
+  const intlPhone = digits.startsWith('0') ? '966' + digits.slice(1) : digits;
+  const text     = (msg || '').normalize('NFC');
+  const url      = `https://wa.me/${intlPhone}?text=${encodeURIComponent(text)}`;
+  if (url.length > 1500) toast('الرسالة طويلة، قد تُقطع عند الفتح', 'warning');
+  return url;
+}
+
 function sendWhatsApp() {
   const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
-  const phone = (s.phone || '').replace(/\D/g, '');
-  const intlPhone = phone.startsWith('0') ? '966' + phone.slice(1) : phone;
   const msg = document.getElementById('wa-msg').value;
-  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(buildWaUrl(s.phone, msg), '_blank');
+
+  // التقاط اسم القالب من الـ select قبل الإغلاق
+  const sel = document.getElementById('wa-type');
+  const tplName = sel?.value !== '' && sel?.selectedOptions?.[0]
+    ? sel.selectedOptions[0].textContent
+    : 'بدون قالب';
+
+  logCommSend({
+    sub: s,
+    msg,
+    templateName: tplName,
+    sendType: 'single'
+  });
+
   closeM('m-whatsapp');
+}
+
+/* ──────────────────────────────────────────
+   تسجيل رسالة في comm_log — لا يُكسر التدفق إذا فشل
+────────────────────────────────────────── */
+async function logCommSend({ sub, msg, templateName, sendType }) {
+  try {
+    await sbInsert(TB.COMM_LOG, {
+      programId    : _currentProg?.id || null,
+      studentId    : sub.studentId || sub.id || null,
+      studentName  : sub.studentName || '',
+      phone        : sub.phone || '',
+      templateName : templateName || 'بدون قالب',
+      messageText  : msg || '',
+      sendType     : sendType || 'single',
+      sentBy       : 'admin'
+    });
+  } catch(e) {
+    console.warn('فشل حفظ سجل التواصل:', e.message);
+  }
 }
 
 /* ══════════════════════════════════════════
