@@ -1676,7 +1676,7 @@ function sendNextInQueue(delay) {
     return;
   }
   const { sub, msg, templateName } = _commQueue[_commQueueIdx];
-  window.open(buildWaUrl(sub.phone, msg), '_blank');
+  openWaLink(sub.phone, msg);
 
   logCommSend({ sub, msg, templateName, sendType: 'bulk' });
 
@@ -1931,26 +1931,41 @@ function onWaTypeChange() {
 }
 
 /* ──────────────────────────────────────────
-   WhatsApp URL builder — UTF-8 + NFC
-   - NFC يدمج surrogate pairs المنفصلة (يحلّ ظهور �
-     عند بعض الإيموجي).
-   - encodeURIComponent يُنتج UTF-8 percent-encoded.
-   - URL طويل (>1500) قد يُقطع من المتصفح ويُفسد
-     آخر إيموجي — نحذّر المستخدم بدلاً من إرساله مكسوراً.
+   فتح رابط واتساب — UTF-8 + NFC + clipboard fallback للرسائل الطويلة
+
+   لماذا clipboard fallback:
+   - الترميز نفسه سليم (encodeURIComponent + NFC). تم التحقق بتشخيص.
+   - لكن WhatsApp يقطع text param عند ~1024 byte في بعض الإصدارات.
+   - الإيموجي يحتل 4 bytes في UTF-8 (مثل %F0%9F%8C%BF لـ 🌿).
+   - القطع داخل sequence رباعي ينتج بايت UTF-8 غير صالح →
+     يُعرض كحرف الاستبدال � (U+FFFD).
+   - الحل: لو الـ URL طويل، نفتح المحادثة فقط ونُلصق النص يدوياً.
 ────────────────────────────────────────── */
-function buildWaUrl(phone, msg) {
+function openWaLink(phone, msg) {
   const digits   = (phone || '').replace(/\D/g, '');
   const intlPhone = digits.startsWith('0') ? '966' + digits.slice(1) : digits;
   const text     = (msg || '').normalize('NFC');
   const url      = `https://wa.me/${intlPhone}?text=${encodeURIComponent(text)}`;
-  if (url.length > 1500) toast('الرسالة طويلة، قد تُقطع عند الفتح', 'warning');
-  return url;
+
+  if (url.length > 1000) {
+    // افتح المحادثة فوراً (user gesture يتجنب popup blocker)
+    window.open(`https://wa.me/${intlPhone}`, '_blank');
+    // ثم انسخ النص للحافظة
+    navigator.clipboard.writeText(text).then(() => {
+      toast('📋 الرسالة طويلة — نُسخت للحافظة. الصقها (Ctrl+V) في WhatsApp', 'info');
+    }).catch(() => {
+      toast('⚠️ الرسالة طويلة. تعذّر النسخ — انسخها من القالب يدوياً', 'warning');
+    });
+    return;
+  }
+
+  window.open(url, '_blank');
 }
 
 function sendWhatsApp() {
   const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
   const msg = document.getElementById('wa-msg').value;
-  window.open(buildWaUrl(s.phone, msg), '_blank');
+  openWaLink(s.phone, msg);
 
   // التقاط اسم القالب من الـ select قبل الإغلاق
   const sel = document.getElementById('wa-type');
