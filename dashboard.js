@@ -1661,9 +1661,7 @@ function sendNextInQueue(delay) {
     return;
   }
   const { sub, msg } = _commQueue[_commQueueIdx];
-  const phone = (sub.phone || '').replace(/\D/g, '');
-  const intlPhone = phone.startsWith('0') ? '966' + phone.slice(1) : phone;
-  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(buildWaUrl(sub.phone, msg), '_blank');
 
   const nameEl  = document.getElementById('comm-current-name');
   const barEl   = document.getElementById('comm-progress-bar');
@@ -1809,12 +1807,27 @@ function onWaTypeChange() {
   if (tpl) document.getElementById('wa-msg').value = buildCommMsg(tpl.body, s);
 }
 
+/* ──────────────────────────────────────────
+   WhatsApp URL builder — UTF-8 + NFC
+   - NFC يدمج surrogate pairs المنفصلة (يحلّ ظهور �
+     عند بعض الإيموجي).
+   - encodeURIComponent يُنتج UTF-8 percent-encoded.
+   - URL طويل (>1500) قد يُقطع من المتصفح ويُفسد
+     آخر إيموجي — نحذّر المستخدم بدلاً من إرساله مكسوراً.
+────────────────────────────────────────── */
+function buildWaUrl(phone, msg) {
+  const digits   = (phone || '').replace(/\D/g, '');
+  const intlPhone = digits.startsWith('0') ? '966' + digits.slice(1) : digits;
+  const text     = (msg || '').normalize('NFC');
+  const url      = `https://wa.me/${intlPhone}?text=${encodeURIComponent(text)}`;
+  if (url.length > 1500) toast('الرسالة طويلة، قد تُقطع عند الفتح', 'warning');
+  return url;
+}
+
 function sendWhatsApp() {
   const s = _progSubs.find(x => x.id === _waSubId); if (!s) return;
-  const phone = (s.phone || '').replace(/\D/g, '');
-  const intlPhone = phone.startsWith('0') ? '966' + phone.slice(1) : phone;
   const msg = document.getElementById('wa-msg').value;
-  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+  window.open(buildWaUrl(s.phone, msg), '_blank');
   closeM('m-whatsapp');
 }
 
