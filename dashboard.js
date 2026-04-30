@@ -1578,13 +1578,18 @@ function onCommTplChange() {
   updateCommPreview();
 }
 
-function insertCommVar(v) {
-  const ta = document.getElementById('comm-msg');
+/* إدراج نص عند موضع المؤشر داخل أي textarea — قابل لإعادة الاستخدام */
+function insertVarAt(textareaId, value) {
+  const ta = document.getElementById(textareaId);
   if (!ta) return;
   const s = ta.selectionStart, e = ta.selectionEnd;
-  ta.value = ta.value.slice(0, s) + v + ta.value.slice(e);
-  ta.selectionStart = ta.selectionEnd = s + v.length;
+  ta.value = ta.value.slice(0, s) + value + ta.value.slice(e);
+  ta.selectionStart = ta.selectionEnd = s + value.length;
   ta.focus();
+}
+
+function insertCommVar(v) {
+  insertVarAt('comm-msg', v);
   updateCommCounter();
   updateCommPreview();
 }
@@ -1739,7 +1744,7 @@ function renderCommTemplates() {
   body.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:center;margin:0 0 12px">
       <div style="font-weight:700;font-size:.95rem">قوالبي ${saved.length ? `<span class="comm-count-badge">${saved.length}</span>` : ''}</div>
-      <button class="btn btn-primary" onclick="openM('m-add-template')">➕ قالب جديد</button>
+      <button class="btn btn-primary" onclick="openAddTemplate()">➕ قالب جديد</button>
     </div>
     ${saved.length ? saved.map((t, i) => `
       <div class="tpl-card">
@@ -1852,6 +1857,21 @@ function useTplInSend(val) {
   // تعيين القالب وتحديث النص
   const sel = document.getElementById('comm-tpl-select');
   if (sel) { sel.value = val; onCommTplChange(); }
+}
+
+function openAddTemplate() {
+  // تعبئة لوحة المتغيرات بأزرار قابلة للضغط
+  const panel = document.getElementById('tpl-vars-panel');
+  if (panel) {
+    panel.innerHTML = `<span class="vars-label">إدراج متغير:</span>` +
+      COMM_VARS.map(v =>
+        `<button type="button" class="comm-var-btn" onclick="insertVarAt('tpl-body','${v}')">${v}</button>`
+      ).join('');
+  }
+  // مسح حقول المودال
+  const nameEl = document.getElementById('tpl-name'); if (nameEl) nameEl.value = '';
+  const bodyEl = document.getElementById('tpl-body'); if (bodyEl) bodyEl.value = '';
+  openM('m-add-template');
 }
 
 function saveCommTemplate() {
