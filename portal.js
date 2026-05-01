@@ -1180,10 +1180,6 @@ function filterAttLog() {
   renderAttLog(q ? _attLogData.filter(r=>(r.studentName||'').toLowerCase().includes(q)) : _attLogData);
 }
 
-function fmtDateShort(dateStr) {
-  if (!dateStr) return '';
-  return new Date(dateStr+'T00:00:00').toLocaleDateString('ar-SA',{day:'numeric',month:'short'});
-}
 function dayName(dateStr) {
   const names = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
   return names[new Date(dateStr+'T00:00:00').getDay()] || '';
@@ -3046,18 +3042,8 @@ async function loadAdmLog() {
 ══════════════════════════════════════════ */
 function todayDate() { return new Date().toISOString().split('T')[0]; }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function fmtDate(d) {
-  if (!d) return '';
-  try { const dt = new Date(d.includes('T') ? d : d + 'T00:00:00'); if (isNaN(dt)) return d; return dt.toLocaleDateString('ar-SA', { year:'numeric', month:'short', day:'numeric' }); } catch { return d; }
-}
-function fmtDatetime(d) {
-  if (!d) return '';
-  try { const dt = new Date(d); if (isNaN(dt)) return ''; return dt.toLocaleString('ar-SA', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' }); } catch { return ''; }
-}
-function fmtDateShort(d) {
-  if (!d) return '';
-  try { const dt = new Date(d + 'T00:00:00'); if (isNaN(dt)) return d; return dt.toLocaleDateString('ar-SA', { day:'numeric', month:'short' }); } catch { return d; }
-}
+// ملاحظة: fmtDate/fmtDatetime/fmtDateShort الميلادية حُذفت — استُبدلت
+// كلياً بـ fmtHijri/fmtHijriDatetime/fmtHijriShort في المرحلة ٢ (ADR-005).
 
 /* ══════════════════════════════════════════
    تحويل التواريخ هجري ↔ ميلادي  (ADR-005)
