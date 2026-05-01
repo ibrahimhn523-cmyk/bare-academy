@@ -316,7 +316,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F6 | سجل التواصل: جدول `comm_log` جديد + تبويب 📜 السجل + التقاط اسم القالب لكل إرسال (فردي/جماعي) | ✅ | 2026-04-30 | `67a42c6` |
 | F7 | متغيرات القالب كأزرار قابلة للضغط في مودال "قالب جديد" + helper عام `insertVarAt` + إصلاح ضمني لمتغيرَي التاريخ الهجري المفقودَين | ✅ | 2026-04-30 | `f13e58d` |
 | F8 | إصلاح حقيقي لمشكلة الإيموجي: WhatsApp يقطع `text` عند ~1024 byte → � عند الإيموجي. الحل: clipboard fallback للرسائل الطويلة عبر `openWaLink()` | ✅ | 2026-04-30 | `ab839c2` |
-| F9 | **التواريخ هجرية — المرحلة ١ (دوال فقط):** `toHijri`, `toGregorian`, `fmtHijri`, `parseHijriInput`, `dateInputToHijri` في dashboard.js + portal.js. اختبار 100/100 round-trip. ADR-005 موثّق | ✅ | 2026-05-01 | (TBD) |
+| F9 | **التواريخ هجرية — المرحلة ١ (دوال فقط):** `toHijri`, `toGregorian`, `fmtHijri`, `parseHijriInput`, `dateInputToHijri` في dashboard.js + portal.js. اختبار 100/100 round-trip. ADR-005 موثّق | ✅ | 2026-05-01 | `b8ce79c` |
 
 ### مشروع التواريخ الهجرية (ADR-005) — مراحل قادمة
 
