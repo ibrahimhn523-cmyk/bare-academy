@@ -323,7 +323,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | # | المرحلة | الحالة |
 |---|---|---|
 | F10 | **المرحلة ٢ — العرض هجري:** دالتان جديدتان (`fmtHijriShort`, `fmtHijriDatetime`) + استبدال 19 موضع عرض في dashboard.js و portal.js | ✅ | 2026-05-01 | `c4f9084` |
-| F11 | المرحلة ٣ — استبدال 13 `<input type="date">` بتقويم منبثق هجري + تحديث ~25 موضع `.value` | ⏳ |
+| F11 | **المرحلة ٣ — الإدخال هجري:** ٣ sub-phases — (3a) منتقي popup + helpers `read/writeDateInput`، (3b) ١٠ inputs في dashboard + ٣٢ موضع `.value`، (3c) ٣ inputs في portal + ٨ مواضع `.value` | ✅ | 2026-05-01 | `f840d08, b33c7d4, 1761459` |
 | F12 | المرحلة ٤ — قوالب واتساب (هجري فقط) + لمسات أخيرة | ⏳ |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
