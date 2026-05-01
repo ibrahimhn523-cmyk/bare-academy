@@ -432,7 +432,7 @@ async function loadHome() {
         <div class="card" style="padding:14px 16px">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <span class="pts-badge">+${p.amount} نقطة</span>
-            <span style="font-size:.75rem;color:var(--muted)">${fmtDatetime(p.addedAt)}</span>
+            <span style="font-size:.75rem;color:var(--muted)">${fmtHijriDatetime(p.addedAt)}</span>
           </div>
         </div>`).join('');
     } else {
@@ -593,7 +593,7 @@ async function saveQuickAtt() {
     }
     _aqDirty = false;
     if (btn) { btn.textContent = '✅ تم الحفظ'; btn.disabled = false; setTimeout(() => { btn.textContent = '💾 حفظ الجلسة'; btn.style.display='none'; }, 2000); }
-    toast(`تم حفظ تحضير ${fmtDate(date)} ✅`);
+    toast(`تم حفظ تحضير ${fmtHijri(date)} ✅`);
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = '💾 حفظ الجلسة'; }
     toast('خطأ: ' + e.message, 'error');
@@ -624,7 +624,7 @@ function renderAttPrograms() {
       <div class="att-drill-info">
         <div class="att-drill-name">${esc(p.name)}</div>
         <div class="att-drill-meta">${grpCount} ${grpCount === 1 ? 'مجموعة' : 'مجموعات'}
-          ${hasSchedule ? `· ${p.numWeeks} أسبوع · منذ ${fmtDateShort(p.startDate)}` : ''}
+          ${hasSchedule ? `· ${p.numWeeks} أسبوع · منذ ${fmtHijriShort(p.startDate)}` : ''}
         </div>
         <div class="att-prog-days">${dayTags}</div>
       </div>
@@ -821,7 +821,7 @@ async function loadAttMatrix() {
       const dayLabels = (_attSelProg.days || []).map(d =>
         `<span class="att-sched-day">${d}</span>`).join('');
       bar.innerHTML = `📅 أيام البرنامج: ${dayLabels}
-        <span class="att-sched-meta">· ${autoDate.length} يوم منذ ${fmtDateShort(_attSelProg.startDate)}</span>`;
+        <span class="att-sched-meta">· ${autoDate.length} يوم منذ ${fmtHijriShort(_attSelProg.startDate)}</span>`;
       bar.style.display = '';
     }
 
@@ -871,8 +871,8 @@ function groupDatesIntoWeeks(dates) {
     map[key].dates.push(date);
     const ds = map[key].dates;
     map[key].title = ds.length > 1
-      ? `${fmtDateShort(ds[0])} – ${fmtDateShort(ds[ds.length-1])}`
-      : fmtDateShort(ds[0]);
+      ? `${fmtHijriShort(ds[0])} – ${fmtHijriShort(ds[ds.length-1])}`
+      : fmtHijriShort(ds[0]);
   });
   return Object.values(map).sort((a,b) => a.key.localeCompare(b.key));
 }
@@ -913,7 +913,7 @@ function renderAttMatrix() {
         const dirty = _attDirtyDates.has(d);
         hdrRow2 += `<th class="att-day-hdr${dirty?' att-day-dirty':''}">
           <div class="att-day-hdr-name">${dayName(d)}</div>
-          <div class="att-day-hdr-date">${fmtDateShort(d)}</div>
+          <div class="att-day-hdr-date">${fmtHijriShort(d)}</div>
         </th>`;
       });
     } else {
@@ -975,7 +975,7 @@ function openAttPicker(studentId, date) {
   /* رأس النافذة: اسم الطالب (مستوى 1) + اليوم · الأسبوع (مستوى 2) */
   document.getElementById('att-picker-title').textContent = s?.studentName || '';
   const subEl = document.getElementById('att-picker-sub');
-  if (subEl) subEl.textContent = `${day}  ·  ${wk?.title || fmtDate(date)}`;
+  if (subEl) subEl.textContent = `${day}  ·  ${wk?.title || fmtHijri(date)}`;
 
   const current = _attMatrix[`${studentId}-${date}`] || null;
 
@@ -1165,11 +1165,11 @@ function renderAttLog(rows) {
         <div class="att-log-icon-wrap"><span class="att-log-icon">◷</span></div>
         <div>
           <h4 class="att-log-name">${esc(r.studentName||'')}</h4>
-          <p class="att-log-sub">${fmtDate(r.date)} · بواسطة ${esc(r.recordedBy||'')}</p>
+          <p class="att-log-sub">${fmtHijri(r.date)} · بواسطة ${esc(r.recordedBy||'')}</p>
         </div>
       </div>
       <div class="att-log-right">
-        <span class="att-log-time">${fmtDatetime(r.recordedAt)}</span>
+        <span class="att-log-time">${fmtHijriDatetime(r.recordedAt)}</span>
         <span class="att-log-badge" style="background:${newColor}22;color:${newColor}">${esc(r.newStatus||'')}</span>
       </div>
     </div>`;
@@ -1599,7 +1599,7 @@ async function openPtsHistory(studentId, studentName) {
                 <td><span class="pts-badge ${p.amount < 0 ? 'pts-deduct' : ''}">${p.amount >= 0 ? '+' : ''}${p.amount}</span></td>
                 <td><span class="badge ${srcBadgeClass(p.source)}">${srcLabel(p.source)}</span></td>
                 <td style="font-size:.78rem;color:var(--muted)">${esc(p.addedBy||'')}</td>
-                <td style="font-size:.78rem;color:var(--muted)">${fmtDatetime(p.addedAt)}</td>
+                <td style="font-size:.78rem;color:var(--muted)">${fmtHijriDatetime(p.addedAt)}</td>
                 ${actions}
               </tr>`;
             }).join('')}
@@ -3117,6 +3117,36 @@ function fmtHijri(greg) {
       year: 'numeric', month: 'long', day: 'numeric',
       calendar: 'islamic-umalqura', timeZone: 'UTC'
     });
+  } catch { return ''; }
+}
+
+/** عرض هجري مختصر: "12 شوال" — بدون سنة */
+function fmtHijriShort(greg) {
+  if (!greg) return '';
+  try {
+    const s = String(greg).slice(0, 10);
+    const dt = new Date(s + 'T12:00:00Z');
+    if (isNaN(dt)) return '';
+    return dt.toLocaleDateString('ar-SA', {
+      day: 'numeric', month: 'long',
+      calendar: 'islamic-umalqura', timeZone: 'UTC'
+    });
+  } catch { return ''; }
+}
+
+/** عرض هجري + وقت */
+function fmtHijriDatetime(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return '';
+    const datePart = dt.toLocaleDateString('ar-SA', {
+      day: 'numeric', month: 'long', calendar: 'islamic-umalqura'
+    });
+    const timePart = dt.toLocaleTimeString('ar-SA', {
+      hour: '2-digit', minute: '2-digit'
+    });
+    return `${datePart} · ${timePart}`;
   } catch { return ''; }
 }
 
