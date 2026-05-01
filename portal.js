@@ -470,7 +470,7 @@ function onAqProgChange() {
 async function loadQuickAtt() {
   const progId = parseInt(document.getElementById('aq-prog-sel').value) || 0;
   const group  = document.getElementById('aq-group-sel').value;
-  const date   = document.getElementById('aq-date').value;
+  const date   = readDateInput('aq-date');
   if (!progId || !group || !date) return;
 
   _aqSelGroup = group;
@@ -570,7 +570,7 @@ function setAqStatus(studentId, status) {
 
 async function saveQuickAtt() {
   const progId = parseInt(document.getElementById('aq-prog-sel').value) || 0;
-  const date   = document.getElementById('aq-date').value;
+  const date   = readDateInput('aq-date');
   if (!progId || !_aqSelGroup || !date) { toast('بيانات غير مكتملة','error'); return; }
 
   const btn = document.getElementById('aq-save-btn');
@@ -680,7 +680,7 @@ function openAttSettings(progId, e) {
 
   document.getElementById('att-set-prog-id').value  = p.id;
   document.getElementById('att-set-prog-name').textContent = p.name;
-  document.getElementById('att-set-start').value    = p.startDate || '';
+  writeDateInput('att-set-start', p.startDate || '');
   document.getElementById('att-set-weeks').value    = p.numWeeks  || 12;
 
   // تمييز الأيام المحددة
@@ -703,7 +703,7 @@ function toggleAttDay(chip) {
 }
 
 function updateAttSettingsPreview() {
-  const start    = document.getElementById('att-set-start').value;
+  const start    = readDateInput('att-set-start');
   const weeks    = parseInt(document.getElementById('att-set-weeks').value) || 0;
   const selDays  = [...document.querySelectorAll('#att-set-days .day-chip.on')].map(c => c.dataset.day);
   const prev     = document.getElementById('att-set-preview');
@@ -714,7 +714,7 @@ function updateAttSettingsPreview() {
 
 async function saveAttSettings() {
   const progId   = parseInt(document.getElementById('att-set-prog-id').value);
-  const start    = document.getElementById('att-set-start').value;
+  const start    = readDateInput('att-set-start');
   const weeks    = parseInt(document.getElementById('att-set-weeks').value) || 12;
   const selDays  = [...document.querySelectorAll('#att-set-days .day-chip.on')].map(c => c.dataset.day);
 
@@ -2068,7 +2068,7 @@ async function addMatch() {
   document.getElementById('match-t1-score').value = 0;
   document.getElementById('match-t2-score').value = 0;
   document.getElementById('match-round').value = '';
-  document.getElementById('match-date').value = todayDate();
+  writeDateInput('match-date', todayDate());
   openM('m-match');
 }
 
@@ -2083,7 +2083,7 @@ function openMatch(matchId) {
   document.getElementById('match-t1-score').value = m.team1Score || 0;
   document.getElementById('match-t2-score').value = m.team2Score || 0;
   document.getElementById('match-round').value  = m.round || '';
-  document.getElementById('match-date').value   = m.matchDate || todayDate();
+  writeDateInput('match-date', m.matchDate || todayDate());
   // populate team selector
   const teamSel = document.getElementById('event-team-sel');
   if (teamSel) {
@@ -2125,7 +2125,7 @@ async function saveMatch() {
   const s1 = parseInt(document.getElementById('match-t1-score').value) || 0;
   const s2 = parseInt(document.getElementById('match-t2-score').value) || 0;
   const round = document.getElementById('match-round').value.trim();
-  const date  = document.getElementById('match-date').value;
+  const date  = readDateInput('match-date');
   const scorersJson = JSON.stringify(_matchEvents);
 
   try {
@@ -3403,4 +3403,7 @@ document.addEventListener('click', e => {
 });
 
 /* ── Start ── */
-document.addEventListener('DOMContentLoaded', checkAuth);
+document.addEventListener('DOMContentLoaded', () => {
+  initHijriInputs();
+  checkAuth();
+});

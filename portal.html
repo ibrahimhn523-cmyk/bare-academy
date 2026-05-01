@@ -138,7 +138,7 @@
           <select id="aq-group-sel" onchange="loadQuickAtt()" class="aq-select" disabled>
             <option value="">👥 اختر المجموعة</option>
           </select>
-          <input type="date" id="aq-date" class="aq-select" onchange="loadQuickAtt()">
+          <input type="text" id="aq-date" class="aq-select hijri-input" onchange="loadQuickAtt()">
         </div>
         <!-- شريط الملخص اللحظي -->
         <div class="aq-summary" id="aq-summary" style="display:none">
@@ -658,7 +658,7 @@
       </div>
       <div class="form-group">
         <label>التاريخ</label>
-        <input type="date" id="match-date">
+        <input type="text" class="hijri-input" id="match-date">
       </div>
       <!-- أحداث المباراة -->
       <div style="background:var(--bg);border-radius:10px;padding:12px;margin-top:8px">
@@ -876,7 +876,7 @@
       <!-- تاريخ البداية -->
       <div>
         <label class="form-label">📅 تاريخ بداية البرنامج</label>
-        <input type="date" id="att-set-start" class="form-control"
+        <input type="text" id="att-set-start" class="form-control hijri-input"
           oninput="updateAttSettingsPreview()" style="margin-top:6px;width:100%">
       </div>
 
