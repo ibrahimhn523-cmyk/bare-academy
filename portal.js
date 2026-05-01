@@ -3059,6 +3059,83 @@ function fmtDateShort(d) {
   try { const dt = new Date(d + 'T00:00:00'); if (isNaN(dt)) return d; return dt.toLocaleDateString('ar-SA', { day:'numeric', month:'short' }); } catch { return d; }
 }
 
+/* ══════════════════════════════════════════
+   تحويل التواريخ هجري ↔ ميلادي  (ADR-005)
+   - DB ميلادي YYYY-MM-DD، الواجهة هجري YYYY/MM/DD.
+   - دوال متطابقة مع dashboard.js — تحديثات لازم تتم بالتوازي.
+══════════════════════════════════════════ */
+
+/** ميلادي "YYYY-MM-DD" → هجري "YYYY/MM/DD" */
+function toHijri(greg) {
+  if (!greg) return '';
+  try {
+    const s = String(greg).slice(0, 10);
+    const dt = new Date(s + 'T12:00:00Z');
+    if (isNaN(dt)) return '';
+    const fmt = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura-nu-latn', {
+      year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC'
+    });
+    const parts = fmt.formatToParts(dt);
+    const y = parts.find(p => p.type === 'year')?.value || '';
+    const m = parts.find(p => p.type === 'month')?.value || '';
+    const d = parts.find(p => p.type === 'day')?.value || '';
+    return y && m && d ? `${y}/${m}/${d}` : '';
+  } catch { return ''; }
+}
+
+/** هجري "YYYY/MM/DD" → ميلادي "YYYY-MM-DD" — بحث على Intl */
+function toGregorian(hijri) {
+  const parsed = parseHijriInput(hijri);
+  if (!parsed) return '';
+  const target = `${String(parsed.y).padStart(4,'0')}/${String(parsed.m).padStart(2,'0')}/${String(parsed.d).padStart(2,'0')}`;
+  const epoch = Date.UTC(622, 6, 16);
+  const estDays = (parsed.y - 1) * 354.367 + (parsed.m - 1) * 29.53 + (parsed.d - 1);
+  let dt = new Date(epoch + estDays * 86400000);
+  for (let i = 0; i < 30; i++) {
+    const iso = dt.toISOString().slice(0, 10);
+    const back = toHijri(iso);
+    if (back === target) return iso;
+    const bm = parseHijriInput(back);
+    if (!bm) return iso;
+    // ترتيب أحادي صحيح يحفظ تسلسل الأيام عبر حدود السنة
+    const diff = ((parsed.y * 12 + parsed.m) * 32 + parsed.d) - ((bm.y * 12 + bm.m) * 32 + bm.d);
+    if (diff === 0) return iso;
+    const jump = i < 3 ? Math.max(1, Math.floor(Math.abs(diff) / 31)) : 1;
+    dt = new Date(dt.getTime() + Math.sign(diff) * jump * 86400000);
+  }
+  return dt.toISOString().slice(0, 10);
+}
+
+/** عرض هجري طويل: "12 شوال 1447 هـ" */
+function fmtHijri(greg) {
+  if (!greg) return '';
+  try {
+    const s = String(greg).slice(0, 10);
+    const dt = new Date(s + 'T12:00:00Z');
+    if (isNaN(dt)) return '';
+    return dt.toLocaleDateString('ar-SA', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      calendar: 'islamic-umalqura', timeZone: 'UTC'
+    });
+  } catch { return ''; }
+}
+
+/** فحص صحة إدخال هجري */
+function parseHijriInput(text) {
+  if (!text) return null;
+  const m = String(text).trim().match(/^(\d{4})[/-](\d{1,2})[/-](\d{1,2})$/);
+  if (!m) return null;
+  const y  = parseInt(m[1], 10);
+  const mo = parseInt(m[2], 10);
+  const d  = parseInt(m[3], 10);
+  if (mo < 1 || mo > 12) return null;
+  if (d  < 1 || d  > 30) return null;
+  if (y  < 1300 || y > 1600) return null;
+  return { y, m: mo, d };
+}
+
+function dateInputToHijri(greg) { return toHijri(greg); }
+
 let _toastTimer;
 function toast(msg, type = 'success') {
   const el = document.getElementById('toast');
