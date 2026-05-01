@@ -331,7 +331,7 @@ function renderStudents() {
       <td>${s.category || '—'}</td>
       <td>${s.source}</td>
       <td style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${progs}">${progs}</td>
-      <td>${fmtDate(s.firstContactDate) || '—'}</td>
+      <td>${fmtHijri(s.firstContactDate) || '—'}</td>
       <td>
         <div class="actions">
           <button class="abt abt-view"    title="بطاقة الطالب"  onclick="openStudentCard(${s.id})">👁️</button>
@@ -429,8 +429,8 @@ function openStudentCard(id) {
       </div>
       <div class="sub-entry-meta">
         <span>النوع: ${fmtSubType(sub.subType)}</span>
-        <span>البداية: ${fmtDate(sub.startDate)}</span>
-        <span>النهاية: ${fmtDate(sub.endDate)}</span>
+        <span>البداية: ${fmtHijri(sub.startDate)}</span>
+        <span>النهاية: ${fmtHijri(sub.endDate)}</span>
         <span>المدفوع: ${paid.toLocaleString()} ر.س | المتبقي: <strong style="color:${rem > 0 ? 'var(--danger)' : 'var(--success)'}">${rem.toLocaleString()} ر.س</strong></span>
       </div>
     </div>`;
@@ -444,7 +444,7 @@ function openStudentCard(id) {
       ${s.phone2 ? `<div class="sc-item"><b>جوال 2:</b> <span dir="ltr">${s.phone2}</span></div>` : ''}
       <div class="sc-item"><b>المرحلة:</b> ${s.category || '—'}</div>
       <div class="sc-item"><b>المصدر:</b> ${s.source}</div>
-      <div class="sc-item"><b>أول تواصل:</b> ${fmtDate(s.firstContactDate) || '—'}</div>
+      <div class="sc-item"><b>أول تواصل:</b> ${fmtHijri(s.firstContactDate) || '—'}</div>
       ${s.notes ? `<div class="sc-item" style="grid-column:1/-1"><b>ملاحظات:</b> ${esc(s.notes)}</div>` : ''}
     </div>
     <h4 style="color:var(--primary);margin-bottom:10px;font-size:.9rem">الاشتراكات (${subs.length})</h4>
@@ -526,7 +526,7 @@ function renderProgTable(d) {
       </td>
       <td>
         <span style="font-size:.76rem;color:var(--muted);line-height:1.6">
-          📅 ${fmtDate(p.startDate)} — ${fmtDate(p.endDate)}<br>
+          📅 ${fmtHijri(p.startDate)} — ${fmtHijri(p.endDate)}<br>
           🗓️ ${daysStr}
         </span>
       </td>
@@ -625,7 +625,7 @@ function openExtend(id) {
   const p = _progs.find(x => x.id === id); if (!p) return;
   document.getElementById('ext-id').value  = p.id;
   document.getElementById('ext-name').value = p.name;
-  document.getElementById('ext-cur').value  = fmtDate(p.endDate);
+  document.getElementById('ext-cur').value  = fmtHijri(p.endDate);
   document.getElementById('ext-days').value = '';
   document.getElementById('ext-new').value  = p.endDate;
   openM('m-extend');
@@ -648,7 +648,7 @@ async function saveExtend() {
   const i = _progs.findIndex(p => p.id === pid); if (i === -1) return;
   _progs[i].endDate = newEnd;
   await sbUpdate(TB.PROGRAMS, pid, { endDate: newEnd }).catch(console.error);
-  addLog('extend_program', `مدّد البرنامج: ${_progs[i].name} حتى ${fmtDate(newEnd)}`);
+  addLog('extend_program', `مدّد البرنامج: ${_progs[i].name} حتى ${fmtHijri(newEnd)}`);
   toast('تم تمديد البرنامج ✅'); closeM('m-extend'); renderProgs();
 }
 
@@ -724,8 +724,8 @@ function renderSubscribers() {
       </td>
       <td>${s.groupName || '—'}</td>
       <td>${fmtSubType(s.subType)}</td>
-      <td>${fmtDate(s.startDate)}</td>
-      <td>${fmtDate(s.endDate)} ${statusBadge}</td>
+      <td>${fmtHijri(s.startDate)}</td>
+      <td>${fmtHijri(s.endDate)} ${statusBadge}</td>
       <td style="text-align:center">${s.sessionCount || '—'}</td>
       <td>${paid.toLocaleString()} ر.س</td>
       <td>${rem > 0 ? `<strong style="color:var(--danger)">${rem.toLocaleString()} ر.س</strong>` : '<span style="color:var(--success)">✅</span>'}</td>
@@ -1131,7 +1131,7 @@ function renderPaymentsList(subId) {
           <span class="pay-entry-meta" style="margin-right:8px">${p.method}</span>
           ${p.note ? `<span class="pay-entry-meta">— ${p.note}</span>` : ''}
         </div>
-        <div class="pay-entry-meta">${fmtDate(p.paidAt)}</div>
+        <div class="pay-entry-meta">${fmtHijri(p.paidAt)}</div>
       </div>`).join('')
     : `<div style="color:var(--muted);text-align:center;padding:12px;font-size:.85rem">لا توجد دفعات مسجلة بعد</div>`}`;
 }
@@ -2102,6 +2102,36 @@ function fmtHijri(greg) {
       year: 'numeric', month: 'long', day: 'numeric',
       calendar: 'islamic-umalqura', timeZone: 'UTC'
     });
+  } catch { return ''; }
+}
+
+/** عرض هجري مختصر: "12 شوال" — بدون سنة، للجداول الضيقة */
+function fmtHijriShort(greg) {
+  if (!greg) return '';
+  try {
+    const s = String(greg).slice(0, 10);
+    const dt = new Date(s + 'T12:00:00Z');
+    if (isNaN(dt)) return '';
+    return dt.toLocaleDateString('ar-SA', {
+      day: 'numeric', month: 'long',
+      calendar: 'islamic-umalqura', timeZone: 'UTC'
+    });
+  } catch { return ''; }
+}
+
+/** عرض هجري + وقت: "12 شوال · 4:30 م" — للسجلات والـ timestamps */
+function fmtHijriDatetime(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    if (isNaN(dt)) return '';
+    const datePart = dt.toLocaleDateString('ar-SA', {
+      day: 'numeric', month: 'long', calendar: 'islamic-umalqura'
+    });
+    const timePart = dt.toLocaleTimeString('ar-SA', {
+      hour: '2-digit', minute: '2-digit'
+    });
+    return `${datePart} · ${timePart}`;
   } catch { return ''; }
 }
 
