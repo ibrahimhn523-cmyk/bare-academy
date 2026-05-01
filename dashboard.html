@@ -343,7 +343,7 @@
             <option>مباشر</option><option>رابط منشور</option><option>إحالة</option><option>أخرى</option>
           </select>
         </div>
-        <div class="fg"><label>تاريخ أول تواصل</label><input type="date" id="st-contact-date"></div>
+        <div class="fg"><label>تاريخ أول تواصل</label><input type="text" class="hijri-input" id="st-contact-date"></div>
       </div>
       <div class="frow single">
         <div class="fg"><label>ملاحظات</label><textarea id="st-notes" placeholder="أي ملاحظات…"></textarea></div>
@@ -458,8 +458,8 @@
         </div>
       </div>
       <div class="frow">
-        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="sub-start" oninput="onSubDatesChange()"></div>
-        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="sub-end" oninput="onSubDatesChange()"></div>
+        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="text" class="hijri-input" id="sub-start" oninput="onSubDatesChange()"></div>
+        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="text" class="hijri-input" id="sub-end" oninput="onSubDatesChange()"></div>
       </div>
       <div class="frow">
         <div class="fg">
@@ -476,7 +476,7 @@
       <div class="form-divider">💰 الدفعة الأولى (اختياري)</div>
       <div class="frow">
         <div class="fg"><label>المبلغ المدفوع (ر.س)</label><input type="number" id="sub-pay-amount" placeholder="0 = لم يدفع بعد" min="0"></div>
-        <div class="fg"><label>تاريخ الدفع</label><input type="date" id="sub-pay-date"></div>
+        <div class="fg"><label>تاريخ الدفع</label><input type="text" class="hijri-input" id="sub-pay-date"></div>
       </div>
       <div class="frow">
         <div class="fg">
@@ -532,8 +532,8 @@
           </div>
         </div>
         <div class="frow">
-          <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="bulk-start" oninput="onBulkDatesChange()"></div>
-          <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="bulk-end" oninput="onBulkDatesChange()"></div>
+          <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="text" class="hijri-input" id="bulk-start" oninput="onBulkDatesChange()"></div>
+          <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="text" class="hijri-input" id="bulk-end" oninput="onBulkDatesChange()"></div>
         </div>
         <div class="frow">
           <div class="fg">
@@ -572,7 +572,7 @@
       <div class="form-divider">➕ إضافة دفعة جديدة</div>
       <div class="frow">
         <div class="fg"><label>المبلغ <span class="req">*</span></label><input type="number" id="new-pay-amount" placeholder="0" min="0"></div>
-        <div class="fg"><label>التاريخ</label><input type="date" id="new-pay-date"></div>
+        <div class="fg"><label>التاريخ</label><input type="text" class="hijri-input" id="new-pay-date"></div>
       </div>
       <div class="frow">
         <div class="fg">
@@ -606,8 +606,8 @@
         </div>
       </div>
       <div class="frow">
-        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="date" id="p-start"></div>
-        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="date" id="p-end"></div>
+        <div class="fg"><label>تاريخ البداية <span class="req">*</span></label><input type="text" class="hijri-input" id="p-start"></div>
+        <div class="fg"><label>تاريخ النهاية <span class="req">*</span></label><input type="text" class="hijri-input" id="p-end"></div>
       </div>
       <div class="frow">
         <div class="fg"><label>الرسم الكامل (ر.س)</label><input type="number" id="p-fee" value="600" min="0"></div>
@@ -679,7 +679,7 @@
         <div class="fg"><label>تاريخ النهاية الحالي</label><input id="ext-cur" class="readonly-field" readonly></div>
         <div class="fg"><label>إضافة أيام</label><input type="number" id="ext-days" min="1" placeholder="عدد الأيام" oninput="calcExtend()"></div>
       </div>
-      <div class="frow single"><div class="fg"><label>تاريخ النهاية الجديد</label><input type="date" id="ext-new"></div></div>
+      <div class="frow single"><div class="fg"><label>تاريخ النهاية الجديد</label><input type="text" class="hijri-input" id="ext-new"></div></div>
     </div>
     <div class="modal-ftr">
       <button class="btn btn-secondary" onclick="closeM('m-extend')">إلغاء</button>
