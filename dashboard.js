@@ -1376,10 +1376,11 @@ function calcEndFromSessions(startDate, sessionCount, progDays) {
 /* ══════════════════════════════════════════
    COMMUNICATION
 ══════════════════════════════════════════ */
+// ADR-005: التواريخ هجرية افتراضياً، فلا داعي لمتغيرات `_هجري` منفصلة.
+// متغيرات `_هجري` لا تزال مدعومة في buildCommMsg للتوافق العكسي.
 const COMM_VARS = [
   '{الاسم}', '{الجوال}', '{المبلغ_الكلي}', '{المدفوع}',
-  '{المتبقي}', '{بداية_الاشتراك}', '{نهاية_الاشتراك}', '{المجموعة}',
-  '{بداية_الاشتراك_هجري}', '{نهاية_الاشتراك_هجري}'
+  '{المتبقي}', '{بداية_الاشتراك}', '{نهاية_الاشتراك}', '{المجموعة}'
 ];
 
 function renderComm() {
@@ -1638,10 +1639,12 @@ function buildCommMsg(body, sub) {
     .replace(/{المبلغ_الكلي}/g,    due.toLocaleString()  + ' ريال')
     .replace(/{المدفوع}/g,         paid.toLocaleString() + ' ريال')
     .replace(/{المتبقي}/g,         rem.toLocaleString()  + ' ريال')
-    .replace(/{بداية_الاشتراك}/g,        fmtDateBoth(sub.startDate))
-    .replace(/{نهاية_الاشتراك}/g,        fmtDateBoth(sub.endDate))
-    .replace(/{بداية_الاشتراك_هجري}/g,   fmtDateHijri(sub.startDate))
-    .replace(/{نهاية_الاشتراك_هجري}/g,   fmtDateHijri(sub.endDate))
+    // ADR-005: قوالب واتساب هجرية فقط. متغيرات _هجري تبقى للتوافق العكسي
+    // مع قوالب المستخدم القديمة لكنها الآن alias للنسخة بدون لاحقة.
+    .replace(/{بداية_الاشتراك}/g,        fmtHijri(sub.startDate))
+    .replace(/{نهاية_الاشتراك}/g,        fmtHijri(sub.endDate))
+    .replace(/{بداية_الاشتراك_هجري}/g,   fmtHijri(sub.startDate))
+    .replace(/{نهاية_الاشتراك_هجري}/g,   fmtHijri(sub.endDate))
     .replace(/{المجموعة}/g,        sub.groupName || '');
 }
 
@@ -2009,31 +2012,6 @@ async function logCommSend({ sub, msg, templateName, sendType }) {
 ══════════════════════════════════════════ */
 function today()     { return new Date().toISOString(); }
 function todayDate() { return new Date().toISOString().split('T')[0]; }
-
-function fmtDate(d) {
-  if (!d) return '';
-  try {
-    const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
-    if (isNaN(dt)) return d;
-    return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
-  } catch { return d; }
-}
-
-function fmtDateHijri(d) {
-  if (!d) return '';
-  try {
-    const dt = new Date(d.includes('T') ? d : d + 'T00:00:00');
-    if (isNaN(dt)) return '';
-    return dt.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric', calendar: 'islamic-umalqura' });
-  } catch { return ''; }
-}
-
-function fmtDateBoth(d) {
-  const gr = fmtDate(d);
-  const hi = fmtDateHijri(d);
-  if (!gr) return '';
-  return hi ? `${gr} (${hi})` : gr;
-}
 
 /* ══════════════════════════════════════════
    تحويل التواريخ هجري ↔ ميلادي  (ADR-005)
