@@ -2152,6 +2152,225 @@ function parseHijriInput(text) {
 /** ميلادي "YYYY-MM-DD" → هجري لحقل input "YYYY/MM/DD" (alias دلالي) */
 function dateInputToHijri(greg) { return toHijri(greg); }
 
+/* ══════════════════════════════════════════
+   منتقي تاريخ هجري (popup picker) — ADR-005 phase 3
+   - input.value = نص هجري معروض "YYYY/MM/DD"
+   - input.dataset.greg = ميلادي مخفي للحفظ
+   - readDateInput / writeDateInput = الواجهة المستخدَمة من بقية الكود
+══════════════════════════════════════════ */
+
+const HIJRI_MONTH_NAMES = [
+  'محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر',
+  'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان',
+  'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'
+];
+const HIJRI_WEEKDAYS = ['أحد', 'إث', 'ثل', 'أرب', 'خم', 'جم', 'سب'];
+
+let _hpInput = null;
+let _hpYear  = null;
+let _hpMonth = null;
+
+/** قراءة الميلادي المخزّن في input هجري */
+function readDateInput(idOrEl) {
+  const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+  return (el && el.dataset && el.dataset.greg) || '';
+}
+
+/** كتابة ميلادي → عرض هجري + تخزين الميلادي في dataset.greg */
+function writeDateInput(idOrEl, gregYYYYMMDD) {
+  const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+  if (!el) return;
+  if (!gregYYYYMMDD) {
+    el.value = '';
+    el.dataset.greg = '';
+    return;
+  }
+  el.dataset.greg = gregYYYYMMDD;
+  el.value = toHijri(gregYYYYMMDD);
+}
+
+/** تفعيل المنتقي على input — يحوّله لـ readonly ويربط النقر */
+function attachHijriPicker(input) {
+  if (!input || input.dataset.hpAttached) return;
+  input.dataset.hpAttached = '1';
+  input.readOnly = true;
+  if (!input.placeholder) input.placeholder = 'اضغط للاختيار…';
+  input.style.cursor = 'pointer';
+  input.addEventListener('click', () => openHijriPicker(input));
+  input.addEventListener('focus', () => openHijriPicker(input));
+}
+
+/** فتح المنتقي عند input معيّن */
+function openHijriPicker(input) {
+  ensureHijriPickerDom();
+  _hpInput = input;
+  // ابدأ من القيمة الحالية، وإلا من اليوم
+  const cur = input.dataset.greg ? toHijri(input.dataset.greg) : toHijri(todayDate());
+  const parsed = parseHijriInput(cur);
+  _hpYear  = parsed ? parsed.y : 1447;
+  _hpMonth = parsed ? parsed.m : 1;
+  document.getElementById('hijri-picker-overlay').classList.add('open');
+  positionHijriPicker(input);
+  renderHijriPicker();
+}
+
+function closeHijriPicker() {
+  const overlay = document.getElementById('hijri-picker-overlay');
+  if (overlay) overlay.classList.remove('open');
+  _hpInput = null;
+}
+
+function positionHijriPicker(input) {
+  const picker = document.getElementById('hijri-picker');
+  const rect = input.getBoundingClientRect();
+  picker.style.left = Math.max(8, rect.left) + 'px';
+  picker.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  // ضبط فوق الـ input لو تجاوز الـ viewport
+  setTimeout(() => {
+    const pRect = picker.getBoundingClientRect();
+    if (pRect.bottom > window.innerHeight) {
+      picker.style.top = (rect.top + window.scrollY - pRect.height - 4) + 'px';
+    }
+    if (pRect.right > window.innerWidth) {
+      picker.style.left = (window.innerWidth - pRect.width - 8) + 'px';
+    }
+  }, 0);
+}
+
+function renderHijriPicker() {
+  const picker = document.getElementById('hijri-picker');
+  if (!picker) return;
+  const monthDays = getHijriMonthDays(_hpYear, _hpMonth);
+  const firstGreg = toGregorian(`${_hpYear}/${String(_hpMonth).padStart(2,'0')}/01`);
+  const firstWeekday = new Date(firstGreg + 'T12:00:00Z').getUTCDay();
+  const todayH = parseHijriInput(toHijri(todayDate()));
+  const selected = _hpInput && _hpInput.dataset.greg ? parseHijriInput(toHijri(_hpInput.dataset.greg)) : null;
+
+  let html = `
+    <div class="hp-header">
+      <button type="button" class="hp-nav" onclick="hpNav(-1)">›</button>
+      <div class="hp-title">${HIJRI_MONTH_NAMES[_hpMonth - 1]} ${_hpYear}</div>
+      <button type="button" class="hp-nav" onclick="hpNav(1)">‹</button>
+    </div>
+    <div class="hp-weekdays">${HIJRI_WEEKDAYS.map(w => `<div>${w}</div>`).join('')}</div>
+    <div class="hp-days">`;
+  for (let i = 0; i < firstWeekday; i++) html += '<div class="hp-day empty"></div>';
+  for (let d = 1; d <= monthDays; d++) {
+    const isToday    = todayH    && todayH.y    === _hpYear && todayH.m    === _hpMonth && todayH.d    === d;
+    const isSelected = selected  && selected.y === _hpYear && selected.m === _hpMonth && selected.d === d;
+    const cls = ['hp-day', isToday && 'today', isSelected && 'selected'].filter(Boolean).join(' ');
+    html += `<div class="${cls}" onclick="hpPick(${d})">${d}</div>`;
+  }
+  html += '</div>';
+  html += `<div class="hp-footer">
+    <button type="button" class="hp-foot-btn" onclick="hpToday()">اليوم</button>
+    <button type="button" class="hp-foot-btn" onclick="hpClear()">مسح</button>
+  </div>`;
+  picker.innerHTML = html;
+}
+
+function hpNav(delta) {
+  _hpMonth += delta;
+  if (_hpMonth > 12) { _hpMonth = 1;  _hpYear++; }
+  if (_hpMonth < 1)  { _hpMonth = 12; _hpYear--; }
+  renderHijriPicker();
+}
+
+function hpPick(day) {
+  if (!_hpInput) return;
+  const hijri = `${_hpYear}/${String(_hpMonth).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
+  const greg = toGregorian(hijri);
+  writeDateInput(_hpInput, greg);
+  _hpInput.dispatchEvent(new Event('input',  { bubbles: true }));
+  _hpInput.dispatchEvent(new Event('change', { bubbles: true }));
+  closeHijriPicker();
+}
+
+function hpToday() {
+  if (!_hpInput) return;
+  writeDateInput(_hpInput, todayDate());
+  _hpInput.dispatchEvent(new Event('input',  { bubbles: true }));
+  _hpInput.dispatchEvent(new Event('change', { bubbles: true }));
+  closeHijriPicker();
+}
+
+function hpClear() {
+  if (!_hpInput) return;
+  writeDateInput(_hpInput, '');
+  _hpInput.dispatchEvent(new Event('input',  { bubbles: true }));
+  _hpInput.dispatchEvent(new Event('change', { bubbles: true }));
+  closeHijriPicker();
+}
+
+/** عدد أيام شهر هجري معيّن (29 أو 30) — عبر فرق ميلادي */
+function getHijriMonthDays(y, m) {
+  const cur  = toGregorian(`${y}/${String(m).padStart(2,'0')}/01`);
+  let nY = y, nM = m + 1;
+  if (nM > 12) { nM = 1; nY++; }
+  const next = toGregorian(`${nY}/${String(nM).padStart(2,'0')}/01`);
+  return Math.round((new Date(next + 'T12:00:00Z') - new Date(cur + 'T12:00:00Z')) / 86400000);
+}
+
+/** إنشاء overlay + picker + CSS لمرة واحدة */
+function ensureHijriPickerDom() {
+  if (document.getElementById('hijri-picker-overlay')) return;
+  // CSS مُضمَّن
+  const style = document.createElement('style');
+  style.id = 'hijri-picker-styles';
+  style.textContent = `
+    .hijri-picker-overlay { position:fixed; inset:0; background:transparent; z-index:9998; display:none; }
+    .hijri-picker-overlay.open { display:block; }
+    .hijri-picker { position:absolute; background:#fff; border:1px solid #e0e0e0; border-radius:12px;
+      box-shadow:0 8px 24px rgba(0,0,0,0.12); padding:12px; width:280px; font-family:inherit; direction:rtl;
+      z-index:9999; }
+    .hp-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+    .hp-title { flex:1; text-align:center; font-weight:700; color:var(--primary, #2D3651); }
+    .hp-nav { width:30px; height:30px; border:none; border-radius:6px; cursor:pointer;
+      background:var(--primary, #2D3651); color:#fff; font-size:1rem; font-family:inherit; }
+    .hp-nav:hover { opacity:.85; }
+    .hp-weekdays { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:6px; }
+    .hp-weekdays > div { text-align:center; font-size:.7rem; color:#888; padding:4px 0; }
+    .hp-days { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .hp-day { text-align:center; padding:7px 0; cursor:pointer; border-radius:6px; font-size:.85rem;
+      border:1px solid transparent; user-select:none; }
+    .hp-day:hover { background:#f3f3f3; }
+    .hp-day.empty { cursor:default; }
+    .hp-day.empty:hover { background:transparent; }
+    .hp-day.today { border-color:var(--gold2, #D4AF37); font-weight:700; }
+    .hp-day.selected { background:var(--primary, #2D3651); color:#fff; }
+    .hp-day.selected.today { border-color:#fff; }
+    .hp-footer { display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid #eee; }
+    .hp-foot-btn { flex:1; padding:6px; border:1px solid #ddd; background:#fafafa; border-radius:6px;
+      cursor:pointer; font-family:inherit; font-size:.8rem; }
+    .hp-foot-btn:hover { background:#f0f0f0; }
+  `;
+  document.head.appendChild(style);
+
+  // Overlay + picker
+  const overlay = document.createElement('div');
+  overlay.id = 'hijri-picker-overlay';
+  overlay.className = 'hijri-picker-overlay';
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeHijriPicker();
+  });
+  const picker = document.createElement('div');
+  picker.id = 'hijri-picker';
+  picker.className = 'hijri-picker';
+  picker.addEventListener('click', e => e.stopPropagation());
+  overlay.appendChild(picker);
+  document.body.appendChild(overlay);
+
+  // ESC للإغلاق
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeHijriPicker();
+  });
+}
+
+/** يفعّل المنتقي على كل input.hijri-input — يُستدعى من init */
+function initHijriInputs() {
+  document.querySelectorAll('input.hijri-input').forEach(attachHijriPicker);
+}
+
 function esc(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
