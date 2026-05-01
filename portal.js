@@ -3195,8 +3195,10 @@ function writeDateInput(idOrEl, gregYYYYMMDD) {
     el.dataset.greg = '';
     return;
   }
-  el.dataset.greg = gregYYYYMMDD;
-  el.value = toHijri(gregYYYYMMDD);
+  // قبول ISO timestamp أو YYYY-MM-DD أو Date — تطبيع لـ YYYY-MM-DD
+  const dateStr = String(gregYYYYMMDD).slice(0, 10);
+  el.dataset.greg = dateStr;
+  el.value = toHijri(dateStr);
 }
 
 function attachHijriPicker(input) {

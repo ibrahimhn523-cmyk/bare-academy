@@ -247,6 +247,7 @@ function mapPay(r) {
    INIT
 ══════════════════════════════════════════ */
 async function init() {
+  initHijriInputs();
   renderSidebar();
   try { await Promise.all([loadStudents(), loadPrograms()]); } catch(e) { console.error(e); }
   // Load all subs and payments for student card / program sub-counts
@@ -348,7 +349,7 @@ function openAddStudent() {
   ['st-id','st-name','st-phone','st-phone2','st-notes'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('st-cat').value          = '';
   document.getElementById('st-source').value       = 'مباشر';
-  document.getElementById('st-contact-date').value = today();
+  writeDateInput('st-contact-date', todayDate());
   openM('m-student');
 }
 
@@ -361,7 +362,7 @@ function openEditStudent(id) {
   document.getElementById('st-phone2').value       = s.phone2;
   document.getElementById('st-cat').value          = s.category;
   document.getElementById('st-source').value       = s.source;
-  document.getElementById('st-contact-date').value = s.firstContactDate;
+  writeDateInput('st-contact-date', s.firstContactDate);
   document.getElementById('st-notes').value        = s.notes;
   openM('m-student');
 }
@@ -377,7 +378,7 @@ async function saveStudent() {
     phone2:           document.getElementById('st-phone2').value.trim(),
     category:         document.getElementById('st-cat').value,
     source:           document.getElementById('st-source').value,
-    firstContactDate: document.getElementById('st-contact-date').value || null,
+    firstContactDate: readDateInput('st-contact-date') || null,
     notes:            document.getElementById('st-notes').value.trim()
   };
 
@@ -568,8 +569,8 @@ function openEditProg(id) {
   document.getElementById('m-prog-title').textContent = '✏️ تعديل البرنامج';
   document.getElementById('p-id').value          = p.id;
   document.getElementById('p-name').value        = p.name;
-  document.getElementById('p-start').value       = p.startDate;
-  document.getElementById('p-end').value         = p.endDate;
+  writeDateInput('p-start', p.startDate);
+  writeDateInput('p-end',   p.endDate);
   document.getElementById('p-fee').value         = p.fullFee;
   document.getElementById('p-group-count').value = p.groupCount;
   document.getElementById('p-status').value      = p.status;
@@ -587,8 +588,8 @@ function openEditProg(id) {
 async function saveProg() {
   const id      = parseInt(document.getElementById('p-id').value) || 0;
   const name    = document.getElementById('p-name').value.trim();
-  const startDate = document.getElementById('p-start').value;
-  const endDate   = document.getElementById('p-end').value;
+  const startDate = readDateInput('p-start');
+  const endDate   = readDateInput('p-end');
   const fullFee   = parseFloat(document.getElementById('p-fee').value) || 0;
   const groupCnt  = parseInt(document.getElementById('p-group-count').value) || 2;
   const status    = document.getElementById('p-status').value;
@@ -627,7 +628,7 @@ function openExtend(id) {
   document.getElementById('ext-name').value = p.name;
   document.getElementById('ext-cur').value  = fmtHijri(p.endDate);
   document.getElementById('ext-days').value = '';
-  document.getElementById('ext-new').value  = p.endDate;
+  writeDateInput('ext-new', p.endDate);
   openM('m-extend');
 }
 
@@ -638,12 +639,12 @@ function calcExtend() {
   if (!days) return;
   const d = new Date(p.endDate + 'T00:00:00');
   d.setDate(d.getDate() + days);
-  document.getElementById('ext-new').value = d.toISOString().split('T')[0];
+  writeDateInput('ext-new', d.toISOString().split('T')[0]);
 }
 
 async function saveExtend() {
   const pid    = parseInt(document.getElementById('ext-id').value);
-  const newEnd = document.getElementById('ext-new').value;
+  const newEnd = readDateInput('ext-new');
   if (!newEnd) { toast('يرجى تحديد تاريخ النهاية', 'error'); return; }
   const i = _progs.findIndex(p => p.id === pid); if (i === -1) return;
   _progs[i].endDate = newEnd;
@@ -764,10 +765,10 @@ function openAddSub() {
     '<option value="">اختر المجموعة</option>' + groups.map(g => `<option>${g}</option>`).join('');
 
   document.getElementById('sub-type').value        = 'كامل';
-  document.getElementById('sub-start').value       = todayDate();
-  document.getElementById('sub-end').value         = _currentProg.endDate || '';
+  writeDateInput('sub-start', todayDate());
+  writeDateInput('sub-end', _currentProg.endDate || '');
   document.getElementById('sub-amount-due').value  = _currentProg.fullFee || '';
-  document.getElementById('sub-pay-date').value    = todayDate();
+  writeDateInput('sub-pay-date', todayDate());
   document.getElementById('sub-pay-amount').value  = '';
   document.getElementById('sub-pay-note').value    = '';
   document.getElementById('sub-notes').value       = '';
@@ -890,14 +891,14 @@ function toggleNewStudent() {
 
 function onSubTypeChange() {
   if (document.getElementById('sub-type').value === 'كامل' && _currentProg?.endDate) {
-    document.getElementById('sub-end').value = _currentProg.endDate;
+    writeDateInput('sub-end', _currentProg.endDate);
     onSubDatesChange();
   }
 }
 
 function onSubDatesChange() {
-  const start = document.getElementById('sub-start').value;
-  const end   = document.getElementById('sub-end').value;
+  const start = readDateInput('sub-start');
+  const end   = readDateInput('sub-end');
   if (start && end && _currentProg) {
     const sessions = calcSessions(start, end, _currentProg.days);
     document.getElementById('sub-sessions').value = sessions || '';
@@ -905,11 +906,11 @@ function onSubDatesChange() {
 }
 
 function onSessionsChange() {
-  const start    = document.getElementById('sub-start').value;
+  const start    = readDateInput('sub-start');
   const sessions = parseInt(document.getElementById('sub-sessions').value) || 0;
   if (start && sessions > 0 && _currentProg) {
     const endDate = calcEndFromSessions(start, sessions, _currentProg.days);
-    if (endDate) document.getElementById('sub-end').value = endDate;
+    if (endDate) writeDateInput('sub-end', endDate);
   }
 }
 
@@ -921,13 +922,13 @@ async function saveSub() {
     if (!_subMultiSel.size) { toast('يرجى تحديد طالب واحد على الأقل', 'error'); return; }
     const groupName = document.getElementById('sub-group').value;
     const subType   = document.getElementById('sub-type').value;
-    const startDate = document.getElementById('sub-start').value;
-    const endDate   = document.getElementById('sub-end').value;
+    const startDate = readDateInput('sub-start');
+    const endDate   = readDateInput('sub-end');
     const sessions  = parseInt(document.getElementById('sub-sessions').value) || 0;
     const amountDue = parseFloat(document.getElementById('sub-amount-due').value) || 0;
     const notes     = document.getElementById('sub-notes').value.trim();
     const payAmt    = parseFloat(document.getElementById('sub-pay-amount').value) || 0;
-    const payDate   = document.getElementById('sub-pay-date').value;
+    const payDate   = readDateInput('sub-pay-date');
     const payMethod = document.getElementById('sub-pay-method').value;
     const payNote   = document.getElementById('sub-pay-note').value;
     if (!startDate || !endDate) { toast('يرجى تحديد تواريخ الاشتراك', 'error'); return; }
@@ -999,8 +1000,8 @@ async function saveSub() {
   const editId     = parseInt(document.getElementById('sub-edit-id').value) || 0;
   const subType    = document.getElementById('sub-type').value;
   const groupName  = document.getElementById('sub-group').value;
-  const startDate  = document.getElementById('sub-start').value;
-  const endDate    = document.getElementById('sub-end').value;
+  const startDate  = readDateInput('sub-start');
+  const endDate    = readDateInput('sub-end');
   const sessions   = parseInt(document.getElementById('sub-sessions').value) || 0;
   const amountDue  = parseFloat(document.getElementById('sub-amount-due').value) || 0;
   const notes      = document.getElementById('sub-notes').value.trim();
@@ -1036,7 +1037,7 @@ async function saveSub() {
       const payData = {
         subscriptionId: subId,
         amount: payAmt,
-        paidAt: document.getElementById('sub-pay-date').value,
+        paidAt: readDateInput('sub-pay-date'),
         method: document.getElementById('sub-pay-method').value,
         note:   document.getElementById('sub-pay-note').value
       };
@@ -1077,8 +1078,8 @@ function openEditSub(subId) {
   document.getElementById('sub-group').innerHTML =
     '<option value="">اختر المجموعة</option>' + groups.map(g => `<option ${g === s.groupName ? 'selected' : ''}>${g}</option>`).join('');
   document.getElementById('sub-type').value       = s.subType || 'كامل';
-  document.getElementById('sub-start').value      = s.startDate;
-  document.getElementById('sub-end').value        = s.endDate;
+  writeDateInput('sub-start', s.startDate);
+  writeDateInput('sub-end',   s.endDate);
   document.getElementById('sub-sessions').value   = s.sessionCount || '';
   document.getElementById('sub-amount-due').value = s.amountDue || '';
   document.getElementById('sub-notes').value      = s.notes || '';
@@ -1103,7 +1104,7 @@ function openSubPayments(subId) {
   const sub = _progSubs.find(s => s.id === subId); if (!sub) return;
   document.getElementById('m-pay-sub-id').value = subId;
   document.getElementById('m-payments-title').textContent = `دفعات: ${sub.studentName}`;
-  document.getElementById('new-pay-date').value   = todayDate();
+  writeDateInput('new-pay-date', todayDate());
   document.getElementById('new-pay-amount').value = '';
   document.getElementById('new-pay-note').value   = '';
   renderPaymentsList(subId);
@@ -1139,7 +1140,7 @@ function renderPaymentsList(subId) {
 async function saveNewPayment() {
   const subId  = parseInt(document.getElementById('m-pay-sub-id').value) || 0;
   const amount = parseFloat(document.getElementById('new-pay-amount').value) || 0;
-  const paidAt = document.getElementById('new-pay-date').value;
+  const paidAt = readDateInput('new-pay-date');
   const method = document.getElementById('new-pay-method').value;
   const note   = document.getElementById('new-pay-note').value.trim();
   if (!subId)    { toast('خطأ: لا يوجد اشتراك', 'error'); return; }
@@ -2185,8 +2186,10 @@ function writeDateInput(idOrEl, gregYYYYMMDD) {
     el.dataset.greg = '';
     return;
   }
-  el.dataset.greg = gregYYYYMMDD;
-  el.value = toHijri(gregYYYYMMDD);
+  // قبول ISO timestamp أو YYYY-MM-DD أو Date — تطبيع لـ YYYY-MM-DD
+  const dateStr = String(gregYYYYMMDD).slice(0, 10);
+  el.dataset.greg = dateStr;
+  el.value = toHijri(dateStr);
 }
 
 /** تفعيل المنتقي على input — يحوّله لـ readonly ويربط النقر */
@@ -2760,8 +2763,8 @@ function openBulkSubModal() {
 
   // القيم الافتراضية
   document.getElementById('bulk-type').value       = 'كامل';
-  document.getElementById('bulk-start').value      = todayDate();
-  document.getElementById('bulk-end').value        = _currentProg.endDate || '';
+  writeDateInput('bulk-start', todayDate());
+  writeDateInput('bulk-end', _currentProg.endDate || '');
   document.getElementById('bulk-amount-due').value = _currentProg.fullFee || '';
   document.getElementById('bulk-notes').value      = '';
   document.getElementById('bulk-search').value     = '';
@@ -2847,8 +2850,8 @@ function updateBulkSelectedCount() {
 }
 
 function onBulkDatesChange() {
-  const start = document.getElementById('bulk-start').value;
-  const end   = document.getElementById('bulk-end').value;
+  const start = readDateInput('bulk-start');
+  const end   = readDateInput('bulk-end');
   if (start && end && _currentProg) {
     const sessions = calcSessions(start, end, _currentProg.days);
     document.getElementById('bulk-sessions').value = sessions || '';
@@ -2862,8 +2865,8 @@ async function saveBulkSub() {
     toast('يرجى اختيار طالب واحد على الأقل', 'error'); return;
   }
 
-  const startDate = document.getElementById('bulk-start').value;
-  const endDate   = document.getElementById('bulk-end').value;
+  const startDate = readDateInput('bulk-start');
+  const endDate   = readDateInput('bulk-end');
   if (!startDate || !endDate) {
     toast('يرجى تحديد تاريخي البداية والنهاية', 'error'); return;
   }
