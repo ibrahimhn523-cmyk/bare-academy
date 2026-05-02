@@ -291,12 +291,6 @@ tbody tr.prog-row:active td { background: #e0e7ff; }
 .selected-student { background: #f0fdf4; border: 1px solid #6ee7b7; border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: .88rem; }
 .selected-student button { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 1rem; }
 
-/* ── ATTENDANCE STATS ── */
-.att-stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px,1fr)); gap: 10px; margin-bottom: 14px; }
-.att-stat-card { background: var(--white); border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
-.att-stat-card .asv { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
-.att-stat-card .asl { font-size: .73rem; color: var(--muted); margin-top: 2px; }
-
 /* ── PAYMENT HISTORY ── */
 .pay-entry { border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 7px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
 .pay-entry-amount { font-size: 1rem; font-weight: 700; color: var(--success); }

@@ -2689,10 +2689,7 @@ async function confirmDeleteProg() {
     // 2. حذف الاشتراكات المرتبطة بالبرنامج
     await fetch(`${SB_URL}/subscriptions?programId=eq.${id}`,
       { method: 'DELETE', headers: _h() });
-    // 3. حذف سجلات الحضور المرتبطة
-    await fetch(`${SB_URL}/attendance?programId=eq.${id}`,
-      { method: 'DELETE', headers: _h() });
-    // 4. حذف البطولات الرياضية المرتبطة (فرق + مباريات + البطولة)
+    // 3. حذف البطولات الرياضية المرتبطة (فرق + مباريات + البطولة)
     const tournsRes = await fetch(`${SB_URL}/sports_tournaments?select=id&programId=eq.${id}`,
       { headers: _h() });
     const tourns = tournsRes.ok ? await tournsRes.json() : [];
