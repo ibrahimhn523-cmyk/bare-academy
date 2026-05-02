@@ -639,24 +639,25 @@ function renderAttWeekView() {
 
 /* ══════ Helpers ══════ */
 
-/** أيام البرنامج لأسبوع _attWeekStart: [{dateGreg, label, hijri}] */
+/** أيام البرنامج لأسبوع _attWeekStart: [{dateGreg, label, hijri}]
+ *  ملاحظة: نستخدم UTC طوال العمليات لتجنّب انزياح يوم في توقيت السعودية (UTC+3).
+ *  السبب: parse-as-local + read-as-UTC كان يُنتج تاريخاً يسبق المطلوب بيوم. */
 function getAttDays() {
   const programDays = _attProg?.days || ['الأحد','الاثنين','الثلاثاء','الأربعاء'];
   const DAY_MAP = { 'الأحد':0, 'الاثنين':1, 'الثلاثاء':2, 'الأربعاء':3, 'الخميس':4, 'الجمعة':5, 'السبت':6 };
-  // الأحد المرجع: من _attWeekStart إن توفر، وإلا أحد الأسبوع الحالي
   let sunday;
   if (_attWeekStart) {
-    sunday = new Date(_attWeekStart + 'T00:00:00');
+    sunday = new Date(_attWeekStart + 'T12:00:00Z');   // UTC noon
   } else {
-    const today = new Date();
-    sunday = new Date(today);
-    sunday.setDate(today.getDate() - today.getDay());
+    const t = new Date();
+    sunday = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate(), 12, 0, 0));
+    sunday.setUTCDate(sunday.getUTCDate() - sunday.getUTCDay());
   }
   return programDays.map(name => {
     const dow = DAY_MAP[name];
     if (dow === undefined) return null;
     const d = new Date(sunday);
-    d.setDate(sunday.getDate() + dow);
+    d.setUTCDate(sunday.getUTCDate() + dow);
     const dateGreg = d.toISOString().slice(0, 10);
     return {
       dateGreg,
@@ -669,24 +670,23 @@ function getAttDays() {
 /** الأسبوع الافتراضي عند الدخول: اليوم لو ضمن البرنامج، وإلا حافة البرنامج */
 function _attComputeInitialWeek() {
   if (!_attProg) return todayDate();
-  const today = new Date(todayDate() + 'T00:00:00');
-  const start = new Date(_attProg.startDate + 'T00:00:00');
-  const end   = new Date(_attProg.endDate + 'T00:00:00');
+  const today = new Date(todayDate()        + 'T12:00:00Z');
+  const start = new Date(_attProg.startDate + 'T12:00:00Z');
+  const end   = new Date(_attProg.endDate   + 'T12:00:00Z');
   let pick;
   if (today < start)      pick = start;
   else if (today > end)   pick = end;
   else                    pick = today;
-  // الأحد لأسبوع pick
   const sun = new Date(pick);
-  sun.setDate(pick.getDate() - pick.getDay());
+  sun.setUTCDate(pick.getUTCDate() - pick.getUTCDay());
   return sun.toISOString().slice(0, 10);
 }
 
 /** تصنيف تعطيل أزرار التنقل بناءً على مدى البرنامج */
 function _attWeekNavDisabled() {
   if (!_attProg || !_attWeekStart) return { prev: true, next: true };
-  const wsObj = new Date(_attWeekStart + 'T00:00:00');
-  const weObj = new Date(wsObj); weObj.setDate(wsObj.getDate() + 6);
+  const wsObj = new Date(_attWeekStart + 'T12:00:00Z');
+  const weObj = new Date(wsObj); weObj.setUTCDate(wsObj.getUTCDate() + 6);
   const weekStart = wsObj.toISOString().slice(0, 10);
   const weekEnd   = weObj.toISOString().slice(0, 10);
   return {
@@ -719,8 +719,8 @@ function setAttWeek(dir) {
   const nav = _attWeekNavDisabled();
   if (dir === 'prev' && nav.prev) return;
   if (dir === 'next' && nav.next) return;
-  const cur = new Date(_attWeekStart + 'T00:00:00');
-  cur.setDate(cur.getDate() + (dir === 'prev' ? -7 : 7));
+  const cur = new Date(_attWeekStart + 'T12:00:00Z');
+  cur.setUTCDate(cur.getUTCDate() + (dir === 'prev' ? -7 : 7));
   _attWeekStart = cur.toISOString().slice(0, 10);
   // لو اليوم النشط لم يعد ضمن الأسبوع الجديد، اختر أول يوم من البرنامج فيه
   const days = getAttDays();
