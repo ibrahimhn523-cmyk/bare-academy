@@ -75,6 +75,7 @@ let _attData     = (() => {
 })();                                                   // { studentId: { 'YYYY-MM-DD': status } }
 let _attSelected = new Set();
 let _attSearch   = '';
+let _attProgCounts = {};                                // { progId: subCount } — جلب مرة واحدة لشاشة البرامج
 
 const ATT_STATUS = {
   present: { label: 'حاضر',   icon: '✓', cls: 'present' },
@@ -312,14 +313,31 @@ function switchSection(name) {
 ══════════════════════════════════════════ */
 
 /** entry point — يُستدعى من switchSection */
-function loadAttendance() {
+async function loadAttendance() {
   // عودة لشاشة البرامج كل مرة (UX متّسق)
   _attScreen = 'programs';
   _attProg = null;
   _attGroup = null;
   _attSelected.clear();
   _attSearch = '';
-  renderAttScreen();
+  renderAttScreen();   // أرسم فوراً — البطاقات ستظهر بدون عدّ، ثم نُحدّث
+
+  // اجلب عدد المشتركين لكل برنامج نشط (مرة واحدة، مع cache)
+  const active = _progs.filter(p => p.status === 'نشط');
+  const toFetch = active.filter(p => _attProgCounts[p.id] === undefined);
+  if (!toFetch.length) return;
+
+  await Promise.all(toFetch.map(async p => {
+    try {
+      const rows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}&select=id`);
+      _attProgCounts[p.id] = rows.length;
+    } catch { _attProgCounts[p.id] = 0; }
+  }));
+
+  // أعد الرسم لو ما زلنا في شاشة البرامج
+  if (_attScreen === 'programs' && _activeSection === 'attendance') {
+    renderAttScreen();
+  }
 }
 
 /** dispatcher */
@@ -345,7 +363,8 @@ function renderAttPrograms() {
   } else {
     html += `<div class="att-card-grid">`;
     active.forEach(p => {
-      const subCount = (window._allSubs || []).filter(s => s.programId === p.id).length;
+      const subCount = _attProgCounts[p.id];
+      const countLabel = subCount === undefined ? '⏳ …' : `👥 ${subCount} مشترك`;
       html += `
         <div class="att-card" onclick="selectAttProg(${p.id})">
           <div class="att-card-icon">📚</div>
@@ -355,7 +374,7 @@ function renderAttPrograms() {
               <span>${fmtHijriShort(p.startDate)} → ${fmtHijriShort(p.endDate)}</span>
             </div>
             <div class="att-card-foot">
-              <span class="att-card-badge">👥 ${subCount} مشترك</span>
+              <span class="att-card-badge">${countLabel}</span>
             </div>
           </div>
         </div>`;
