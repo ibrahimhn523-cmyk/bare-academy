@@ -9,6 +9,8 @@ const TB = {
   STUDENTS       : 'students',
   PROGRAMS       : 'programs',
   SUBSCRIPTIONS  : 'subscriptions',
+  ATTENDANCE     : 'attendance',
+  ATTENDANCE_LOG : 'attendance_log',
   POINTS         : 'points',
   POINT_REASONS  : 'point_reasons',
   USERS          : 'users',
@@ -405,10 +407,12 @@ async function renderAttGroups() {
     </div>
     <div class="empty"><div class="ei">⏳</div><p>جاري تحميل المجموعات…</p></div>`;
 
-  // حمّل subscriptions للبرنامج (مرة واحدة)
-  try {
-    _attSubs = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}`);
-  } catch(e) { _attSubs = []; }
+  // حمّل subscriptions + بيانات التحضير معاً (parallel) — مرة واحدة لكل برنامج
+  const [subs] = await Promise.all([
+    sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}`).catch(() => []),
+    loadAttData(p.id)
+  ]);
+  _attSubs = subs;
 
   // المجموعات: من حقل البرنامج (مفصول بـ ،) أو فريدة من الاشتراكات
   let groups = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
@@ -772,6 +776,26 @@ function getAttStudents() {
 /** تخزين mock في localStorage */
 function _attPersist() {
   try { localStorage.setItem('bare_att_mock', JSON.stringify(_attData)); } catch(e) {}
+}
+
+/** تحميل بيانات التحضير من Supabase + دمج مع localStorage (DB لها الأولوية).
+ *  مرحلة انتقالية: القراءة من DB، الكتابة لا تزال محلية حتى Commit 3. */
+async function loadAttData(programId) {
+  // ابدأ من localStorage للحفاظ على التغييرات غير المرفوعة
+  let merged = {};
+  try { merged = JSON.parse(localStorage.getItem('bare_att_mock') || '{}'); } catch {}
+  // ثم ادمج DB فوقها (DB authoritative للقيم المتطابقة)
+  try {
+    const rows = await sbRead(TB.ATTENDANCE, `programId=eq.${programId}`);
+    rows.forEach(r => {
+      const sid = parseInt(r.studentId);
+      if (!merged[sid]) merged[sid] = {};
+      merged[sid][r.date] = r.status;
+    });
+  } catch(e) {
+    console.warn('فشل تحميل التحضير من DB، استخدام localStorage فقط:', e.message);
+  }
+  _attData = merged;
 }
 
 /* ── ترتيب الطلاب المخصّص لكل مجموعة (drag & drop) ── */
