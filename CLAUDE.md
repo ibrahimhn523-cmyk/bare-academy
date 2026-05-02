@@ -367,7 +367,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F11 | **المرحلة ٣ — الإدخال هجري:** ٣ sub-phases — (3a) منتقي popup + helpers `read/writeDateInput`، (3b) ١٠ inputs في dashboard + ٣٢ موضع `.value`، (3c) ٣ inputs في portal + ٨ مواضع `.value` | ✅ | 2026-05-01 | `f840d08, b33c7d4, 1761459` |
 | F12 | **المرحلة ٤ — قوالب واتساب هجرية + تنظيف:** `{بداية/نهاية_الاشتراك}` تنتج هجري فقط، حذف `fmtDate`, `fmtDateBoth`, `fmtDateHijri`, `fmtDatetime` (دوال ميلادية غير مستخدمة)، حذف نسخة مكررة من `fmtDateShort`. توافق عكسي مع `_هجري` للقوالب القديمة | ✅ | 2026-05-01 | `3efa35c` |
 | F13 | **حذف ميزة التحضير بالكامل** (ADR-006): ٤ commits متسلسلة — portal.html (-218 سطر) + portal.js (-602 سطر) + portal.css (-472 سطر) + dashboard cleanup (-6 سطر) | ✅ | 2026-05-02 | `34a2225, 88a3267, d504a98, a2edb4b` |
-| F14 | **إعادة بناء التحضير** (ADR-007): تصميم drill-down جديد، 3 شاشات (Programs → Groups → Attend)، 4 حالات، mock في localStorage، mobile-first | ✅ | 2026-05-02 | (TBD) |
+| F14 | **إعادة بناء التحضير** (ADR-007): تصميم drill-down جديد، 3 شاشات (Programs → Groups → Attend)، 4 حالات، mock في localStorage، mobile-first | ✅ | 2026-05-02 | `718c595` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
