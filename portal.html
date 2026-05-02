@@ -52,32 +52,6 @@
       </div>
       <div class="nav-section-label">قسم النظام</div>
 
-      <!-- ✅ التحضير — قابل للطي -->
-      <div class="nav-item" id="nav-attendance" onclick="toggleAttNav()">
-        <span class="nav-icon">✅</span>
-        <span>تحضير الطلاب</span>
-        <span class="nav-att-arrow" id="nav-att-arrow">▸</span>
-      </div>
-      <div id="nav-att-sub" class="nav-att-sub-wrap" style="display:none">
-        <div class="nav-att-sub-item" id="nav-att-programs" onclick="switchAttPage('programs')">
-          <span class="nav-icon">📚</span><span>البرامج</span>
-        </div>
-        <div class="nav-att-sub-item" id="nav-att-matrix" onclick="switchAttPage('matrix')">
-          <span class="nav-icon">📋</span><span>المصفوفة</span>
-        </div>
-        <div class="nav-att-sub-item" id="nav-att-stats" onclick="switchAttPage('stats')">
-          <span class="nav-icon">📊</span><span>الإحصائيات</span>
-        </div>
-        <div class="nav-att-sub-item" id="nav-att-log" onclick="switchAttPage('log')">
-          <span class="nav-icon">📜</span><span>السجل</span>
-        </div>
-      </div>
-
-      <!-- ⚡ تحضير سريع (النسخة الجديدة) -->
-      <div class="nav-sub-item" id="nav-att-quick" onclick="switchSection('att-quick')">
-        <span class="nav-icon">⚡</span><span>تحضير سريع <span class="nav-badge-new">جديد</span></span>
-      </div>
-
       <div class="nav-sub-item" id="nav-points" onclick="switchSection('points')">
         <span class="nav-icon">⭐</span><span>النقاط</span>
       </div>
@@ -114,126 +88,6 @@
       </div>
       <div class="kpi-row" id="home-kpi"></div>
       <div class="cards-grid" id="home-recent"></div>
-    </section>
-
-    <!-- ══ ATTENDANCE QUICK ══ -->
-    <section class="section" id="section-att-quick">
-      <!-- رأس الصفحة -->
-      <div class="page-hdr">
-        <div>
-          <div class="page-title">تحضير سريع <span class="aq-badge-new">نسخة جديدة</span></div>
-          <div style="font-size:.78rem;color:var(--muted);margin-top:2px">نقرة واحدة لكل طالب — بدون نوافذ</div>
-        </div>
-        <div class="hdr-actions">
-          <button class="btn btn-success" id="aq-save-btn" onclick="saveQuickAtt()" style="display:none">💾 حفظ الجلسة</button>
-        </div>
-      </div>
-
-      <!-- شريط الاختيار -->
-      <div class="aq-toolbar">
-        <div class="aq-selects">
-          <select id="aq-prog-sel" onchange="onAqProgChange()" class="aq-select">
-            <option value="">📚 اختر البرنامج</option>
-          </select>
-          <select id="aq-group-sel" onchange="loadQuickAtt()" class="aq-select" disabled>
-            <option value="">👥 اختر المجموعة</option>
-          </select>
-          <input type="text" id="aq-date" class="aq-select hijri-input" onchange="loadQuickAtt()">
-        </div>
-        <!-- شريط الملخص اللحظي -->
-        <div class="aq-summary" id="aq-summary" style="display:none">
-          <div class="aq-sum-item aq-sum-total"><span id="aq-sum-total">0</span><small>إجمالي</small></div>
-          <div class="aq-sum-item aq-sum-present"><span id="aq-sum-present">0</span><small>حاضر</small></div>
-          <div class="aq-sum-item aq-sum-late"><span id="aq-sum-late">0</span><small>متأخر</small></div>
-          <div class="aq-sum-item aq-sum-absent"><span id="aq-sum-absent">0</span><small>غائب</small></div>
-          <div class="aq-sum-item aq-sum-pct"><span id="aq-sum-pct">-</span><small>نسبة الحضور</small></div>
-        </div>
-      </div>
-
-      <!-- قائمة الطلاب -->
-      <div id="aq-body">
-        <div class="empty"><div class="ei">⚡</div><p>اختر البرنامج والمجموعة لبدء التحضير</p></div>
-      </div>
-    </section>
-
-    <!-- ══ ATTENDANCE ══ -->
-    <section class="section" id="section-attendance">
-
-      <!-- ── Breadcrumbs ── -->
-      <nav class="att-bc" id="att-breadcrumbs" style="display:none">
-        <span class="att-bc-item" onclick="switchAttPage('programs')">✅ تحضير الطلاب</span>
-        <span class="att-bc-sep">‹</span>
-        <span class="att-bc-item att-bc-active" id="att-bc-prog" style="display:none"></span>
-        <span class="att-bc-sep" id="att-bc-sep2" style="display:none">‹</span>
-        <span class="att-bc-item att-bc-active" id="att-bc-group" style="display:none"></span>
-      </nav>
-
-      <!-- SUB-PAGE: PROGRAMS -->
-      <div id="att-page-programs">
-        <div class="page-hdr">
-          <div class="page-title">تحضير الطلاب <span class="page-sub">اختر البرنامج</span></div>
-        </div>
-        <div id="att-prog-cards" class="att-drill-grid">
-          <div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>
-        </div>
-      </div>
-
-      <!-- SUB-PAGE: GROUPS -->
-      <div id="att-page-groups" style="display:none">
-        <div class="page-hdr">
-          <div class="page-title" id="att-groups-title">المجموعات <span class="page-sub">اختر المجموعة</span></div>
-        </div>
-        <div id="att-group-cards" class="att-drill-grid"></div>
-      </div>
-
-      <!-- SUB-PAGE: MATRIX -->
-      <div id="att-page-matrix" style="display:none">
-        <div class="page-hdr">
-          <div>
-            <div class="page-title" id="att-matrix-title">مصفوفة التحضير</div>
-            <div class="att-schedule-bar" id="att-schedule-bar" style="display:none"></div>
-          </div>
-          <div class="hdr-actions">
-            <input type="text" id="att-search" placeholder="🔍 بحث بالاسم…" oninput="renderAttMatrix()"
-              style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:150px">
-            <button class="btn btn-success" id="att-save-btn" onclick="saveAttendanceMatrix()" style="display:none">💾 حفظ التحضير</button>
-          </div>
-        </div>
-        <div id="att-body">
-          <div class="empty"><div class="ei">✅</div><p>اختر البرنامج والمجموعة أولاً</p></div>
-        </div>
-      </div>
-
-      <!-- SUB-PAGE: STATS -->
-      <div id="att-page-stats" style="display:none">
-        <div class="page-hdr">
-          <div class="page-title" id="att-stats-title">الإحصائيات</div>
-          <button class="btn btn-refresh" onclick="renderAttStats()">🔄 تحديث</button>
-        </div>
-        <div id="att-stats-body">
-          <div class="empty"><div class="ei">📊</div><p>اختر مجموعة من المصفوفة أولاً</p></div>
-        </div>
-      </div>
-
-      <!-- SUB-PAGE: LOG -->
-      <div id="att-page-log" style="display:none">
-        <div class="page-hdr">
-          <div class="page-title" id="att-log-title">سجل العمليات</div>
-          <div class="hdr-actions">
-            <input type="text" id="att-log-search" placeholder="🔍 بحث باسم الطالب…" oninput="filterAttLog()"
-              style="padding:7px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.82rem;min-width:180px">
-            <button class="btn btn-refresh" onclick="loadAttLog()">🔄 تحديث</button>
-          </div>
-        </div>
-        <div id="att-log-body">
-          <div class="empty"><div class="ei">📜</div><p>اختر مجموعة من المصفوفة أولاً</p></div>
-        </div>
-      </div>
-
-      <!-- hidden dropdowns kept for backward compat -->
-      <select id="att-prog-sel"  style="display:none"><option value="">--</option></select>
-      <select id="att-group-sel" style="display:none"><option value="">--</option></select>
-
     </section>
 
     <!-- ══ POINTS ══ -->
@@ -725,7 +579,6 @@
       <div class="form-group" id="u-perms-wrap">
         <label>الصلاحيات</label>
         <div class="perm-grid">
-          <span class="perm-chip on" data-key="attendance" onclick="togglePerm(this)">✅ التحضير</span>
           <span class="perm-chip on" data-key="points"     onclick="togglePerm(this)">⭐ النقاط</span>
           <span class="perm-chip"   data-key="cultural"   onclick="togglePerm(this)">🏆 الثقافي</span>
           <span class="perm-chip"   data-key="sports"     onclick="togglePerm(this)">⚽ الرياضي</span>
@@ -840,77 +693,6 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeM('m-bulkpts')">إلغاء</button>
       <button class="btn btn-gold" id="bulk-save-btn" onclick="saveBulkPoints()">✅ تسجيل للجميع</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Attendance Status Picker -->
-<div class="modal-overlay" id="m-att-picker" style="display:none" onclick="if(event.target===this)closeAttPicker()">
-  <div class="modal" style="max-width:340px">
-    <div class="modal-hdr att-picker-hdr">
-      <div class="att-picker-hdr-text">
-        <span class="modal-title" id="att-picker-title">تحديد حالة التحضير</span>
-        <span class="att-picker-sub" id="att-picker-sub"></span>
-      </div>
-      <button class="modal-close" onclick="closeAttPicker()">✕</button>
-    </div>
-    <div class="modal-body" id="att-picker-body" style="padding:12px 16px"></div>
-  </div>
-</div>
-
-<!-- modal الجلسة اليدوية محذوف — التواريخ تُولَّد تلقائياً من جدول البرنامج -->
-
-<!-- Modal: إعدادات جدول التحضير -->
-<div class="modal-overlay" id="m-att-settings" style="display:none" onclick="if(event.target===this)closeAttSettings()">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-hdr">
-      <div>
-        <div class="modal-title">⚙️ إعدادات جدول التحضير</div>
-        <div style="font-size:.76rem;color:var(--muted);margin-top:2px" id="att-set-prog-name"></div>
-      </div>
-      <button class="modal-close" onclick="closeAttSettings()">✕</button>
-    </div>
-    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:18px">
-      <input type="hidden" id="att-set-prog-id">
-
-      <!-- تاريخ البداية -->
-      <div>
-        <label class="form-label">📅 تاريخ بداية البرنامج</label>
-        <input type="text" id="att-set-start" class="form-control hijri-input"
-          oninput="updateAttSettingsPreview()" style="margin-top:6px;width:100%">
-      </div>
-
-      <!-- عدد الأسابيع -->
-      <div>
-        <label class="form-label">🔢 عدد أسابيع البرنامج</label>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:6px">
-          <input type="number" id="att-set-weeks" min="1" max="104" value="12"
-            class="form-control" style="width:100px"
-            oninput="updateAttSettingsPreview()">
-          <span style="font-size:.82rem;color:var(--muted)">أسبوع</span>
-        </div>
-      </div>
-
-      <!-- أيام الأسبوع -->
-      <div>
-        <label class="form-label">📆 أيام الحضور الأسبوعية</label>
-        <div id="att-set-days" class="day-picker" style="margin-top:10px">
-          <div class="day-chip" data-day="الأحد"    onclick="toggleAttDay(this)">الأحد</div>
-          <div class="day-chip" data-day="الاثنين"  onclick="toggleAttDay(this)">الاثنين</div>
-          <div class="day-chip" data-day="الثلاثاء" onclick="toggleAttDay(this)">الثلاثاء</div>
-          <div class="day-chip" data-day="الأربعاء" onclick="toggleAttDay(this)">الأربعاء</div>
-          <div class="day-chip" data-day="الخميس"  onclick="toggleAttDay(this)">الخميس</div>
-          <div class="day-chip" data-day="الجمعة"   onclick="toggleAttDay(this)">الجمعة</div>
-          <div class="day-chip" data-day="السبت"    onclick="toggleAttDay(this)">السبت</div>
-        </div>
-      </div>
-
-      <!-- معاينة -->
-      <div class="att-set-preview" id="att-set-preview"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeAttSettings()">إلغاء</button>
-      <button class="btn btn-primary" id="att-set-save-btn" onclick="saveAttSettings()">💾 حفظ الإعدادات</button>
     </div>
   </div>
 </div>
