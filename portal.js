@@ -63,6 +63,29 @@ let _reasons  = [];
 let _users    = [];     // admin only
 let _activeSection = 'home';
 
+/* ── Attendance state (ADR-007) — mock-only, persisted in localStorage ── */
+let _attScreen   = 'programs';                          // 'programs' | 'groups' | 'attend'
+let _attProg     = null;                                // selected program object
+let _attGroup    = null;                                // selected group name
+let _attSubs     = [];                                  // subscriptions for selected program
+let _attView     = 'day';                               // 'day' | 'week'
+let _attDayKey   = null;                                // active day, Gregorian YYYY-MM-DD
+let _attData     = (() => {
+  try { return JSON.parse(localStorage.getItem('bare_att_mock') || '{}'); } catch { return {}; }
+})();                                                   // { studentId: { 'YYYY-MM-DD': status } }
+let _attSelected = new Set();
+let _attSearch   = '';
+let _attProgCounts = {};                                // { progId: subCount } — جلب مرة واحدة لشاشة البرامج
+let _attWeekStart = null;                               // أحد الأسبوع المعروض، YYYY-MM-DD ميلادي
+let _attDragId    = null;                               // studentId المسحوب حالياً (drag & drop)
+
+const ATT_STATUS = {
+  present: { label: 'حاضر',   icon: 'ح', cls: 'present' },
+  late:    { label: 'متأخر',  icon: 'ت', cls: 'late'    },
+  excused: { label: 'مستأذن', icon: 'م', cls: 'excused' },
+  absent:  { label: 'غائب',   icon: 'غ', cls: 'absent'  }
+};
+
 // points state
 let _ptsSubs    = [];    // subscriptions for selected program
 let _ptsPoints  = [];    // points for selected program
@@ -157,6 +180,9 @@ async function startApp() {
   ['nav-admin','nav-admin-div'].forEach(id => {
     const el = document.getElementById(id); if (el) el.style.display = isSA ? '' : 'none';
   });
+  if (!hasPermission('attendance')) {
+    const e = document.getElementById('nav-attendance'); if (e) e.style.display = 'none';
+  }
   if (!hasPermission('points')) {
     const e = document.getElementById('nav-points'); if (e) e.style.display = 'none';
   }
@@ -241,6 +267,7 @@ function populateProgSelects() {
 ══════════════════════════════════════════ */
 const SECTION_LABELS = {
   home:'الرئيسية',
+  attendance:'التحضير',
   points:'النقاط',
   cultural:'الثقافي', sports:'الرياضي', 'sport-stats':'إحصائيات البطولة',
   leaderboard:'الصدارة', admin:'الإدارة'
@@ -249,6 +276,7 @@ const SECTION_LABELS = {
 function switchSection(name) {
   // ── حارس الصلاحيات ──
   const _SECTION_PERMS = {
+    attendance   : 'attendance',
     points       : 'points',
     cultural     : 'cultural',
     sports       : 'sports',
@@ -277,7 +305,622 @@ function switchSection(name) {
 
   if (name === 'sport-stats') loadSportStats();
   if (name === 'admin') admTab('users');
+  if (name === 'attendance') loadAttendance();
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════
+   ATTENDANCE — drill-down (programs → groups → attend)
+   ADR-007: واجهة جديدة، بيانات mock في localStorage
+══════════════════════════════════════════ */
+
+/** entry point — يُستدعى من switchSection */
+async function loadAttendance() {
+  // عودة لشاشة البرامج كل مرة (UX متّسق)
+  _attScreen = 'programs';
+  _attProg = null;
+  _attGroup = null;
+  _attSelected.clear();
+  _attSearch = '';
+  _attWeekStart = null;
+  renderAttScreen();   // أرسم فوراً — البطاقات ستظهر بدون عدّ، ثم نُحدّث
+
+  // اجلب عدد المشتركين لكل برنامج نشط (مرة واحدة، مع cache)
+  const active = _progs.filter(p => p.status === 'نشط');
+  const toFetch = active.filter(p => _attProgCounts[p.id] === undefined);
+  if (!toFetch.length) return;
+
+  await Promise.all(toFetch.map(async p => {
+    try {
+      const rows = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}&select=id`);
+      _attProgCounts[p.id] = rows.length;
+    } catch { _attProgCounts[p.id] = 0; }
+  }));
+
+  // أعد الرسم لو ما زلنا في شاشة البرامج
+  if (_attScreen === 'programs' && _activeSection === 'attendance') {
+    renderAttScreen();
+  }
+}
+
+/** dispatcher */
+function renderAttScreen() {
+  if (_attScreen === 'programs')      renderAttPrograms();
+  else if (_attScreen === 'groups')   renderAttGroups();
+  else if (_attScreen === 'attend')   renderAttAttend();
+}
+
+/* ── شاشة ١: البرامج النشطة ── */
+function renderAttPrograms() {
+  const body = document.getElementById('att-body');
+  const active = _progs.filter(p => p.status === 'نشط');
+
+  let html = `
+    <div class="att-header">
+      <div class="att-page-title">التحضير</div>
+      <div class="att-page-sub">اختر البرنامج</div>
+    </div>`;
+
+  if (!active.length) {
+    html += `<div class="empty"><div class="ei">📚</div><p>لا توجد برامج نشطة حالياً</p></div>`;
+  } else {
+    html += `<div class="att-card-grid">`;
+    active.forEach(p => {
+      const subCount = _attProgCounts[p.id];
+      const countLabel = subCount === undefined ? '⏳ …' : `👥 ${subCount} مشترك`;
+      html += `
+        <div class="att-card" onclick="selectAttProg(${p.id})">
+          <div class="att-card-icon">📚</div>
+          <div class="att-card-body">
+            <div class="att-card-title">${esc(p.name)}</div>
+            <div class="att-card-meta">
+              <span>${fmtHijriShort(p.startDate)} → ${fmtHijriShort(p.endDate)}</span>
+            </div>
+            <div class="att-card-foot">
+              <span class="att-card-badge">${countLabel}</span>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+/* ── شاشة ٢: المجموعات ── */
+async function renderAttGroups() {
+  const body = document.getElementById('att-body');
+  const p = _attProg;
+  if (!p) { _attScreen = 'programs'; return renderAttScreen(); }
+
+  body.innerHTML = `
+    <div class="att-breadcrumb">
+      <button class="att-back-btn" onclick="attBack('programs')">← البرامج</button>
+      <span class="att-bc-sep">›</span>
+      <span class="att-bc-cur">${esc(p.name)}</span>
+    </div>
+    <div class="att-header">
+      <div class="att-page-title">اختر المجموعة</div>
+    </div>
+    <div class="empty"><div class="ei">⏳</div><p>جاري تحميل المجموعات…</p></div>`;
+
+  // حمّل subscriptions للبرنامج (مرة واحدة)
+  try {
+    _attSubs = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}`);
+  } catch(e) { _attSubs = []; }
+
+  // المجموعات: من حقل البرنامج (مفصول بـ ،) أو فريدة من الاشتراكات
+  let groups = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
+  if (!groups.length) {
+    groups = [...new Set(_attSubs.map(s => s.groupName).filter(Boolean))];
+  }
+
+  let html = `
+    <div class="att-breadcrumb">
+      <button class="att-back-btn" onclick="attBack('programs')">← البرامج</button>
+      <span class="att-bc-sep">›</span>
+      <span class="att-bc-cur">${esc(p.name)}</span>
+    </div>
+    <div class="att-header">
+      <div class="att-page-title">اختر المجموعة</div>
+    </div>`;
+
+  if (!groups.length) {
+    html += `<div class="empty"><div class="ei">👥</div><p>لا توجد مجموعات في هذا البرنامج</p></div>`;
+  } else {
+    html += `<div class="att-card-grid">`;
+    groups.forEach(g => {
+      const count = _attSubs.filter(s => s.groupName === g).length;
+      html += `
+        <div class="att-card" onclick="selectAttGroup('${esc(g).replace(/'/g, "\\'")}')">
+          <div class="att-card-icon">👥</div>
+          <div class="att-card-body">
+            <div class="att-card-title">المجموعة ${esc(g)}</div>
+            <div class="att-card-foot">
+              <span class="att-card-badge">${count} طالب</span>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+/* ── شاشة ٣: التحضير الكامل ── */
+function renderAttAttend() {
+  const body = document.getElementById('att-body');
+  const p = _attProg, g = _attGroup;
+  if (!p || !g) { _attScreen = 'programs'; return renderAttScreen(); }
+
+  // تهيئة الأسبوع لو لم يُحسب بعد
+  if (!_attWeekStart) _attWeekStart = _attComputeInitialWeek();
+
+  // أيام البرنامج للأسبوع الحالي
+  const days = getAttDays();
+  if (!_attDayKey || !days.find(d => d.dateGreg === _attDayKey)) {
+    // اختر اليوم الحالي إن كان من أيام البرنامج لهذا الأسبوع، وإلا أول يوم
+    const today = todayDate();
+    _attDayKey = (days.find(d => d.dateGreg === today) || days[0])?.dateGreg || null;
+  }
+
+  const nav = _attWeekNavDisabled();
+  const rangeLabel = getAttWeekRangeLabel();
+
+  let html = `
+    <div class="att-breadcrumb">
+      <button class="att-back-btn" onclick="attBack('groups')">← المجموعات</button>
+      <span class="att-bc-sep">›</span>
+      <span class="att-bc-link" onclick="attBack('programs')">${esc(p.name)}</span>
+      <span class="att-bc-sep">›</span>
+      <span class="att-bc-cur">المجموعة ${esc(g)}</span>
+    </div>
+
+    <div class="att-view-row">
+      <div class="att-view-toggle">
+        <button class="att-vbtn ${_attView==='day'?'active':''}" onclick="setAttView('day')">عرض يومي</button>
+        <button class="att-vbtn ${_attView==='week'?'active':''}" onclick="setAttView('week')">عرض أسبوعي</button>
+      </div>
+      <div class="att-toolbar">
+        <input class="att-search-inp" placeholder="🔍 بحث..." value="${esc(_attSearch)}" oninput="attSearch(this.value)">
+      </div>
+    </div>
+
+    <div class="att-week-nav">
+      <button class="att-week-nav-btn" ${nav.prev ? 'disabled' : ''} onclick="setAttWeek('prev')">← السابق</button>
+      <span class="att-week-range">${rangeLabel}</span>
+      <button class="att-week-nav-btn" ${nav.next ? 'disabled' : ''} onclick="setAttWeek('next')">التالي →</button>
+    </div>
+
+    <div class="att-days-bar" id="att-days-bar"></div>
+
+    <div id="att-view-body"></div>`;
+
+  body.innerHTML = html;
+
+  renderAttDaysBar();
+  if (_attView === 'day') renderAttDayView();
+  else                     renderAttWeekView();
+}
+
+/* ── شريط الأيام ── */
+function renderAttDaysBar() {
+  const bar = document.getElementById('att-days-bar');
+  if (!bar) return;
+  const days = getAttDays();
+  bar.innerHTML = days.map(d => `
+    <button class="att-day-btn ${d.dateGreg===_attDayKey?'active':''}" onclick="setAttDay('${d.dateGreg}')">
+      ${d.label}
+      <span class="att-day-date">${d.hijri}</span>
+    </button>`).join('');
+}
+
+/* ── العرض اليومي: stats + bulk + قائمة الطلاب ── */
+function renderAttDayView() {
+  const view = document.getElementById('att-view-body');
+  if (!view) return;
+  const students = getAttStudents();
+
+  // إحصائيات لليوم النشط
+  const c = { present:0, late:0, excused:0, absent:0 };
+  students.forEach(s => {
+    const v = (_attData[s.studentId] || {})[_attDayKey];
+    if (v && c[v] !== undefined) c[v]++;
+  });
+
+  const selN = _attSelected.size;
+  const allSel = students.length > 0 && students.every(s => _attSelected.has(s.studentId));
+  const someSel = selN > 0 && !allSel;
+  const done = students.filter(s => (_attData[s.studentId] || {})[_attDayKey]).length;
+
+  view.innerHTML = `
+    <div class="att-stats-row">
+      <div class="att-stat"><div class="att-stat-num">${students.length}</div><div class="att-stat-lbl">الإجمالي</div></div>
+      <div class="att-stat s-present"><div class="att-stat-num">${c.present}</div><div class="att-stat-lbl">حاضر</div></div>
+      <div class="att-stat s-late"><div class="att-stat-num">${c.late}</div><div class="att-stat-lbl">متأخر</div></div>
+      <div class="att-stat s-excused"><div class="att-stat-num">${c.excused}</div><div class="att-stat-lbl">مستأذن</div></div>
+      <div class="att-stat s-absent"><div class="att-stat-num">${c.absent}</div><div class="att-stat-lbl">غائب</div></div>
+    </div>
+
+    <div class="att-bulk-bar ${selN>0?'visible':''}">
+      <span class="att-bulk-label">${selN} طالب محدد</span>
+      <div class="att-bulk-btns">
+        <button class="att-bbtn b-present" onclick="attBulkSet('present')">✓ حاضر</button>
+        <button class="att-bbtn b-late"    onclick="attBulkSet('late')">⏱ متأخر</button>
+        <button class="att-bbtn b-excused" onclick="attBulkSet('excused')">✎ مستأذن</button>
+        <button class="att-bbtn b-absent"  onclick="attBulkSet('absent')">✕ غائب</button>
+        <button class="att-bbtn b-clear"   onclick="attBulkSet('')">مسح</button>
+      </div>
+      <button class="att-deselect-btn" onclick="attDeselectAll()" title="إلغاء التحديد">×</button>
+    </div>
+
+    ${students.length ? `
+    <div class="att-select-all-row" onclick="attToggleSelectAll()">
+      <input type="checkbox" class="att-cb ${someSel?'indeterminate':''}" ${allSel?'checked':''} onclick="event.stopPropagation();attToggleSelectAll()">
+      <label>تحديد الكل</label>
+    </div>
+
+    <div class="att-students">
+      ${students.map((s, i) => {
+        const cur = (_attData[s.studentId] || {})[_attDayKey] || '';
+        const isSel = _attSelected.has(s.studentId);
+        return `
+          <div class="att-srow ${isSel?'selected':''}"
+               draggable="true"
+               ondragstart="attDragStart(event, ${s.studentId})"
+               ondragend="attDragEnd(event)"
+               ondragover="attDragOver(event)"
+               ondragleave="attDragLeave(event)"
+               ondrop="attDrop(event, ${s.studentId})"
+               onclick="attToggleSelect(${s.studentId})">
+            <span class="att-drag-handle" title="اسحب لإعادة الترتيب" aria-hidden="true">⋮⋮</span>
+            <input type="checkbox" class="att-cb" ${isSel?'checked':''} onclick="event.stopPropagation();attToggleSelect(${s.studentId})">
+            <span class="att-snum">${i+1}</span>
+            <span class="att-sname">${esc(s.studentName)}</span>
+            <div class="att-sbtns" onclick="event.stopPropagation()">
+              ${Object.entries(ATT_STATUS).map(([k, v]) => `
+                <button class="att-sbtn ${cur===k?k:''}" title="${v.label}" onclick="attSetStatus(${s.studentId}, '${k}')">${v.icon}</button>
+              `).join('')}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+
+    <div class="att-summary-bar">
+      <span>${done} من ${students.length} طالب سُجّل حضورهم</span>
+      <button class="att-save-btn" onclick="saveAttendanceMock()">حفظ التحضير</button>
+    </div>
+    ` : `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب مطابقون</p></div>`}
+  `;
+}
+
+/* ── العرض الأسبوعي: جدول طلاب × أيام ── */
+function renderAttWeekView() {
+  const view = document.getElementById('att-view-body');
+  if (!view) return;
+  const students = getAttStudents();
+  const days = getAttDays();
+
+  if (!students.length) {
+    view.innerHTML = `<div class="empty"><div class="ei">👥</div><p>لا يوجد طلاب مطابقون</p></div>`;
+    return;
+  }
+
+  const head = `<thead><tr>
+    <th>الطالب</th>
+    ${days.map(d => `<th>${d.label}</th>`).join('')}
+    <th>النسبة</th>
+  </tr></thead>`;
+
+  const rows = students.map(s => {
+    const stats = days.map(d => {
+      const v = (_attData[s.studentId] || {})[d.dateGreg];
+      if (!v) return `<td><span class="att-wbadge unset">—</span></td>`;
+      return `<td><span class="att-wbadge ${v}">${ATT_STATUS[v].label.charAt(0)}</span></td>`;
+    }).join('');
+    const present = days.filter(d => {
+      const v = (_attData[s.studentId] || {})[d.dateGreg];
+      return v === 'present' || v === 'late';
+    }).length;
+    const pct = days.length ? Math.round(present / days.length * 100) : 0;
+    return `<tr>
+      <td class="att-week-name">${esc(s.studentName)}</td>
+      ${stats}
+      <td>
+        <div class="att-pct-bar">
+          <div class="att-pct-track"><div class="att-pct-fill" style="width:${pct}%"></div></div>
+          <span class="att-pct-num">${pct}٪</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  view.innerHTML = `
+    <div class="att-week-wrap">
+      <table class="att-week-table">
+        ${head}
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+/* ══════ Helpers ══════ */
+
+/** أيام البرنامج لأسبوع _attWeekStart: [{dateGreg, label, hijri}]
+ *  ملاحظة: نستخدم UTC طوال العمليات لتجنّب انزياح يوم في توقيت السعودية (UTC+3).
+ *  السبب: parse-as-local + read-as-UTC كان يُنتج تاريخاً يسبق المطلوب بيوم. */
+function getAttDays() {
+  const programDays = _attProg?.days || ['الأحد','الاثنين','الثلاثاء','الأربعاء'];
+  const DAY_MAP = { 'الأحد':0, 'الاثنين':1, 'الثلاثاء':2, 'الأربعاء':3, 'الخميس':4, 'الجمعة':5, 'السبت':6 };
+  let sunday;
+  if (_attWeekStart) {
+    sunday = new Date(_attWeekStart + 'T12:00:00Z');   // UTC noon
+  } else {
+    const t = new Date();
+    sunday = new Date(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate(), 12, 0, 0));
+    sunday.setUTCDate(sunday.getUTCDate() - sunday.getUTCDay());
+  }
+  return programDays.map(name => {
+    const dow = DAY_MAP[name];
+    if (dow === undefined) return null;
+    const d = new Date(sunday);
+    d.setUTCDate(sunday.getUTCDate() + dow);
+    const dateGreg = d.toISOString().slice(0, 10);
+    return {
+      dateGreg,
+      label: name,
+      hijri: fmtHijriShort(dateGreg)
+    };
+  }).filter(Boolean);
+}
+
+/** الأسبوع الافتراضي عند الدخول: اليوم لو ضمن البرنامج، وإلا حافة البرنامج */
+function _attComputeInitialWeek() {
+  if (!_attProg) return todayDate();
+  const today = new Date(todayDate()        + 'T12:00:00Z');
+  const start = new Date(_attProg.startDate + 'T12:00:00Z');
+  const end   = new Date(_attProg.endDate   + 'T12:00:00Z');
+  let pick;
+  if (today < start)      pick = start;
+  else if (today > end)   pick = end;
+  else                    pick = today;
+  const sun = new Date(pick);
+  sun.setUTCDate(pick.getUTCDate() - pick.getUTCDay());
+  return sun.toISOString().slice(0, 10);
+}
+
+/** تصنيف تعطيل أزرار التنقل بناءً على مدى البرنامج */
+function _attWeekNavDisabled() {
+  if (!_attProg || !_attWeekStart) return { prev: true, next: true };
+  const wsObj = new Date(_attWeekStart + 'T12:00:00Z');
+  const weObj = new Date(wsObj); weObj.setUTCDate(wsObj.getUTCDate() + 6);
+  const weekStart = wsObj.toISOString().slice(0, 10);
+  const weekEnd   = weObj.toISOString().slice(0, 10);
+  return {
+    prev: weekStart <= _attProg.startDate,
+    next: weekEnd   >= _attProg.endDate
+  };
+}
+
+/** تسمية مدى الأسبوع بالهجري ("١٠–١٣ شوال ١٤٤٧" أو متغير حسب الشهر/السنة) */
+function getAttWeekRangeLabel() {
+  const days = getAttDays();
+  if (!days.length) return '';
+  const f = parseHijriInput(toHijri(days[0].dateGreg));
+  const l = parseHijriInput(toHijri(days[days.length - 1].dateGreg));
+  if (!f || !l) return '';
+  const HM = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+  const ar = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  if (f.y === l.y && f.m === l.m) {
+    return `${ar(f.d)}–${ar(l.d)} ${HM[f.m-1]} ${ar(f.y)}`;
+  }
+  if (f.y === l.y) {
+    return `${ar(f.d)} ${HM[f.m-1]} – ${ar(l.d)} ${HM[l.m-1]} ${ar(f.y)}`;
+  }
+  return `${ar(f.d)} ${HM[f.m-1]} ${ar(f.y)} – ${ar(l.d)} ${HM[l.m-1]} ${ar(l.y)}`;
+}
+
+/** التنقل أسبوعاً للأمام/الخلف — مع guard دفاعي */
+function setAttWeek(dir) {
+  if (!_attWeekStart) return;
+  const nav = _attWeekNavDisabled();
+  if (dir === 'prev' && nav.prev) return;
+  if (dir === 'next' && nav.next) return;
+  const cur = new Date(_attWeekStart + 'T12:00:00Z');
+  cur.setUTCDate(cur.getUTCDate() + (dir === 'prev' ? -7 : 7));
+  _attWeekStart = cur.toISOString().slice(0, 10);
+  // لو اليوم النشط لم يعد ضمن الأسبوع الجديد، اختر أول يوم من البرنامج فيه
+  const days = getAttDays();
+  if (!days.find(d => d.dateGreg === _attDayKey)) {
+    _attDayKey = days[0]?.dateGreg || null;
+  }
+  _attSelected.clear();
+  renderAttAttend();
+}
+
+/** الطلاب في المجموعة الحالية بعد فلترة البحث + ترتيب مخصّص */
+function getAttStudents() {
+  let list = _attSubs.filter(s => s.groupName === _attGroup);
+  if (_attSearch) {
+    const q = _attSearch.toLowerCase();
+    list = list.filter(s => (s.studentName || '').toLowerCase().includes(q));
+  }
+  // dedupe بـ studentId (لو فيه اشتراكات مكررة لنفس الطالب)
+  const seen = new Set();
+  list = list.filter(s => {
+    if (seen.has(s.studentId)) return false;
+    seen.add(s.studentId);
+    return true;
+  });
+  // تطبيق الترتيب المحفوظ — الطلاب الجدد (غير موجودين في الترتيب) يُلحقون بالنهاية
+  const savedOrder = _attLoadOrder()[_attGroup] || [];
+  if (savedOrder.length) {
+    list.sort((a, b) => {
+      const ai = savedOrder.indexOf(a.studentId);
+      const bi = savedOrder.indexOf(b.studentId);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+  return list;
+}
+
+/** تخزين mock في localStorage */
+function _attPersist() {
+  try { localStorage.setItem('bare_att_mock', JSON.stringify(_attData)); } catch(e) {}
+}
+
+/* ── ترتيب الطلاب المخصّص لكل مجموعة (drag & drop) ── */
+function _attLoadOrder() {
+  try { return JSON.parse(localStorage.getItem('bare_att_order') || '{}'); }
+  catch { return {}; }
+}
+function _attSaveOrder(order) {
+  try { localStorage.setItem('bare_att_order', JSON.stringify(order)); } catch(e) {}
+}
+
+function attDragStart(e, sid) {
+  _attDragId = sid;
+  e.dataTransfer.effectAllowed = 'move';
+  // setData مطلوب على Firefox لكي يبدأ الـ drag
+  try { e.dataTransfer.setData('text/plain', String(sid)); } catch(e) {}
+  e.currentTarget.classList.add('dragging');
+}
+function attDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.att-srow.drop-target').forEach(r => r.classList.remove('drop-target'));
+}
+function attDragOver(e) {
+  if (_attDragId === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drop-target');
+}
+function attDragLeave(e) {
+  e.currentTarget.classList.remove('drop-target');
+}
+function attDrop(e, targetSid) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-target');
+  if (_attDragId === null || _attDragId === targetSid) { _attDragId = null; return; }
+
+  const ids = getAttStudents().map(s => s.studentId);
+  const fromIdx = ids.indexOf(_attDragId);
+  const toIdx   = ids.indexOf(targetSid);
+  if (fromIdx === -1 || toIdx === -1) { _attDragId = null; return; }
+
+  ids.splice(fromIdx, 1);
+  ids.splice(toIdx, 0, _attDragId);
+
+  const order = _attLoadOrder();
+  order[_attGroup] = ids;
+  _attSaveOrder(order);
+  _attDragId = null;
+  renderAttDayView();
+}
+
+/* ══════ Navigation handlers ══════ */
+function selectAttProg(progId) {
+  _attProg = _progs.find(p => p.id === progId);
+  if (!_attProg) return;
+  _attScreen = 'groups';
+  _attSelected.clear();
+  _attWeekStart = null;   // برنامج جديد → أعد حساب الأسبوع الافتراضي
+  renderAttScreen();
+}
+
+function selectAttGroup(name) {
+  _attGroup = name;
+  _attScreen = 'attend';
+  _attSelected.clear();
+  _attSearch = '';
+  _attDayKey = null;  // re-pick on render
+  renderAttScreen();
+}
+
+function attBack(to) {
+  _attSelected.clear();
+  if (to === 'programs') {
+    _attProg = null;
+    _attGroup = null;
+    _attScreen = 'programs';
+  } else if (to === 'groups') {
+    _attGroup = null;
+    _attScreen = 'groups';
+  }
+  renderAttScreen();
+}
+
+function setAttDay(key) {
+  _attDayKey = key;
+  _attSelected.clear();
+  if (_attView === 'day') renderAttDayView();
+  renderAttDaysBar();
+}
+
+function setAttView(v) {
+  _attView = v;
+  _attSelected.clear();
+  renderAttAttend();
+}
+
+function attSearch(q) {
+  _attSearch = q || '';
+  _attSelected.clear();
+  if (_attView === 'day') renderAttDayView();
+  else                     renderAttWeekView();
+}
+
+/* ══════ Selection / Status handlers ══════ */
+function attToggleSelect(sid) {
+  if (_attSelected.has(sid)) _attSelected.delete(sid);
+  else                       _attSelected.add(sid);
+  renderAttDayView();
+}
+
+function attToggleSelectAll() {
+  const students = getAttStudents();
+  const allSel = students.length > 0 && students.every(s => _attSelected.has(s.studentId));
+  if (allSel) students.forEach(s => _attSelected.delete(s.studentId));
+  else        students.forEach(s => _attSelected.add(s.studentId));
+  renderAttDayView();
+}
+
+function attDeselectAll() {
+  _attSelected.clear();
+  renderAttDayView();
+}
+
+function attBulkSet(status) {
+  const sids = [..._attSelected];
+  if (!sids.length) return;
+  sids.forEach(sid => {
+    if (!_attData[sid]) _attData[sid] = {};
+    if (status) _attData[sid][_attDayKey] = status;
+    else        delete _attData[sid][_attDayKey];
+  });
+  _attPersist();
+  const lbl = status ? ATT_STATUS[status].label : 'مسح';
+  toast(`تم تطبيق "${lbl}" على ${sids.length} طالب`, 'success');
+  _attSelected.clear();
+  renderAttDayView();
+}
+
+function attSetStatus(sid, status) {
+  if (!_attData[sid]) _attData[sid] = {};
+  const cur = _attData[sid][_attDayKey];
+  if (cur === status) delete _attData[sid][_attDayKey];
+  else                _attData[sid][_attDayKey] = status;
+  _attPersist();
+  renderAttDayView();
+}
+
+function saveAttendanceMock() {
+  toast('✅ تم الحفظ محلياً (mock — لا اتصال بالخادم بعد)', 'success');
 }
 
 /* ══════════════════════════════════════════
@@ -1971,7 +2614,7 @@ async function savePointsSettings() {
 function renderAdmUsers() {
   const body = document.getElementById('adm-users-body');
   if (!_users.length) { body.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">لا يوجد مستخدمون</td></tr>`; return; }
-  const permLabels = { points:'النقاط', cultural:'الثقافي', sports:'الرياضي' };
+  const permLabels = { attendance:'التحضير', points:'النقاط', cultural:'الثقافي', sports:'الرياضي' };
   body.innerHTML = _users.map(u => {
     const perms = u.permissions || {};
     const permStr = Object.entries(permLabels).filter(([k]) => perms[k]).map(([,v])=>v).join(' • ') || '—';
@@ -1997,7 +2640,7 @@ function openUserModal(id = 0) {
   document.getElementById('u-password').value = u?.password || '';
   document.getElementById('u-role').value     = u?.role || 'moderator';
   document.getElementById('u-quota').value    = u?.dailyQuota || 100;
-  const perms = u?.permissions || { points: true, cultural: false, sports: false };
+  const perms = u?.permissions || { attendance: true, points: true, cultural: false, sports: false };
   document.querySelectorAll('#u-perms-wrap .perm-chip').forEach(chip => {
     chip.classList.toggle('on', !!perms[chip.dataset.key]);
   });
@@ -2024,7 +2667,7 @@ async function saveUser() {
   document.querySelectorAll('#u-perms-wrap .perm-chip').forEach(chip => {
     permissions[chip.dataset.key] = chip.classList.contains('on');
   });
-  if (role === 'super_admin') { ['points','cultural','sports'].forEach(k => permissions[k] = true); }
+  if (role === 'super_admin') { ['attendance','points','cultural','sports'].forEach(k => permissions[k] = true); }
 
   const data = { username, password, role, dailyQuota: quota, permissions, isActive: true };
   try {

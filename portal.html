@@ -52,6 +52,9 @@
       </div>
       <div class="nav-section-label">قسم النظام</div>
 
+      <div class="nav-item" id="nav-attendance" onclick="switchSection('attendance')">
+        <span class="nav-icon">✅</span><span>التحضير</span>
+      </div>
       <div class="nav-sub-item" id="nav-points" onclick="switchSection('points')">
         <span class="nav-icon">⭐</span><span>النقاط</span>
       </div>
@@ -88,6 +91,11 @@
       </div>
       <div class="kpi-row" id="home-kpi"></div>
       <div class="cards-grid" id="home-recent"></div>
+    </section>
+
+    <!-- ══ ATTENDANCE ══ -->
+    <section class="section" id="section-attendance">
+      <div id="att-body"></div>
     </section>
 
     <!-- ══ POINTS ══ -->
@@ -579,6 +587,7 @@
       <div class="form-group" id="u-perms-wrap">
         <label>الصلاحيات</label>
         <div class="perm-grid">
+          <span class="perm-chip on" data-key="attendance" onclick="togglePerm(this)">✅ التحضير</span>
           <span class="perm-chip on" data-key="points"     onclick="togglePerm(this)">⭐ النقاط</span>
           <span class="perm-chip"   data-key="cultural"   onclick="togglePerm(this)">🏆 الثقافي</span>
           <span class="perm-chip"   data-key="sports"     onclick="togglePerm(this)">⚽ الرياضي</span>
