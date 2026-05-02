@@ -9,6 +9,8 @@ const TB = {
   STUDENTS       : 'students',
   PROGRAMS       : 'programs',
   SUBSCRIPTIONS  : 'subscriptions',
+  ATTENDANCE     : 'attendance',
+  ATTENDANCE_LOG : 'attendance_log',
   POINTS         : 'points',
   POINT_REASONS  : 'point_reasons',
   USERS          : 'users',
@@ -70,9 +72,7 @@ let _attGroup    = null;                                // selected group name
 let _attSubs     = [];                                  // subscriptions for selected program
 let _attView     = 'day';                               // 'day' | 'week'
 let _attDayKey   = null;                                // active day, Gregorian YYYY-MM-DD
-let _attData     = (() => {
-  try { return JSON.parse(localStorage.getItem('bare_att_mock') || '{}'); } catch { return {}; }
-})();                                                   // { studentId: { 'YYYY-MM-DD': status } }
+let _attData     = {};                                  // { studentId: { 'YYYY-MM-DD': status } } — يُحمّل من DB في loadAttData
 let _attSelected = new Set();
 let _attSearch   = '';
 let _attProgCounts = {};                                // { progId: subCount } — جلب مرة واحدة لشاشة البرامج
@@ -405,10 +405,19 @@ async function renderAttGroups() {
     </div>
     <div class="empty"><div class="ei">⏳</div><p>جاري تحميل المجموعات…</p></div>`;
 
-  // حمّل subscriptions للبرنامج (مرة واحدة)
-  try {
-    _attSubs = await sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}`);
-  } catch(e) { _attSubs = []; }
+  // حمّل subscriptions + بيانات التحضير معاً (parallel) — مرة واحدة لكل برنامج
+  const [subs] = await Promise.all([
+    sbRead(TB.SUBSCRIPTIONS, `programId=eq.${p.id}`).catch(() => []),
+    loadAttData(p.id)
+  ]);
+  _attSubs = subs;
+
+  // Migration لمرة واحدة من localStorage → DB (لو كان هناك بيانات قديمة)
+  await _attMigrateLocalToDb(p.id, _attSubs);
+  // أعد التحميل لو حدث migration (السجلات الجديدة مضمنة الآن)
+  if (!localStorage.getItem('bare_att_mock')) {
+    await loadAttData(p.id);
+  }
 
   // المجموعات: من حقل البرنامج (مفصول بـ ،) أو فريدة من الاشتراكات
   let groups = (p.groups || '').split('،').map(g => g.trim()).filter(Boolean);
@@ -769,9 +778,64 @@ function getAttStudents() {
   return list;
 }
 
-/** تخزين mock في localStorage */
-function _attPersist() {
-  try { localStorage.setItem('bare_att_mock', JSON.stringify(_attData)); } catch(e) {}
+/** تحميل بيانات التحضير من Supabase (DB authoritative — لا اعتماد على localStorage). */
+async function loadAttData(programId) {
+  _attData = {};
+  try {
+    const rows = await sbRead(TB.ATTENDANCE, `programId=eq.${programId}`);
+    rows.forEach(r => {
+      const sid = parseInt(r.studentId);
+      if (!_attData[sid]) _attData[sid] = {};
+      _attData[sid][r.date] = r.status;
+    });
+  } catch(e) {
+    console.warn('فشل تحميل التحضير من DB:', e.message);
+    toast('فشل تحميل التحضير — حاول لاحقاً', 'error');
+  }
+}
+
+/** Migration لمرة واحدة: نقل بيانات mock من localStorage إلى DB.
+ *  يقتصر على الطلاب الموجودين في الـ subs المحملة (تجنب البيانات الوهمية). */
+async function _attMigrateLocalToDb(programId, knownSubs) {
+  let local;
+  try { local = JSON.parse(localStorage.getItem('bare_att_mock') || '{}'); } catch { return; }
+  if (!local || !Object.keys(local).length) return;
+
+  const subById = new Map(knownSubs.map(s => [parseInt(s.studentId), s]));
+  const rows = [];
+  for (const [sidStr, dates] of Object.entries(local)) {
+    const sid = parseInt(sidStr);
+    const sub = subById.get(sid);
+    if (!sub) continue;   // طالب غير معروف في هذا البرنامج → تخطّ
+    for (const [date, status] of Object.entries(dates || {})) {
+      if (!status) continue;
+      if (!['present','late','excused','absent'].includes(status)) continue;
+      rows.push({
+        programId,
+        studentId:   sid,
+        studentName: sub.studentName || '',
+        groupName:   sub.groupName || '',
+        date,
+        status,
+        recordedBy:  'migrated'
+      });
+    }
+  }
+
+  if (!rows.length) {
+    // لا شيء قابل للترحيل — احذف المحلي على أي حال
+    try { localStorage.removeItem('bare_att_mock'); } catch {}
+    return;
+  }
+
+  try {
+    await sbUpsert(TB.ATTENDANCE, rows);
+    try { localStorage.removeItem('bare_att_mock'); } catch {}
+    toast(`تم نقل ${rows.length} سجل تحضير محلي إلى السحابة`, 'success');
+  } catch(e) {
+    console.warn('فشل ترحيل البيانات المحلية:', e.message);
+    // نُبقي localStorage حتى لا تضيع البيانات
+  }
 }
 
 /* ── ترتيب الطلاب المخصّص لكل مجموعة (drag & drop) ── */
@@ -895,32 +959,125 @@ function attDeselectAll() {
   renderAttDayView();
 }
 
-function attBulkSet(status) {
+/* ── الكتابة لـ Supabase (ADR-008) — UI يُحدَّث optimistic ثم نكتب DB ── */
+
+async function attSetStatus(sid, status) {
+  if (!_attData[sid]) _attData[sid] = {};
+  const cur = _attData[sid][_attDayKey];
+  const newStatus = (cur === status) ? null : status;   // toggle off if same
+  const oldStatus = cur || null;
+
+  // Optimistic UI
+  if (newStatus) _attData[sid][_attDayKey] = newStatus;
+  else           delete _attData[sid][_attDayKey];
+  renderAttDayView();
+
+  // Persist to DB
+  try {
+    const sub = _attSubs.find(s => s.studentId === sid);
+    if (newStatus) {
+      await sbUpsert(TB.ATTENDANCE, {
+        programId:   _attProg.id,
+        studentId:   sid,
+        studentName: sub?.studentName || '',
+        groupName:   _attGroup,
+        date:        _attDayKey,
+        status:      newStatus,
+        recordedBy:  _user?.username || 'admin'
+      });
+    } else {
+      await fetch(`${SB_URL}/${TB.ATTENDANCE}?programId=eq.${_attProg.id}&studentId=eq.${sid}&date=eq.${_attDayKey}`,
+        { method: 'DELETE', headers: _h() });
+    }
+    // Audit log (لا يكسر التدفق إن فشل)
+    sbInsert(TB.ATTENDANCE_LOG, {
+      programId:   _attProg.id,
+      studentId:   sid,
+      studentName: sub?.studentName || '',
+      groupName:   _attGroup,
+      date:        _attDayKey,
+      oldStatus,
+      newStatus,
+      changedBy:   _user?.username || 'admin'
+    }).catch(e => console.warn('att-log fail:', e.message));
+  } catch(e) {
+    // Rollback
+    if (oldStatus) _attData[sid][_attDayKey] = oldStatus;
+    else           delete _attData[sid][_attDayKey];
+    renderAttDayView();
+    toast('فشل الحفظ — ' + e.message, 'error');
+  }
+}
+
+async function attBulkSet(status) {
   const sids = [..._attSelected];
   if (!sids.length) return;
+
+  // Snapshot للـ rollback
+  const oldStatuses = {};
   sids.forEach(sid => {
     if (!_attData[sid]) _attData[sid] = {};
+    oldStatuses[sid] = _attData[sid][_attDayKey] || null;
     if (status) _attData[sid][_attDayKey] = status;
     else        delete _attData[sid][_attDayKey];
   });
-  _attPersist();
+
   const lbl = status ? ATT_STATUS[status].label : 'مسح';
   toast(`تم تطبيق "${lbl}" على ${sids.length} طالب`, 'success');
   _attSelected.clear();
   renderAttDayView();
-}
 
-function attSetStatus(sid, status) {
-  if (!_attData[sid]) _attData[sid] = {};
-  const cur = _attData[sid][_attDayKey];
-  if (cur === status) delete _attData[sid][_attDayKey];
-  else                _attData[sid][_attDayKey] = status;
-  _attPersist();
-  renderAttDayView();
+  // Persist to DB
+  try {
+    if (status) {
+      const rows = sids.map(sid => {
+        const sub = _attSubs.find(s => s.studentId === sid);
+        return {
+          programId:   _attProg.id,
+          studentId:   sid,
+          studentName: sub?.studentName || '',
+          groupName:   _attGroup,
+          date:        _attDayKey,
+          status,
+          recordedBy:  _user?.username || 'admin'
+        };
+      });
+      await sbUpsert(TB.ATTENDANCE, rows);
+    } else {
+      // bulk delete: studentId in (...)
+      const idsList = sids.join(',');
+      await fetch(`${SB_URL}/${TB.ATTENDANCE}?programId=eq.${_attProg.id}&studentId=in.(${idsList})&date=eq.${_attDayKey}`,
+        { method: 'DELETE', headers: _h() });
+    }
+    // Bulk audit log (parallel best-effort)
+    const logRows = sids.map(sid => {
+      const sub = _attSubs.find(s => s.studentId === sid);
+      return {
+        programId:   _attProg.id,
+        studentId:   sid,
+        studentName: sub?.studentName || '',
+        groupName:   _attGroup,
+        date:        _attDayKey,
+        oldStatus:   oldStatuses[sid],
+        newStatus:   status || null,
+        changedBy:   _user?.username || 'admin'
+      };
+    });
+    sbInsert(TB.ATTENDANCE_LOG, logRows).catch(e => console.warn('bulk att-log fail:', e.message));
+  } catch(e) {
+    // Rollback كل التغييرات
+    sids.forEach(sid => {
+      if (oldStatuses[sid]) _attData[sid][_attDayKey] = oldStatuses[sid];
+      else                  delete _attData[sid][_attDayKey];
+    });
+    renderAttDayView();
+    toast('فشل الحفظ الجماعي — ' + e.message, 'error');
+  }
 }
 
 function saveAttendanceMock() {
-  toast('✅ تم الحفظ محلياً (mock — لا اتصال بالخادم بعد)', 'success');
+  // الحفظ صار تلقائياً عند كل تعديل. الزر يبقى للتأكيد البصري.
+  toast('✅ كل التغييرات محفوظة في السحابة', 'success');
 }
 
 /* ══════════════════════════════════════════
