@@ -264,6 +264,26 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
   - localStorage key: `bare_att_mock` — يضيع عند مسح الكاش لكن يبقى عبر reload.
   - **مراحل قادمة محتملة:** ربط DB، إضافة سجل العمليات، تنقّل بين الأسابيع، تقارير شهرية.
 
+### ADR-008 — Schema جداول التحضير وربطها بـ Supabase
+- **التاريخ:** 2026-05-02
+- **السياق:** بعد ADR-007 (إعادة بناء التحضير mock في localStorage)، حان وقت ربط الميزة بـ DB لتمكين عبر-أجهزة و persistent storage. السؤال: schema بسيط (جدول واحد) أم طبيعي (جلسات + سجلات)؟
+- **القرار:**
+  - **خيار أ — جدول واحد عريض:** `attendance` يخزن (programId, studentId, date, status) مع snapshot للاسم والمجموعة و audit metadata.
+  - **جدول `attendance_log`** للـ audit (oldStatus, newStatus, changedBy, changedAt). يُكتب best-effort بعد كل تعديل (parallel، لا يعطّل التدفق إن فشل).
+  - **`UNIQUE(programId, studentId, date)`** — يدعم upsert عبر `Prefer: resolution=merge-duplicates`.
+  - **`CHECK (status IN ...)`** — حماية من قيم خاطئة على مستوى DB.
+  - **Trigger `updatedAt`** — يحدّث تلقائياً عند UPDATE.
+  - **RLS مؤقت:** anon full access (تطابق ADR-001). يُحكم في S4.
+- **البدائل المرفوضة:**
+  - (أ) جلسات منفصلة (`att_sessions` + `att_records`) — تعقيد إضافي بدون حاجة حالية. متوسعة لاحقاً لو احتجنا notes per-session.
+  - (ب) Schemaless (jsonb column) — صعوبة الفهرسة والاستعلام، RLS أصعب.
+  - (ج) إبقاء mock في localStorage — لا cross-device، لا audit، لا scalable.
+- **النتيجة:**
+  - **الكتابة optimistic:** UI يُحدّث فوراً، DB في الخلفية، rollback تلقائي عند فشل.
+  - **القراءة authoritative من DB** بعد Commit 3.
+  - **Migration لمرة واحدة:** عند الدخول الأول للتحضير، يُنقل ما في `localStorage('bare_att_mock')` إلى DB إن أمكن (مع فلترة على الطلاب المعروفين فقط)، ثم يُمسح localStorage.
+  - 3 commits متسلسلة: DDL في Supabase Studio (يدوي) → ربط القراءة → ربط الكتابة + migration + audit.
+
 ### ADR-006 — حذف ميزة التحضير بالكامل
 - **التاريخ:** 2026-05-02
 - **السياق:** ميزة التحضير (Attendance) كانت موجودة في portal كقسم رئيسي مع 5 صفحات فرعية (programs/groups/matrix/stats/log) + شاشة "تحضير سريع" منفصلة. الميزة كبيرة (~1100 سطر عبر HTML/JS/CSS) لكنها **لم تُستخدم في التشغيل اليومي** كما كان متوقعاً، ولم تُحقق العائد التشغيلي اللازم لتبرير صيانتها.
@@ -369,6 +389,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F13 | **حذف ميزة التحضير بالكامل** (ADR-006): ٤ commits متسلسلة — portal.html (-218 سطر) + portal.js (-602 سطر) + portal.css (-472 سطر) + dashboard cleanup (-6 سطر) | ✅ | 2026-05-02 | `34a2225, 88a3267, d504a98, a2edb4b` |
 | F14 | **إعادة بناء التحضير** (ADR-007): تصميم drill-down جديد، 3 شاشات (Programs → Groups → Attend)، 4 حالات، mock في localStorage، mobile-first | ✅ | 2026-05-02 | `718c595` |
 | F15 | **تحسينات التحضير:** عداد المشتركين على شاشة البرامج + تنقّل بين الأسابيع مع تقييد بمدى البرنامج + إصلاح TZ في تواريخ الأسبوع (UTC) + أيقونات عربية (ح ت م غ) + drag-drop لإعادة ترتيب الطلاب مع localStorage | ✅ | 2026-05-02 | `fb09fdd, f9f9a26, 084d85e, bdc692a, 3d7f7eb` |
+| F16 | **ربط التحضير بـ Supabase** (ADR-008): DDL لـ `attendance` + `attendance_log`، قراءة من DB، كتابة optimistic مع rollback، audit log، migration لمرة واحدة من localStorage | ✅ | 2026-05-02 | `b4e3ffe, ...` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
