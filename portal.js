@@ -79,10 +79,10 @@ let _attProgCounts = {};                                // { progId: subCount } 
 let _attWeekStart = null;                               // أحد الأسبوع المعروض، YYYY-MM-DD ميلادي
 
 const ATT_STATUS = {
-  present: { label: 'حاضر',   icon: '✓', cls: 'present' },
-  late:    { label: 'متأخر',  icon: '⏱', cls: 'late'    },
-  excused: { label: 'مستأذن', icon: '✎', cls: 'excused' },
-  absent:  { label: 'غائب',   icon: '✕', cls: 'absent'  }
+  present: { label: 'حاضر',   icon: 'ح', cls: 'present' },
+  late:    { label: 'متأخر',  icon: 'ت', cls: 'late'    },
+  excused: { label: 'مستأذن', icon: 'م', cls: 'excused' },
+  absent:  { label: 'غائب',   icon: 'غ', cls: 'absent'  }
 };
 
 // points state
