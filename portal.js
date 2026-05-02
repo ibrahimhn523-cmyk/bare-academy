@@ -77,6 +77,7 @@ let _attSelected = new Set();
 let _attSearch   = '';
 let _attProgCounts = {};                                // { progId: subCount } — جلب مرة واحدة لشاشة البرامج
 let _attWeekStart = null;                               // أحد الأسبوع المعروض، YYYY-MM-DD ميلادي
+let _attDragId    = null;                               // studentId المسحوب حالياً (drag & drop)
 
 const ATT_STATUS = {
   present: { label: 'حاضر',   icon: 'ح', cls: 'present' },
@@ -566,7 +567,15 @@ function renderAttDayView() {
         const cur = (_attData[s.studentId] || {})[_attDayKey] || '';
         const isSel = _attSelected.has(s.studentId);
         return `
-          <div class="att-srow ${isSel?'selected':''}" onclick="attToggleSelect(${s.studentId})">
+          <div class="att-srow ${isSel?'selected':''}"
+               draggable="true"
+               ondragstart="attDragStart(event, ${s.studentId})"
+               ondragend="attDragEnd(event)"
+               ondragover="attDragOver(event)"
+               ondragleave="attDragLeave(event)"
+               ondrop="attDrop(event, ${s.studentId})"
+               onclick="attToggleSelect(${s.studentId})">
+            <span class="att-drag-handle" title="اسحب لإعادة الترتيب" aria-hidden="true">⋮⋮</span>
             <input type="checkbox" class="att-cb" ${isSel?'checked':''} onclick="event.stopPropagation();attToggleSelect(${s.studentId})">
             <span class="att-snum">${i+1}</span>
             <span class="att-sname">${esc(s.studentName)}</span>
@@ -731,7 +740,7 @@ function setAttWeek(dir) {
   renderAttAttend();
 }
 
-/** الطلاب في المجموعة الحالية بعد فلترة البحث */
+/** الطلاب في المجموعة الحالية بعد فلترة البحث + ترتيب مخصّص */
 function getAttStudents() {
   let list = _attSubs.filter(s => s.groupName === _attGroup);
   if (_attSearch) {
@@ -740,16 +749,78 @@ function getAttStudents() {
   }
   // dedupe بـ studentId (لو فيه اشتراكات مكررة لنفس الطالب)
   const seen = new Set();
-  return list.filter(s => {
+  list = list.filter(s => {
     if (seen.has(s.studentId)) return false;
     seen.add(s.studentId);
     return true;
   });
+  // تطبيق الترتيب المحفوظ — الطلاب الجدد (غير موجودين في الترتيب) يُلحقون بالنهاية
+  const savedOrder = _attLoadOrder()[_attGroup] || [];
+  if (savedOrder.length) {
+    list.sort((a, b) => {
+      const ai = savedOrder.indexOf(a.studentId);
+      const bi = savedOrder.indexOf(b.studentId);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }
+  return list;
 }
 
 /** تخزين mock في localStorage */
 function _attPersist() {
   try { localStorage.setItem('bare_att_mock', JSON.stringify(_attData)); } catch(e) {}
+}
+
+/* ── ترتيب الطلاب المخصّص لكل مجموعة (drag & drop) ── */
+function _attLoadOrder() {
+  try { return JSON.parse(localStorage.getItem('bare_att_order') || '{}'); }
+  catch { return {}; }
+}
+function _attSaveOrder(order) {
+  try { localStorage.setItem('bare_att_order', JSON.stringify(order)); } catch(e) {}
+}
+
+function attDragStart(e, sid) {
+  _attDragId = sid;
+  e.dataTransfer.effectAllowed = 'move';
+  // setData مطلوب على Firefox لكي يبدأ الـ drag
+  try { e.dataTransfer.setData('text/plain', String(sid)); } catch(e) {}
+  e.currentTarget.classList.add('dragging');
+}
+function attDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.att-srow.drop-target').forEach(r => r.classList.remove('drop-target'));
+}
+function attDragOver(e) {
+  if (_attDragId === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drop-target');
+}
+function attDragLeave(e) {
+  e.currentTarget.classList.remove('drop-target');
+}
+function attDrop(e, targetSid) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drop-target');
+  if (_attDragId === null || _attDragId === targetSid) { _attDragId = null; return; }
+
+  const ids = getAttStudents().map(s => s.studentId);
+  const fromIdx = ids.indexOf(_attDragId);
+  const toIdx   = ids.indexOf(targetSid);
+  if (fromIdx === -1 || toIdx === -1) { _attDragId = null; return; }
+
+  ids.splice(fromIdx, 1);
+  ids.splice(toIdx, 0, _attDragId);
+
+  const order = _attLoadOrder();
+  order[_attGroup] = ids;
+  _attSaveOrder(order);
+  _attDragId = null;
+  renderAttDayView();
 }
 
 /* ══════ Navigation handlers ══════ */

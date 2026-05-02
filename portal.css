@@ -762,6 +762,15 @@ tr.row-selected { background:rgba(193,157,46,.06); }
 }
 .att-srow:hover { border-color: #ccc; }
 .att-srow.selected { border-color: var(--primary); background: #f0f3f8; }
+.att-srow.dragging { opacity: 0.4; }
+.att-srow.drop-target { border-color: var(--gold2); border-style: dashed; background: #fff8e8; }
+
+.att-drag-handle {
+  cursor: grab; color: var(--muted); font-size: 1rem;
+  padding: 0 4px; user-select: none; line-height: 1;
+  letter-spacing: -2px;
+}
+.att-drag-handle:active { cursor: grabbing; }
 .att-snum { font-size: .76rem; color: var(--muted); min-width: 22px; text-align: center; font-weight: 500; }
 .att-sname { flex: 1; font-size: .88rem; font-weight: 500; color: var(--primary); min-width: 120px; }
 .att-sbtns { display: flex; gap: 5px; flex-wrap: wrap; }
@@ -836,5 +845,8 @@ tr.row-selected { background:rgba(193,157,46,.06); }
   .att-sbtn { flex: 1; min-width: 0; }
   .att-bulk-bar { padding: 9px 12px; }
   .att-bulk-label { width: 100%; }
+  /* drag-drop UX سيء على touch — نخفي المقبض. الترتيب المحفوظ يبقى ساري المفعول */
+  .att-drag-handle { display: none; }
+  .att-srow { -webkit-user-drag: none; user-drag: none; }
 }
 
