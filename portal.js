@@ -76,6 +76,7 @@ let _attData     = (() => {
 let _attSelected = new Set();
 let _attSearch   = '';
 let _attProgCounts = {};                                // { progId: subCount } — جلب مرة واحدة لشاشة البرامج
+let _attWeekStart = null;                               // أحد الأسبوع المعروض، YYYY-MM-DD ميلادي
 
 const ATT_STATUS = {
   present: { label: 'حاضر',   icon: '✓', cls: 'present' },
@@ -320,6 +321,7 @@ async function loadAttendance() {
   _attGroup = null;
   _attSelected.clear();
   _attSearch = '';
+  _attWeekStart = null;
   renderAttScreen();   // أرسم فوراً — البطاقات ستظهر بدون عدّ، ثم نُحدّث
 
   // اجلب عدد المشتركين لكل برنامج نشط (مرة واحدة، مع cache)
@@ -452,13 +454,19 @@ function renderAttAttend() {
   const p = _attProg, g = _attGroup;
   if (!p || !g) { _attScreen = 'programs'; return renderAttScreen(); }
 
-  // أيام البرنامج لهذا الأسبوع
+  // تهيئة الأسبوع لو لم يُحسب بعد
+  if (!_attWeekStart) _attWeekStart = _attComputeInitialWeek();
+
+  // أيام البرنامج للأسبوع الحالي
   const days = getAttDays();
   if (!_attDayKey || !days.find(d => d.dateGreg === _attDayKey)) {
-    // اختر اليوم الحالي إن كان من أيام البرنامج، وإلا أول يوم
+    // اختر اليوم الحالي إن كان من أيام البرنامج لهذا الأسبوع، وإلا أول يوم
     const today = todayDate();
     _attDayKey = (days.find(d => d.dateGreg === today) || days[0])?.dateGreg || null;
   }
+
+  const nav = _attWeekNavDisabled();
+  const rangeLabel = getAttWeekRangeLabel();
 
   let html = `
     <div class="att-breadcrumb">
@@ -477,6 +485,12 @@ function renderAttAttend() {
       <div class="att-toolbar">
         <input class="att-search-inp" placeholder="🔍 بحث..." value="${esc(_attSearch)}" oninput="attSearch(this.value)">
       </div>
+    </div>
+
+    <div class="att-week-nav">
+      <button class="att-week-nav-btn" ${nav.prev ? 'disabled' : ''} onclick="setAttWeek('prev')">← السابق</button>
+      <span class="att-week-range">${rangeLabel}</span>
+      <button class="att-week-nav-btn" ${nav.next ? 'disabled' : ''} onclick="setAttWeek('next')">التالي →</button>
     </div>
 
     <div class="att-days-bar" id="att-days-bar"></div>
@@ -625,16 +639,19 @@ function renderAttWeekView() {
 
 /* ══════ Helpers ══════ */
 
-/** أيام البرنامج لهذا الأسبوع: [{dateGreg, label, hijri}] */
+/** أيام البرنامج لأسبوع _attWeekStart: [{dateGreg, label, hijri}] */
 function getAttDays() {
   const programDays = _attProg?.days || ['الأحد','الاثنين','الثلاثاء','الأربعاء'];
-  // map Arabic day name → JS getDay() (0=Sunday)
   const DAY_MAP = { 'الأحد':0, 'الاثنين':1, 'الثلاثاء':2, 'الأربعاء':3, 'الخميس':4, 'الجمعة':5, 'السبت':6 };
-  // ابدأ من الأحد لهذا الأسبوع
-  const today = new Date();
-  const sunday = new Date(today);
-  sunday.setDate(today.getDate() - today.getDay());
-  // لكل يوم من أيام البرنامج، احسب التاريخ الميلادي ثم الهجري
+  // الأحد المرجع: من _attWeekStart إن توفر، وإلا أحد الأسبوع الحالي
+  let sunday;
+  if (_attWeekStart) {
+    sunday = new Date(_attWeekStart + 'T00:00:00');
+  } else {
+    const today = new Date();
+    sunday = new Date(today);
+    sunday.setDate(today.getDate() - today.getDay());
+  }
   return programDays.map(name => {
     const dow = DAY_MAP[name];
     if (dow === undefined) return null;
@@ -647,6 +664,71 @@ function getAttDays() {
       hijri: fmtHijriShort(dateGreg)
     };
   }).filter(Boolean);
+}
+
+/** الأسبوع الافتراضي عند الدخول: اليوم لو ضمن البرنامج، وإلا حافة البرنامج */
+function _attComputeInitialWeek() {
+  if (!_attProg) return todayDate();
+  const today = new Date(todayDate() + 'T00:00:00');
+  const start = new Date(_attProg.startDate + 'T00:00:00');
+  const end   = new Date(_attProg.endDate + 'T00:00:00');
+  let pick;
+  if (today < start)      pick = start;
+  else if (today > end)   pick = end;
+  else                    pick = today;
+  // الأحد لأسبوع pick
+  const sun = new Date(pick);
+  sun.setDate(pick.getDate() - pick.getDay());
+  return sun.toISOString().slice(0, 10);
+}
+
+/** تصنيف تعطيل أزرار التنقل بناءً على مدى البرنامج */
+function _attWeekNavDisabled() {
+  if (!_attProg || !_attWeekStart) return { prev: true, next: true };
+  const wsObj = new Date(_attWeekStart + 'T00:00:00');
+  const weObj = new Date(wsObj); weObj.setDate(wsObj.getDate() + 6);
+  const weekStart = wsObj.toISOString().slice(0, 10);
+  const weekEnd   = weObj.toISOString().slice(0, 10);
+  return {
+    prev: weekStart <= _attProg.startDate,
+    next: weekEnd   >= _attProg.endDate
+  };
+}
+
+/** تسمية مدى الأسبوع بالهجري ("١٠–١٣ شوال ١٤٤٧" أو متغير حسب الشهر/السنة) */
+function getAttWeekRangeLabel() {
+  const days = getAttDays();
+  if (!days.length) return '';
+  const f = parseHijriInput(toHijri(days[0].dateGreg));
+  const l = parseHijriInput(toHijri(days[days.length - 1].dateGreg));
+  if (!f || !l) return '';
+  const HM = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+  const ar = n => String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+  if (f.y === l.y && f.m === l.m) {
+    return `${ar(f.d)}–${ar(l.d)} ${HM[f.m-1]} ${ar(f.y)}`;
+  }
+  if (f.y === l.y) {
+    return `${ar(f.d)} ${HM[f.m-1]} – ${ar(l.d)} ${HM[l.m-1]} ${ar(f.y)}`;
+  }
+  return `${ar(f.d)} ${HM[f.m-1]} ${ar(f.y)} – ${ar(l.d)} ${HM[l.m-1]} ${ar(l.y)}`;
+}
+
+/** التنقل أسبوعاً للأمام/الخلف — مع guard دفاعي */
+function setAttWeek(dir) {
+  if (!_attWeekStart) return;
+  const nav = _attWeekNavDisabled();
+  if (dir === 'prev' && nav.prev) return;
+  if (dir === 'next' && nav.next) return;
+  const cur = new Date(_attWeekStart + 'T00:00:00');
+  cur.setDate(cur.getDate() + (dir === 'prev' ? -7 : 7));
+  _attWeekStart = cur.toISOString().slice(0, 10);
+  // لو اليوم النشط لم يعد ضمن الأسبوع الجديد، اختر أول يوم من البرنامج فيه
+  const days = getAttDays();
+  if (!days.find(d => d.dateGreg === _attDayKey)) {
+    _attDayKey = days[0]?.dateGreg || null;
+  }
+  _attSelected.clear();
+  renderAttAttend();
 }
 
 /** الطلاب في المجموعة الحالية بعد فلترة البحث */
@@ -676,6 +758,7 @@ function selectAttProg(progId) {
   if (!_attProg) return;
   _attScreen = 'groups';
   _attSelected.clear();
+  _attWeekStart = null;   // برنامج جديد → أعد حساب الأسبوع الافتراضي
   renderAttScreen();
 }
 
