@@ -309,6 +309,54 @@ function switchSection(name) {
   if (window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
 }
 
+/** فتح/إغلاق السايدبار (للموبايل — زر ☰).
+ *  ملاحظة: حُذفت بالخطأ في 88a3267 ضمن إزالة دوال التحضير، واستُعيدت لاحقاً. */
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+/* ══════════════════════════════════════════
+   HOME
+   ملاحظة: loadHome حُذفت بالخطأ في 88a3267، واستُعيدت لاحقاً.
+══════════════════════════════════════════ */
+async function loadHome() {
+  const kpi = document.getElementById('home-kpi');
+  const rec = document.getElementById('home-recent');
+  kpi.innerHTML = `<div class="kpi-card"><div class="kv">⏳</div><div class="kl">جاري التحميل…</div></div>`;
+
+  try {
+    const [ptRows] = await Promise.all([
+      fetch(`${SB_URL}/points?select=id,amount,addedAt&order=id.desc&limit=200`, { headers: _h() }).then(r=>r.json()).catch(()=>[])
+    ]);
+
+    const today = todayDate();
+    const todayPts = ptRows.filter(p => p.addedAt?.startsWith(today)).reduce((a,p) => a + (parseInt(p.amount)||0), 0);
+    const totalPts = ptRows.reduce((a,p) => a + (parseInt(p.amount)||0), 0);
+
+    kpi.innerHTML = `
+      <div class="kpi-card"><div class="kv">${_students.length}</div><div class="kl">إجمالي الطلاب</div></div>
+      <div class="kpi-card"><div class="kv">${_progs.length}</div><div class="kl">البرامج</div></div>
+      <div class="kpi-card k-success"><div class="kv">${todayPts}</div><div class="kl">نقاط اليوم</div></div>
+      <div class="kpi-card k-info"><div class="kv">${totalPts}</div><div class="kl">إجمالي النقاط الممنوحة</div></div>
+    `;
+
+    const recent = ptRows.slice(0, 8);
+    if (recent.length) {
+      rec.innerHTML = recent.map(p => `
+        <div class="card" style="padding:14px 16px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="pts-badge">+${p.amount} نقطة</span>
+            <span style="font-size:.75rem;color:var(--muted)">${fmtHijriDatetime(p.addedAt)}</span>
+          </div>
+        </div>`).join('');
+    } else {
+      rec.innerHTML = `<div class="empty"><div class="ei">⭐</div><p>لم تُمنح أي نقاط بعد</p></div>`;
+    }
+  } catch(e) {
+    kpi.innerHTML = `<div class="empty"><div class="ei">⚠️</div><p>تعذر التحميل</p></div>`;
+  }
+}
+
 /* ══════════════════════════════════════════
    ATTENDANCE — drill-down (programs → groups → attend)
    ADR-007: واجهة جديدة، بيانات mock في localStorage
