@@ -5,13 +5,15 @@ const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
 
 const TB = {
-  STUDENTS      : 'students',
-  SUBSCRIPTIONS : 'subscriptions',
-  PAYMENTS      : 'payments',
-  PROGRAMS      : 'programs',
-  SETTINGS      : 'settings',
-  LOGS          : 'logs',
-  COMM_LOG      : 'comm_log'
+  STUDENTS       : 'students',
+  SUBSCRIPTIONS  : 'subscriptions',
+  PAYMENTS       : 'payments',
+  PROGRAMS       : 'programs',
+  ATTENDANCE     : 'attendance',
+  ATTENDANCE_LOG : 'attendance_log',
+  SETTINGS       : 'settings',
+  LOGS           : 'logs',
+  COMM_LOG       : 'comm_log'
 };
 
 /* ── Supabase Helpers ── */
@@ -144,6 +146,9 @@ function renderSidebar() {
         <div class="nav-item ${_activeSection === 'comm' ? 'active' : ''}" onclick="switchSection('comm')">
           <span class="nav-icon">💬</span><span>التواصل</span>
         </div>
+        <div class="nav-item ${_activeSection === 'attendance' ? 'active' : ''}" onclick="switchSection('attendance')">
+          <span class="nav-icon">📅</span><span>التحضير</span>
+        </div>
         <div class="nav-item ${_activeSection === 'prog-stats' ? 'active' : ''}" onclick="switchSection('prog-stats')">
           <span class="nav-icon">📊</span><span>الإحصائيات</span>
         </div>
@@ -167,6 +172,7 @@ function switchSection(name) {
   if (name === 'groups')      renderGroups();
   if (name === 'fees')        renderFees();
   if (name === 'comm')        { _commSelected.clear(); renderComm(); }
+  if (name === 'attendance')  loadAttendance();
   if (name === 'prog-stats')  renderProgStats();
   if (name === 'logs')        loadLogs();
   if (window.innerWidth <= 760) document.getElementById('sidebar').classList.remove('open');
@@ -2005,6 +2011,366 @@ async function logCommSend({ sub, msg, templateName, sendType }) {
   } catch(e) {
     console.warn('فشل حفظ سجل التواصل:', e.message);
   }
+}
+
+/* ══════════════════════════════════════════
+   ATTENDANCE TAB (program-level) — ADR-009
+   تبويب التحضير في صفحة البرنامج. القراءة/الكتابة من جدول attendance
+   (نفس الـ schema المستخدم في portal.js — ADR-008).
+══════════════════════════════════════════ */
+
+const ATT_STATUS_LABELS = {
+  present: 'حاضر', late: 'متأخر', excused: 'مستأذن', absent: 'غائب'
+};
+
+let _attData            = {};        // { studentId: { 'YYYY-MM-DD': status } }
+let _attDays            = [];        // [{ dateGreg, label }]
+let _attInnerTab        = 'overview';
+let _attSelDay          = null;
+let _attRecDay          = null;
+let _attOverviewSearch  = '';
+let _attPayFilter       = '';        // '' | 'paid' | 'partial' | 'unpaid'
+let _attLevelFilter     = '';        // '' | 'high' | 'low' | 'absent3'
+let _attRecSearch       = '';
+
+/** entry point */
+async function loadAttendance() {
+  if (!_currentProg) return;
+
+  const pn = document.getElementById('att-prog-name');
+  if (pn) pn.textContent = _currentProg.name || '';
+
+  // احسب أيام البرنامج
+  _attDays = _attComputeDays(_currentProg);
+  if (!_attSelDay  || !_attDays.find(d => d.dateGreg === _attSelDay))  _attSelDay  = _attDays[0]?.dateGreg || null;
+  if (!_attRecDay  || !_attDays.find(d => d.dateGreg === _attRecDay))  _attRecDay  = _attDays[0]?.dateGreg || null;
+
+  // اقرأ من DB
+  try {
+    const rows = await sbRead(TB.ATTENDANCE, `programId=eq.${_currentProg.id}`);
+    _attData = {};
+    rows.forEach(r => {
+      const sid = parseInt(r.studentId);
+      if (!_attData[sid]) _attData[sid] = {};
+      _attData[sid][r.date] = r.status;
+    });
+  } catch(e) {
+    console.warn('فشل تحميل التحضير:', e.message);
+    _attData = {};
+  }
+
+  renderAttendance();
+}
+
+/** يولّد كل أيام البرنامج (UTC) من startDate حتى endDate حسب program.days */
+function _attComputeDays(prog) {
+  if (!prog?.startDate || !prog?.endDate) return [];
+  const dayList = (prog.days && prog.days.length) ? prog.days : ['الأحد','الاثنين','الثلاثاء','الأربعاء'];
+  const DAY_MAP = { 'الأحد':0, 'الاثنين':1, 'الثلاثاء':2, 'الأربعاء':3, 'الخميس':4, 'الجمعة':5, 'السبت':6 };
+  const allowedDows = new Set(dayList.map(d => DAY_MAP[d]).filter(d => d !== undefined));
+  const NAMES = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+
+  const result = [];
+  const start = new Date(prog.startDate + 'T12:00:00Z');
+  const end   = new Date(prog.endDate   + 'T12:00:00Z');
+  const cursor = new Date(start);
+  let safetyCount = 0;
+  while (cursor <= end && safetyCount++ < 400) {
+    if (allowedDows.has(cursor.getUTCDay())) {
+      const dateGreg = cursor.toISOString().slice(0, 10);
+      const dayName  = NAMES[cursor.getUTCDay()];
+      result.push({
+        dateGreg,
+        label: `${dayName} ${fmtHijriShort(dateGreg)}`
+      });
+    }
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return result;
+}
+
+function getAttStudentStats(sid) {
+  const days = _attData[sid] || {};
+  const c = { present: 0, late: 0, excused: 0, absent: 0 };
+  for (const d of _attDays) {
+    const v = days[d.dateGreg];
+    if (v && c[v] !== undefined) c[v]++;
+  }
+  const total = _attDays.length;
+  const attended = c.present + c.late;
+  const pct = total > 0 ? Math.round(attended / total * 100) : 0;
+  return { ...c, total, pct };
+}
+
+function renderAttendance() {
+  renderAttSummary();
+  renderAttAlerts();
+
+  // inner tab pills
+  document.querySelectorAll('.att-tab-pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === _attInnerTab);
+  });
+
+  // visibility
+  document.getElementById('att-inner-overview').style.display = _attInnerTab === 'overview' ? '' : 'none';
+  document.getElementById('att-inner-day').style.display      = _attInnerTab === 'day'      ? '' : 'none';
+  document.getElementById('att-inner-record').style.display   = _attInnerTab === 'record'   ? '' : 'none';
+
+  if (_attInnerTab === 'overview') renderAttOverview();
+  else if (_attInnerTab === 'day') renderAttDayView();
+  else                              renderAttRecordView();
+}
+
+function attSwitchInner(tab) {
+  _attInnerTab = tab;
+  renderAttendance();
+}
+
+function renderAttSummary() {
+  const subs = _progSubs || [];
+  const allStats = subs.map(s => getAttStudentStats(s.studentId));
+  const totalDays = _attDays.length;
+  const avgPct = allStats.length ? Math.round(allStats.reduce((a,b) => a + b.pct, 0) / allStats.length) : 0;
+  const totalAbsent = allStats.reduce((a,b) => a + b.absent, 0);
+
+  document.getElementById('att-summary').innerHTML = `
+    <div class="att-scard"><div class="att-scard-num">${subs.length}</div><div class="att-scard-lbl">إجمالي الطلاب</div></div>
+    <div class="att-scard s-rate"><div class="att-scard-num">${avgPct}%</div><div class="att-scard-lbl">متوسط الحضور</div></div>
+    <div class="att-scard s-present"><div class="att-scard-num">${totalDays}</div><div class="att-scard-lbl">أيام التشغيل</div></div>
+    <div class="att-scard s-absent"><div class="att-scard-num">${totalAbsent}</div><div class="att-scard-lbl">إجمالي الغيابات</div></div>
+  `;
+}
+
+function renderAttAlerts() {
+  const warnings = (_progSubs || []).filter(s => getAttStudentStats(s.studentId).absent >= 3);
+  const box = document.getElementById('att-alerts');
+  if (!box) return;
+  if (!warnings.length) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="att-alerts-title">⚠️ تنبيه — طلاب غابوا ٣ مرات أو أكثر</div>
+    ${warnings.map(s => {
+      const st = getAttStudentStats(s.studentId);
+      return `<div class="att-alert-item">• ${esc(s.studentName)} — ${st.absent} غيابات</div>`;
+    }).join('')}
+  `;
+}
+
+function getAttFilteredStudents() {
+  return (_progSubs || []).filter(sub => {
+    if (_attOverviewSearch && !sub.studentName.includes(_attOverviewSearch)) return false;
+    const st  = getAttStudentStats(sub.studentId);
+    const pay = getSubPayInfo(sub);
+    if (_attPayFilter === 'paid'    && pay.payStatus !== 'مسدد')   return false;
+    if (_attPayFilter === 'partial' && pay.payStatus !== 'جزئي')   return false;
+    if (_attPayFilter === 'unpaid'  && pay.payStatus !== 'لم يدفع') return false;
+    if (_attLevelFilter === 'high'    && st.pct < 80)  return false;
+    if (_attLevelFilter === 'low'     && st.pct >= 80) return false;
+    if (_attLevelFilter === 'absent3' && st.absent < 3) return false;
+    return true;
+  });
+}
+
+function renderAttOverview() {
+  const body = document.getElementById('att-inner-overview');
+  const filtered = getAttFilteredStudents();
+  body.innerHTML = `
+    <div class="att-filters-row">
+      <input type="text" placeholder="🔍 بحث باسم الطالب..." value="${esc(_attOverviewSearch)}" oninput="attSetOverviewSearch(this.value)">
+      <select onchange="attSetPayFilter(this.value)">
+        <option value="">كل حالات الدفع</option>
+        <option value="paid"    ${_attPayFilter==='paid'    ?'selected':''}>مكتمل</option>
+        <option value="partial" ${_attPayFilter==='partial' ?'selected':''}>جزئي</option>
+        <option value="unpaid"  ${_attPayFilter==='unpaid'  ?'selected':''}>لم يدفع</option>
+      </select>
+      <select onchange="attSetLevelFilter(this.value)">
+        <option value="">كل مستويات الحضور</option>
+        <option value="high"    ${_attLevelFilter==='high'    ?'selected':''}>حضور ≥ 80%</option>
+        <option value="low"     ${_attLevelFilter==='low'     ?'selected':''}>حضور &lt; 80%</option>
+        <option value="absent3" ${_attLevelFilter==='absent3' ?'selected':''}>غاب 3+ مرات</option>
+      </select>
+      <button class="att-export-btn" onclick="attExportExcel()">⬇ تصدير Excel</button>
+    </div>
+    <div class="table-card"><div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>الطالب</th>
+          <th>حاضر</th><th>متأخر</th><th>مستأذن</th><th>غائب</th>
+          <th>نسبة الحضور</th><th>المدفوع</th><th>المتبقي</th>
+        </tr></thead>
+        <tbody>
+          ${filtered.map((sub, i) => {
+            const st  = getAttStudentStats(sub.studentId);
+            const pay = getSubPayInfo(sub);
+            return `<tr>
+              <td>${i + 1}</td>
+              <td>${esc(sub.studentName)}</td>
+              <td><span class="att-badge present">${st.present}</span></td>
+              <td><span class="att-badge late">${st.late}</span></td>
+              <td><span class="att-badge excused">${st.excused}</span></td>
+              <td><span class="att-badge ${st.absent >= 3 ? 'warn' : 'absent'}">${st.absent}</span></td>
+              <td><div class="att-pct-wrap">
+                <div class="att-pct-track"><div class="att-pct-fill" style="width:${st.pct}%"></div></div>
+                <span class="att-pct-num">${st.pct}%</span>
+              </div></td>
+              <td class="att-pay-ok">${pay.paid.toLocaleString()} ر.س</td>
+              <td class="${pay.rem > 0 ? 'att-pay-warn' : 'att-pay-ok'}">${pay.rem.toLocaleString()} ر.س</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">لا نتائج</td></tr>'}
+        </tbody>
+      </table>
+    </div></div>
+  `;
+}
+
+function attSetOverviewSearch(v) { _attOverviewSearch = v; renderAttOverview(); }
+function attSetPayFilter(v)      { _attPayFilter = v;      renderAttOverview(); }
+function attSetLevelFilter(v)    { _attLevelFilter = v;    renderAttOverview(); }
+
+function renderAttDayView() {
+  const body = document.getElementById('att-inner-day');
+  body.innerHTML = `
+    <div class="att-day-filter">
+      ${_attDays.map(d =>
+        `<button class="att-day-pill ${d.dateGreg===_attSelDay?'active':''}" onclick="attSelDay('${d.dateGreg}')">${d.label}</button>`
+      ).join('') || '<span style="color:var(--muted)">لا أيام للبرنامج</span>'}
+    </div>
+    <div class="table-card"><div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>الطالب</th><th>الحالة</th></tr></thead>
+        <tbody>
+          ${(_progSubs || []).map((sub, i) => {
+            const status = _attData[sub.studentId]?.[_attSelDay] || '';
+            return `<tr>
+              <td>${i + 1}</td>
+              <td>${esc(sub.studentName)}</td>
+              <td>${status ? `<span class="att-badge ${status}">${ATT_STATUS_LABELS[status]}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div></div>
+  `;
+}
+
+function attSelDay(key) { _attSelDay = key; renderAttDayView(); }
+
+function renderAttRecordView() {
+  const body = document.getElementById('att-inner-record');
+  const filtered = (_progSubs || []).filter(s => !_attRecSearch || s.studentName.includes(_attRecSearch));
+  body.innerHTML = `
+    <div class="att-day-filter">
+      ${_attDays.map(d =>
+        `<button class="att-day-pill ${d.dateGreg===_attRecDay?'active':''}" onclick="attSelRecDay('${d.dateGreg}')">${d.label}</button>`
+      ).join('') || '<span style="color:var(--muted)">لا أيام للبرنامج</span>'}
+    </div>
+    <div class="att-filters-row">
+      <input type="text" placeholder="🔍 بحث..." value="${esc(_attRecSearch)}" oninput="attSetRecSearch(this.value)">
+    </div>
+    <div class="table-card"><div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>الطالب</th><th>تسجيل الحضور</th></tr></thead>
+        <tbody>
+          ${filtered.map((sub, i) => {
+            const cur = _attData[sub.studentId]?.[_attRecDay] || '';
+            return `<tr>
+              <td>${i + 1}</td>
+              <td>${esc(sub.studentName)}</td>
+              <td><div class="att-rec-btns">
+                <button class="att-sbtn ${cur==='present'?'present':''}" onclick="attRecSet(${sub.studentId},'present')">ح</button>
+                <button class="att-sbtn ${cur==='late'   ?'late'   :''}" onclick="attRecSet(${sub.studentId},'late')">ت</button>
+                <button class="att-sbtn ${cur==='excused'?'excused':''}" onclick="attRecSet(${sub.studentId},'excused')">م</button>
+                <button class="att-sbtn ${cur==='absent' ?'absent' :''}" onclick="attRecSet(${sub.studentId},'absent')">غ</button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div></div>
+    <div class="att-save-bar">
+      <span class="att-save-hint">✓ الحفظ تلقائي عند كل ضغطة</span>
+    </div>
+  `;
+}
+
+function attSelRecDay(key)     { _attRecDay = key;    renderAttRecordView(); }
+function attSetRecSearch(v)    { _attRecSearch = v;   renderAttRecordView(); }
+
+async function attRecSet(sid, status) {
+  if (!_attData[sid]) _attData[sid] = {};
+  const cur = _attData[sid][_attRecDay];
+  const newStatus = (cur === status) ? null : status;
+  const oldStatus = cur || null;
+
+  // Optimistic UI
+  if (newStatus) _attData[sid][_attRecDay] = newStatus;
+  else           delete _attData[sid][_attRecDay];
+  renderAttRecordView();
+  renderAttSummary();
+  renderAttAlerts();
+
+  // Persist
+  try {
+    const sub = (_progSubs || []).find(s => s.studentId === sid);
+    if (newStatus) {
+      await sbUpsert(TB.ATTENDANCE, {
+        programId:   _currentProg.id,
+        studentId:   sid,
+        studentName: sub?.studentName || '',
+        groupName:   sub?.groupName || '',
+        date:        _attRecDay,
+        status:      newStatus,
+        recordedBy:  'admin'
+      });
+    } else {
+      await fetch(`${SB_URL}/${TB.ATTENDANCE}?programId=eq.${_currentProg.id}&studentId=eq.${sid}&date=eq.${_attRecDay}`,
+        { method: 'DELETE', headers: _h() });
+    }
+    sbInsert(TB.ATTENDANCE_LOG, {
+      programId:   _currentProg.id,
+      studentId:   sid,
+      studentName: sub?.studentName || '',
+      groupName:   sub?.groupName || '',
+      date:        _attRecDay,
+      oldStatus,
+      newStatus,
+      changedBy:   'admin'
+    }).catch(e => console.warn('att-log fail:', e.message));
+  } catch(e) {
+    if (oldStatus) _attData[sid][_attRecDay] = oldStatus;
+    else           delete _attData[sid][_attRecDay];
+    renderAttRecordView();
+    renderAttSummary();
+    renderAttAlerts();
+    toast('فشل الحفظ — ' + e.message, 'error');
+  }
+}
+
+function attExportExcel() {
+  const filtered = getAttFilteredStudents();
+  if (!filtered.length) { toast('لا بيانات للتصدير', 'warning'); return; }
+
+  const rows = filtered.map((sub, i) => {
+    const st  = getAttStudentStats(sub.studentId);
+    const pay = getSubPayInfo(sub);
+    return {
+      '#': i + 1,
+      'الطالب': sub.studentName,
+      'حاضر':  st.present,
+      'متأخر': st.late,
+      'مستأذن': st.excused,
+      'غائب':  st.absent,
+      'نسبة الحضور': st.pct + '%',
+      'المدفوع': pay.paid,
+      'المتبقي': pay.rem
+    };
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'تقرير التحضير');
+  XLSX.writeFile(wb, `تحضير - ${_currentProg.name}.xlsx`);
+  toast('تم التصدير ✅', 'success');
 }
 
 /* ══════════════════════════════════════════

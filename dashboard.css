@@ -357,3 +357,120 @@ tbody tr.prog-row:active td { background: #e0e7ff; }
   .bulk-panels { grid-template-columns: 1fr; }
   .bulk-panel-students { border-left: none; border-bottom: 1px solid var(--border); }
 }
+
+/* ══════════════════════════════════════════
+   ATTENDANCE TAB (ADR-009)
+══════════════════════════════════════════ */
+:root {
+  --att-present-bg: #EAF3DE; --att-present-bd: #97C459; --att-present-fg: #27500A;
+  --att-late-bg:    #FAEEDA; --att-late-bd:    #EF9F27; --att-late-fg:    #633806;
+  --att-excused-bg: #E6F1FB; --att-excused-bd: #85B7EB; --att-excused-fg: #0C447C;
+  --att-absent-bg:  #FCEBEB; --att-absent-bd:  #F09595; --att-absent-fg:  #791F1F;
+  --att-warn-bg:    #FFF3CD; --att-warn-fg:    #856404;
+  --att-surface2:   #f8f5f0;
+}
+
+/* Summary cards */
+.att-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.att-scard { background: var(--white); border-radius: 10px; padding: 14px; border: 1px solid var(--border); text-align: center; }
+.att-scard-num { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+.att-scard-lbl { font-size: .78rem; color: var(--muted); margin-top: 4px; }
+.att-scard.s-present .att-scard-num { color: var(--att-present-fg); }
+.att-scard.s-absent  .att-scard-num { color: var(--att-absent-fg); }
+.att-scard.s-rate    .att-scard-num { color: var(--primary); }
+
+/* Alerts */
+.att-alerts { background: var(--att-warn-bg); border: 1px solid #ffc107; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; }
+.att-alerts-title { font-size: .88rem; font-weight: 700; color: var(--att-warn-fg); margin-bottom: 8px; }
+.att-alert-item { font-size: .85rem; color: var(--att-warn-fg); padding: 3px 0; }
+
+/* Inner tabs (pills) */
+.att-inner-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.att-tab-pill {
+  padding: 7px 18px; border-radius: 20px; border: 1.5px solid var(--border);
+  background: var(--white); color: var(--muted); cursor: pointer;
+  font-family: inherit; font-size: .82rem; font-weight: 500;
+  transition: all .15s; min-height: 36px;
+}
+.att-tab-pill:hover { border-color: var(--primary); color: var(--primary); }
+.att-tab-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Filters row */
+.att-filters-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+.att-filters-row input,
+.att-filters-row select {
+  padding: 8px 12px; font-size: .82rem; font-family: inherit;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--white); color: var(--text); outline: none;
+}
+.att-filters-row input { flex: 1; min-width: 160px; }
+.att-filters-row input:focus,
+.att-filters-row select:focus { border-color: var(--primary); }
+.att-export-btn {
+  padding: 8px 16px; background: var(--gold); color: var(--text);
+  border: none; border-radius: 8px; cursor: pointer;
+  font-family: inherit; font-size: .82rem; font-weight: 600;
+  margin-right: auto; min-height: 36px;
+}
+.att-export-btn:hover { opacity: .9; }
+
+/* Day filter pills */
+.att-day-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+.att-day-pill {
+  padding: 6px 14px; border-radius: 18px; border: 1px solid var(--border);
+  background: var(--white); cursor: pointer; font-size: .76rem;
+  color: var(--muted); font-family: inherit; transition: all .15s;
+  white-space: nowrap; flex-shrink: 0;
+}
+.att-day-pill:hover { border-color: var(--primary); color: var(--primary); }
+.att-day-pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+/* Status badges */
+.att-badge { display: inline-block; padding: 2px 10px; border-radius: 18px; font-size: .72rem; font-weight: 700; }
+.att-badge.present { background: var(--att-present-bg); color: var(--att-present-fg); }
+.att-badge.late    { background: var(--att-late-bg);    color: var(--att-late-fg); }
+.att-badge.excused { background: var(--att-excused-bg); color: var(--att-excused-fg); }
+.att-badge.absent  { background: var(--att-absent-bg);  color: var(--att-absent-fg); }
+.att-badge.warn    { background: var(--att-warn-bg);    color: var(--att-warn-fg); }
+
+/* Percentage bar */
+.att-pct-wrap { display: flex; align-items: center; gap: 6px; justify-content: center; }
+.att-pct-track { width: 60px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.att-pct-fill { height: 100%; background: var(--att-present-bd); border-radius: 3px; }
+.att-pct-num { font-size: .72rem; color: var(--muted); min-width: 30px; }
+
+.att-pay-ok   { color: var(--att-present-fg); font-weight: 600; }
+.att-pay-warn { color: var(--att-absent-fg);  font-weight: 600; }
+
+/* Record buttons (ح ت م غ) */
+.att-rec-btns { display: flex; gap: 4px; justify-content: center; }
+.att-sbtn {
+  width: 32px; height: 32px; border-radius: 7px;
+  border: 1.5px solid var(--border); background: var(--att-surface2);
+  cursor: pointer; font-size: .92rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: all .12s; font-family: inherit;
+  line-height: 1;
+}
+.att-sbtn:hover { transform: scale(1.1); }
+.att-sbtn.present { background: var(--att-present-bg); border-color: var(--att-present-bd); color: var(--att-present-fg); }
+.att-sbtn.late    { background: var(--att-late-bg);    border-color: var(--att-late-bd);    color: var(--att-late-fg); }
+.att-sbtn.excused { background: var(--att-excused-bg); border-color: var(--att-excused-bd); color: var(--att-excused-fg); }
+.att-sbtn.absent  { background: var(--att-absent-bg);  border-color: var(--att-absent-bd);  color: var(--att-absent-fg); }
+
+/* Save bar */
+.att-save-bar { display: flex; justify-content: flex-start; margin-top: 12px; padding: 10px 14px; background: var(--white); border: 1px solid var(--border); border-radius: 10px; }
+.att-save-hint { font-size: .82rem; color: var(--att-present-fg); font-weight: 500; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .att-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .att-scard-num { font-size: 1.3rem; }
+  .att-filters-row input { min-width: 120px; }
+  .att-export-btn { margin-right: 0; width: 100%; }
+}
+@media (max-width: 480px) {
+  .att-summary-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .att-scard { padding: 10px; }
+  .att-tab-pill { padding: 6px 12px; font-size: .76rem; }
+}

@@ -213,6 +213,23 @@
     <div id="comm-body"></div>
   </section>
 
+  <!-- ══════ LEVEL 2: ATTENDANCE ══════ -->
+  <section class="section" id="section-attendance">
+    <div class="page-hdr">
+      <div class="page-title">📅 التحضير <span class="page-sub" id="att-prog-name"></span></div>
+    </div>
+    <div class="att-summary-grid" id="att-summary"></div>
+    <div class="att-alerts" id="att-alerts" style="display:none"></div>
+    <div class="att-inner-tabs">
+      <button class="att-tab-pill active" data-tab="overview" onclick="attSwitchInner('overview')">ملخص إجمالي</button>
+      <button class="att-tab-pill"        data-tab="day"      onclick="attSwitchInner('day')">تفاصيل يوم</button>
+      <button class="att-tab-pill"        data-tab="record"   onclick="attSwitchInner('record')">تسجيل الحضور</button>
+    </div>
+    <div id="att-inner-overview"></div>
+    <div id="att-inner-day"      style="display:none"></div>
+    <div id="att-inner-record"   style="display:none"></div>
+  </section>
+
   <!-- ══════ LEVEL 2: PROGRAM STATS ══════ -->
   <section class="section" id="section-prog-stats">
     <div class="page-hdr">
