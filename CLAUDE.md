@@ -472,7 +472,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F16 | **ربط التحضير بـ Supabase** (ADR-008): DDL لـ `attendance` + `attendance_log`، قراءة من DB، كتابة optimistic مع rollback، audit log، migration لمرة واحدة من localStorage | ✅ | 2026-05-02 | `b4e3ffe, 72eb2c2` |
 | F17 | **تبويب التحضير في dashboard** (ADR-009): 3 شاشات داخلية (ملخص/يوم/تسجيل) في صفحة البرنامج، تنبيهات غياب 3+، Excel export، نفس الـ schema مع portal | ✅ | 2026-05-03 | `2679b97` |
 | F18 | **حذف القسم الرياضي القديم بالكامل** (ADR-010): 5 commits متسلسلة — portal.html (-170) + portal.js (-923) + portal.css (-80) + dashboard/leaderboard/tournament-view (-585) + ADR-010 | ✅ | 2026-05-07 | `d62de36, cc6bfef, 7cf1043, 8906737, 90dd7d8` |
-| F19 | **صفحة البطولة الجديدة** (ADR-011): `tournament.html` مستقل + 16 ملف React inline + 5 جداول Supabase موجودة مسبقاً + zر ربط من portal | 🔄 جارٍ | 2026-05-07 | `9d3d954, ...` |
+| F19 | **صفحة البطولة الجديدة** (ADR-011): `tournament.html` مستقل + 16 ملف React inline + DB layer `tournament/supabase.jsx` + Hijri dates + رابط في portal sidebar | ✅ | 2026-05-07 | `9d3d954, 819ae5a, dbb4fc9, (TBD)` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |

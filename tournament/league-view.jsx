@@ -163,11 +163,18 @@ window.LeagueView = LeagueView;
 function toArabicNum(n) {
   return String(n).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 }
+// ADR-005: التواريخ هجرية في الواجهة عبر Intl(islamic-umalqura).
+// تأخذ ISO أو YYYY-MM-DD وتُرجع "13 ذو القعدة" بأرقام عربية-هندية.
 function formatArabicDate(iso) {
   if (!iso) return "";
   try {
-    const d = new Date(iso);
-    return d.toLocaleDateString("ar", { day: "numeric", month: "short" });
+    const s = String(iso).slice(0, 10);
+    const d = new Date(s + "T12:00:00Z");
+    if (isNaN(d)) return iso;
+    return d.toLocaleDateString("ar-SA", {
+      day: "numeric", month: "long",
+      calendar: "islamic-umalqura", timeZone: "UTC"
+    });
   } catch { return iso; }
 }
 window.formatArabicDate = formatArabicDate;
