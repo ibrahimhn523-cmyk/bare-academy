@@ -34,12 +34,23 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 }/*EDITMODE-END*/;
 
 function App() {
-  const { buildFootballLeague, buildTableTennisKO } = window.TournamentData;
+  // ADR-011: data source is Supabase (window.TDB), not the prototype's seed builders.
+  const [tournaments, setTournaments] = appUseState([]);
+  const [loadingTournaments, setLoadingTournaments] = appUseState(true);
+  const [loadError, setLoadError] = appUseState(null);
 
-  const [tournaments, setTournaments] = appUseState(() => [
-    buildFootballLeague(),
-    buildTableTennisKO(),
-  ]);
+  appUseEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await window.TDB.list();
+        if (!cancelled) { setTournaments(list); setLoadingTournaments(false); }
+      } catch (e) {
+        if (!cancelled) { setLoadError(e.message); setLoadingTournaments(false); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   // Detect view-only mode from URL hash #/view/<id>
   const initialView = (() => {
     const m = (window.location.hash || "").match(/^#\/view\/([\w-]+)/);
@@ -73,14 +84,42 @@ function App() {
   const startNew = () => { setDraft(emptyDraft()); goWizard(1); };
   const openTournament = (id) => setView({ kind: "tournament", id });
 
-  const updateTournament = (updated) => {
+  // Update path: persist meta to DB, then refresh local state from DB.
+  const updateTournament = async (updated) => {
+    // Optimistic in-memory update for instant feedback
     setTournaments(tournaments.map(t => t.id === updated.id ? updated : t));
+    try {
+      await window.TDB.updateMeta(updated);
+      const fresh = await window.TDB.getOne(updated.id);
+      if (fresh) setTournaments(prev => prev.map(t => t.id === fresh.id ? fresh : t));
+    } catch (e) {
+      console.error('updateTournament failed:', e.message);
+      // Rollback by reloading the original
+      try {
+        const fresh = await window.TDB.getOne(updated.id);
+        if (fresh) setTournaments(prev => prev.map(t => t.id === fresh.id ? fresh : t));
+      } catch {}
+      alert('فشل الحفظ: ' + e.message);
+    }
   };
 
-  const launchDraft = () => {
-    const launched = { ...draft, id: `t_${Date.now()}`, status: "active", progress: 0 };
-    setTournaments([launched, ...tournaments]);
-    setView({ kind: "tournament", id: launched.id });
+  // Launch path: insert tournament + teams + matches, then load the persisted
+  // version (which has DB-issued ids) and switch to its detail view.
+  const launchDraft = async () => {
+    const programId = draft.programId || draft.config?.programId;
+    if (!programId) {
+      alert('يجب اختيار البرنامج قبل إطلاق البطولة');
+      return;
+    }
+    try {
+      const created = await window.TDB.create(draft, programId);
+      if (!created) throw new Error('لم يتم إنشاء البطولة');
+      setTournaments([created, ...tournaments]);
+      setView({ kind: "tournament", id: created.id });
+    } catch (e) {
+      console.error('launchDraft failed:', e.message);
+      alert('فشل إنشاء البطولة: ' + e.message);
+    }
   };
 
   return (
@@ -105,7 +144,13 @@ function App() {
         )}
 
         <div className="content-area">
-          {view.kind === "dashboard" && (
+          {view.kind === "dashboard" && loadingTournaments && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-text-3)' }}>⏳ جاري تحميل البطولات…</div>
+          )}
+          {view.kind === "dashboard" && !loadingTournaments && loadError && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-warning)' }}>⚠️ خطأ في التحميل: {loadError}</div>
+          )}
+          {view.kind === "dashboard" && !loadingTournaments && !loadError && (
             <Dashboard tournaments={tournaments} onNew={startNew} onOpen={openTournament} />
           )}
           {view.kind === "wizard" && (
@@ -126,9 +171,14 @@ function App() {
               bracketStyle={t.bracketStyle}
               readOnly={!!view.readOnly}
               onShare={() => setShareForId(view.id)}
-              onDelete={() => {
-                setTournaments(tournaments.filter(x => x.id !== view.id));
-                setView({ kind: "dashboard" });
+              onDelete={async () => {
+                try {
+                  await window.TDB.deleteTournament(view.id);
+                  setTournaments(tournaments.filter(x => x.id !== view.id));
+                  setView({ kind: "dashboard" });
+                } catch (e) {
+                  alert('فشل الحذف: ' + e.message);
+                }
               }}
               onExitPreview={() => {
                 window.location.hash = "";
