@@ -440,7 +440,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F15 | **تحسينات التحضير:** عداد المشتركين على شاشة البرامج + تنقّل بين الأسابيع مع تقييد بمدى البرنامج + إصلاح TZ في تواريخ الأسبوع (UTC) + أيقونات عربية (ح ت م غ) + drag-drop لإعادة ترتيب الطلاب مع localStorage | ✅ | 2026-05-02 | `fb09fdd, f9f9a26, 084d85e, bdc692a, 3d7f7eb` |
 | F16 | **ربط التحضير بـ Supabase** (ADR-008): DDL لـ `attendance` + `attendance_log`، قراءة من DB، كتابة optimistic مع rollback، audit log، migration لمرة واحدة من localStorage | ✅ | 2026-05-02 | `b4e3ffe, 72eb2c2` |
 | F17 | **تبويب التحضير في dashboard** (ADR-009): 3 شاشات داخلية (ملخص/يوم/تسجيل) في صفحة البرنامج، تنبيهات غياب 3+، Excel export، نفس الـ schema مع portal | ✅ | 2026-05-03 | `2679b97` |
-| F18 | **حذف القسم الرياضي القديم بالكامل** (ADR-010): 5 commits متسلسلة — portal.html (-170) + portal.js (-923) + portal.css (-80) + dashboard/leaderboard/tournament-view (-585) | ✅ | 2026-05-07 | `d62de36, cc6bfef, 7cf1043, 8906737, ...` |
+| F18 | **حذف القسم الرياضي القديم بالكامل** (ADR-010): 5 commits متسلسلة — portal.html (-170) + portal.js (-923) + portal.css (-80) + dashboard/leaderboard/tournament-view (-585) + ADR-010 | ✅ | 2026-05-07 | `d62de36, cc6bfef, 7cf1043, 8906737, 90dd7d8` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
