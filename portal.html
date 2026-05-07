@@ -62,13 +62,6 @@
       <div class="nav-item" id="nav-cultural" onclick="switchSection('cultural')">
         <span class="nav-icon">🏆</span><span>المسابقات الثقافية</span>
       </div>
-      <div class="nav-section-label nav-sports-label" id="nav-sports-label">قسم الرياضي</div>
-      <div class="nav-item" id="nav-sports" onclick="switchSection('sports')">
-        <span class="nav-icon">⚽</span><span>البطولات الرياضية</span>
-      </div>
-      <div class="nav-sub-item" id="nav-sport-stats" onclick="switchSection('sport-stats')" style="display:none">
-        <span class="nav-icon">📊</span><span>إحصائيات البطولة</span>
-      </div>
       <div class="nav-section-label">الصدارة</div>
       <div class="nav-item" id="nav-leaderboard" onclick="switchSection('leaderboard')">
         <span class="nav-icon">📊</span><span>لوحة الصدارة</span>
@@ -138,37 +131,6 @@
       </div>
     </section>
 
-    <!-- ══ SPORTS ══ -->
-    <section class="section" id="section-sports">
-      <div class="page-hdr">
-        <div class="page-title">البطولات الرياضية</div>
-        <button class="btn btn-gold" onclick="openWizard()">➕ بطولة جديدة</button>
-      </div>
-      <div class="prog-select-bar">
-        <label>البرنامج:</label>
-        <select id="sports-prog-sel" onchange="loadSports()"><option value="">-- اختر --</option></select>
-      </div>
-      <div id="sports-body">
-        <div class="empty"><div class="ei">⚽</div><p>اختر البرنامج لعرض البطولات</p></div>
-      </div>
-    </section>
-
-    <!-- ══ SPORT STATS ══ -->
-    <section class="section" id="section-sport-stats">
-      <div class="page-hdr">
-        <div class="page-title">📊 إحصائيات البطولة</div>
-        <button class="btn btn-outline" id="ss-view-btn" onclick="openTournamentView()" style="display:none">🔗 رابط الطلاب</button>
-      </div>
-      <div class="prog-select-bar">
-        <label>البرنامج:</label>
-        <select id="ss-prog-sel" onchange="loadSportStats()"><option value="">-- اختر --</option></select>
-        <label>البطولة:</label>
-        <select id="ss-tourn-sel" onchange="renderSportStatsBody()"><option value="">-- اختر --</option></select>
-      </div>
-      <div id="sport-stats-body">
-        <div class="empty"><div class="ei">📊</div><p>اختر البطولة لعرض الإحصائيات</p></div>
-      </div>
-    </section>
 
     <!-- ══ LEADERBOARD ══ -->
     <section class="section" id="section-leaderboard">
@@ -187,9 +149,6 @@
         </label>
         <label style="display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;direction:ltr">
           <input type="checkbox" id="lb-filter-cultural" checked onchange="applyLeaderboardFilter()"> <span>🏆 ثقافي</span>
-        </label>
-        <label style="display:inline-flex;align-items:center;gap:5px;font-size:.85rem;cursor:pointer;direction:ltr">
-          <input type="checkbox" id="lb-filter-sports"   checked onchange="applyLeaderboardFilter()"> <span>⚽ رياضي</span>
         </label>
       </div>
       <div id="lb-body">
@@ -311,7 +270,6 @@
         <select id="addpts-section">
           <option value="general">🌟 عام</option>
           <option value="cultural">🏆 ثقافي</option>
-          <option value="sports">⚽ رياضي</option>
         </select>
       </div>
       <div class="form-row">
@@ -425,132 +383,6 @@
   </div>
 </div>
 
-<!-- Modal: Wizard - Create Tournament -->
-<div class="overlay" id="m-wizard">
-  <div class="modal" style="max-width:740px">
-    <div class="modal-hdr">
-      <div class="modal-title">🏆 إنشاء بطولة جديدة</div>
-      <button class="modal-close" onclick="closeM('m-wizard')">✕</button>
-    </div>
-    <div class="wizard-steps" style="padding:0 20px">
-      <div class="wz-step active" id="wz-s1"><span class="wz-step-num">1️⃣</span><span class="wz-label">المعلومات</span></div>
-      <div class="wz-step" id="wz-s2"><span class="wz-step-num">2️⃣</span><span class="wz-label">الفرق</span></div>
-      <div class="wz-step" id="wz-s3"><span class="wz-step-num">3️⃣</span><span class="wz-label">الجوائز</span></div>
-      <div class="wz-step" id="wz-s4"><span class="wz-step-num">4️⃣</span><span class="wz-label">الجدول</span></div>
-    </div>
-    <div class="modal-body" id="wz-body" style="min-height:340px"></div>
-    <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn btn-outline" id="wz-back-btn" onclick="wizardBack()" style="display:none">← رجوع</button>
-      <span></span>
-      <button class="btn btn-gold" id="wz-next-btn" onclick="wizardNext()">التالي →</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Sports Tournament (Edit existing) -->
-<div class="overlay" id="m-sports">
-  <div class="modal">
-    <div class="modal-hdr">
-      <div class="modal-title" id="m-sports-title">بطولة رياضية</div>
-      <button class="modal-close" onclick="closeM('m-sports')">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="sports-edit-id">
-      <div class="form-group">
-        <label>البرنامج</label>
-        <select id="sports-modal-prog"></select>
-      </div>
-      <div class="form-group">
-        <label>اسم البطولة</label>
-        <input type="text" id="sports-name" placeholder="بطولة كرة القدم الخماسية">
-      </div>
-      <div class="form-group">
-        <label>النوع</label>
-        <select id="sports-type">
-          <option value="league">دوري</option>
-          <option value="knockout">خروج مغلوب</option>
-        </select>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeM('m-sports')">إلغاء</button>
-      <button class="btn btn-gold" onclick="saveSports()">💾 حفظ</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Manage Tournament -->
-<div class="overlay" id="m-tournament">
-  <div class="modal" style="max-width:760px">
-    <div class="modal-hdr">
-      <div class="modal-title" id="m-tournament-title">إدارة البطولة</div>
-      <button class="modal-close" onclick="closeM('m-tournament')">✕</button>
-    </div>
-    <div class="modal-body" id="m-tournament-body"></div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeM('m-tournament')">إغلاق</button>
-      <button class="btn btn-success" id="sports-approve-btn" onclick="approveSports()">🏆 اعتماد نهائي</button>
-    </div>
-  </div>
-</div>
-
-<!-- Modal: Match Result -->
-<div class="overlay" id="m-match">
-  <div class="modal" style="max-width:500px">
-    <div class="modal-hdr">
-      <div class="modal-title" id="m-match-title">نتيجة المباراة</div>
-      <button class="modal-close" onclick="closeM('m-match')">✕</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="match-id">
-      <div class="form-row">
-        <div class="form-group" style="flex:1;text-align:center">
-          <label id="match-t1-name">الفريق الأول</label>
-          <input type="number" id="match-t1-score" min="0" value="0" style="text-align:center;font-size:1.5rem;font-weight:bold">
-        </div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:8px;font-size:1.5rem;color:var(--muted)">—</div>
-        <div class="form-group" style="flex:1;text-align:center">
-          <label id="match-t2-name">الفريق الثاني</label>
-          <input type="number" id="match-t2-score" min="0" value="0" style="text-align:center;font-size:1.5rem;font-weight:bold">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>الجولة</label>
-        <input type="text" id="match-round" placeholder="مثال: الجولة الأولى">
-      </div>
-      <div class="form-group">
-        <label>التاريخ</label>
-        <input type="text" class="hijri-input" id="match-date">
-      </div>
-      <!-- أحداث المباراة -->
-      <div style="background:var(--bg);border-radius:10px;padding:12px;margin-top:8px">
-        <div style="font-weight:700;font-size:.85rem;margin-bottom:10px;color:var(--primary)">⚽ أحداث المباراة</div>
-        <div id="match-events-list" style="margin-bottom:10px;min-height:28px;display:flex;flex-wrap:wrap;gap:4px"></div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-          <div class="form-group" style="flex:2;margin-bottom:0">
-            <input type="text" id="event-player-name" placeholder="اسم اللاعب..." style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem;width:100%">
-          </div>
-          <div class="form-group" style="flex:1;margin-bottom:0">
-            <select id="event-team-sel" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem;width:100%"></select>
-          </div>
-          <div class="form-group" style="flex:1;margin-bottom:0">
-            <select id="event-type-sel" style="padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem;width:100%">
-              <option value="goal">⚽ هدف</option>
-              <option value="assist">🎯 صناعة</option>
-              <option value="yellow">🟨 كرت أصفر</option>
-              <option value="red">🟥 كرت أحمر</option>
-            </select>
-          </div>
-          <button class="btn btn-sm btn-primary" onclick="addMatchEvent()" style="white-space:nowrap;margin-bottom:0">➕ إضافة</button>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeM('m-match')">إلغاء</button>
-      <button class="btn btn-gold" onclick="saveMatch()">💾 حفظ النتيجة</button>
-    </div>
-  </div>
-</div>
 
 <!-- Modal: Admin User -->
 <div class="overlay" id="m-user">
@@ -590,7 +422,6 @@
           <span class="perm-chip on" data-key="attendance" onclick="togglePerm(this)">✅ التحضير</span>
           <span class="perm-chip on" data-key="points"     onclick="togglePerm(this)">⭐ النقاط</span>
           <span class="perm-chip"   data-key="cultural"   onclick="togglePerm(this)">🏆 الثقافي</span>
-          <span class="perm-chip"   data-key="sports"     onclick="togglePerm(this)">⚽ الرياضي</span>
         </div>
       </div>
     </div>
@@ -682,7 +513,6 @@
         <select id="bulk-section">
           <option value="general">🌟 عام</option>
           <option value="cultural">🏆 ثقافي</option>
-          <option value="sports">⚽ رياضي</option>
         </select>
       </div>
       <!-- المبلغ والملاحظة -->
