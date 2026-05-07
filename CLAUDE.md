@@ -284,6 +284,30 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
   - **Migration لمرة واحدة:** عند الدخول الأول للتحضير، يُنقل ما في `localStorage('bare_att_mock')` إلى DB إن أمكن (مع فلترة على الطلاب المعروفين فقط)، ثم يُمسح localStorage.
   - 3 commits متسلسلة: DDL في Supabase Studio (يدوي) → ربط القراءة → ربط الكتابة + migration + audit.
 
+### ADR-010 — حذف القسم الرياضي القديم بالكامل
+- **التاريخ:** 2026-05-07
+- **السياق:** ميزة البطولات الرياضية (Sports Tournaments) كانت موجودة في portal كقسم رئيسي مع شاشتين (قائمة البطولات + الإحصائيات) و wizard من 4 خطوات و 4 modals، إضافة لـ tournament-view.html (صفحة عامة مستقلة) و 4 جداول في DB. المساحة الكلية ~1900 سطر. الميزة لم تُستخدم تشغيلياً ولم تُحقق العائد المتوقع. القرار: حذف نهائي مع نية إعادة بناء بتصميم جديد لاحقاً (نمط مماثل لـ ADR-006 للتحضير).
+- **القرار:**
+  - حذف كامل من portal.html / portal.js / portal.css.
+  - حذف ملف `tournament-view.html` بالكامل.
+  - تنظيف cascade في dashboard.js (لم يعد يحاول DELETE من جداول رياضية).
+  - تنظيف فلاتر sports في leaderboard.html.
+  - **DB:** الجداول الأربعة (`sports_tournaments`, `sports_teams`, `sports_matches`, `sports_stats`) تم DROP خارجياً قبل التنظيف البرمجي.
+- **البدائل المرفوضة:**
+  - (أ) الإبقاء مع display:none — يبقي تعقيد صيانة لكود غير مستخدم.
+  - (ب) إبقاء `tournament-view.html` كأرشيف — يصبح dead code يربط schema مفقود.
+  - (ج) ترحيل البيانات للأرشيف — لا قيمة (ميزة لم تُستخدم).
+- **النتيجة:**
+  - portal.html: 711 → 541 سطر (−170)
+  - portal.js: 3322 → 2399 سطر (−923)
+  - portal.css: 850 → 770 سطر (−80)
+  - dashboard.js: −12 سطر (cascade)
+  - leaderboard.html: −6 سطر
+  - tournament-view.html: محذوف بالكامل (−567 سطر)
+  - **مجموع المحذوف: ~1758 سطر**
+  - 5 commits متسلسلة (HTML / JS / CSS / outside-portal / docs).
+  - النمط مطابق لـ ADR-006: حذف نظيف، DB قابلة للحذف خارجياً، جاهز لإعادة بناء بتصميم جديد لو احتجناها.
+
 ### ADR-009 — تبويب التحضير في dashboard (program-level)
 - **التاريخ:** 2026-05-03
 - **السياق:** بعد ADR-008 (التحضير في portal)، احتاج المدير في dashboard لرؤية وتعديل بيانات التحضير ضمن صفحة البرنامج بنفس مستوى التبويبات الموجودة (المشتركون، الرسوم، التواصل، الإحصائيات).
@@ -416,6 +440,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F15 | **تحسينات التحضير:** عداد المشتركين على شاشة البرامج + تنقّل بين الأسابيع مع تقييد بمدى البرنامج + إصلاح TZ في تواريخ الأسبوع (UTC) + أيقونات عربية (ح ت م غ) + drag-drop لإعادة ترتيب الطلاب مع localStorage | ✅ | 2026-05-02 | `fb09fdd, f9f9a26, 084d85e, bdc692a, 3d7f7eb` |
 | F16 | **ربط التحضير بـ Supabase** (ADR-008): DDL لـ `attendance` + `attendance_log`، قراءة من DB، كتابة optimistic مع rollback، audit log، migration لمرة واحدة من localStorage | ✅ | 2026-05-02 | `b4e3ffe, 72eb2c2` |
 | F17 | **تبويب التحضير في dashboard** (ADR-009): 3 شاشات داخلية (ملخص/يوم/تسجيل) في صفحة البرنامج، تنبيهات غياب 3+، Excel export، نفس الـ schema مع portal | ✅ | 2026-05-03 | `2679b97` |
+| F18 | **حذف القسم الرياضي القديم بالكامل** (ADR-010): 5 commits متسلسلة — portal.html (-170) + portal.js (-923) + portal.css (-80) + dashboard/leaderboard/tournament-view (-585) + ADR-010 | ✅ | 2026-05-07 | `d62de36, cc6bfef, 7cf1043, 8906737, 90dd7d8` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |

@@ -149,7 +149,6 @@ body {
 }
 .src-general { background:rgba(148,163,184,.15); color:#94a3b8; }
 .src-cultural { background:rgba(212,175,55,.15); color:#d4af37; }
-.src-sports   { background:rgba(59,130,246,.15); color:#60a5fa; }
 
 /* ══ Empty ══ */
 .empty-state { text-align:center; padding:60px 20px; color:var(--muted); }
@@ -194,10 +193,6 @@ body {
       <label class="sort-option">
         <input type="checkbox" id="f-cultural" checked onchange="applySort()">
         <span>🏆 ثقافي</span>
-      </label>
-      <label class="sort-option">
-        <input type="checkbox" id="f-sports" checked onchange="applySort()">
-        <span>⚽ رياضي</span>
       </label>
     </div>
   </div>
@@ -277,7 +272,6 @@ function applySort() {
   const activeSrc = [];
   if (document.getElementById('f-general')?.checked)  activeSrc.push('general', 'manual', null, undefined, '');
   if (document.getElementById('f-cultural')?.checked) activeSrc.push('cultural');
-  if (document.getElementById('f-sports')?.checked)   activeSrc.push('sports');
 
   // Filter points by source
   const filteredPts = _allPts.filter(p => activeSrc.includes(p.source || 'manual'));
