@@ -33,6 +33,13 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "academyLogo": ""
 }/*EDITMODE-END*/;
 
+// قراءة المستخدم من portal — يُحفظ في localStorage عند تسجيل الدخول هناك.
+// لو فُتحت tournament.html مباشرة بدون portal، نسقط لـ "زائر".
+const portalUser = (() => {
+  try { return JSON.parse(localStorage.getItem('portal_user') || '{}'); }
+  catch { return {}; }
+})();
+
 function App() {
   // ADR-011: data source is Supabase (window.TDB), not the prototype's seed builders.
   const [tournaments, setTournaments] = appUseState([]);
@@ -132,9 +139,7 @@ function App() {
           onHome={() => setView({ kind: "dashboard" })}
           onOpen={openTournament}
           academyName={t.academyName}
-          academyLogo={t.academyLogo}
-          onLogoChange={(url) => setTweak("academyLogo", url)}
-          onNameChange={(n) => setTweak("academyName", n)}
+          user={portalUser}
         />
       )}
 
@@ -151,7 +156,7 @@ function App() {
             <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-warning)' }}>⚠️ خطأ في التحميل: {loadError}</div>
           )}
           {view.kind === "dashboard" && !loadingTournaments && !loadError && (
-            <Dashboard tournaments={tournaments} onNew={startNew} onOpen={openTournament} />
+            <Dashboard tournaments={tournaments} onNew={startNew} onOpen={openTournament} user={portalUser} />
           )}
           {view.kind === "wizard" && (
             <WizardRouter
@@ -217,70 +222,21 @@ function emptyDraft() {
 }
 
 // ====================== SIDEBAR ======================
-function Sidebar({ tournaments, view, onNew, onHome, onOpen, academyName, academyLogo, onLogoChange, onNameChange }) {
-  const fileRef = React.useRef(null);
-  const [editingName, setEditingName] = React.useState(false);
-  const [tempName, setTempName] = React.useState(academyName || "");
-
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onLogoChange(reader.result);
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
+function Sidebar({ tournaments, view, onNew, onHome, onOpen, academyName, user }) {
+  const userName  = user?.username || 'زائر';
+  const roleLabel = user?.role === 'super_admin' ? 'مسؤول أعلى' : 'مشرف';
+  const initial   = (userName || '?').charAt(0);
 
   return (
     <aside className="sidebar" data-screen-label="Sidebar">
       <div className="brand">
-        <button
-          type="button"
-          className={`brand-mark ${academyLogo ? "has-logo" : ""}`}
-          onClick={() => fileRef.current?.click()}
-          title="تغيير شعار الأكاديمية"
-        >
-          {academyLogo ? (
-            <img src={academyLogo} alt="" />
-          ) : (
-            <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
-              <path d="M16 2l3.5 7.5L28 11l-6 6 1.5 9-7.5-4-7.5 4L10 17 4 11l8.5-1.5z" fill="currentColor"/>
-            </svg>
-          )}
-          <span className="brand-mark-edit">
-            <svg viewBox="0 0 24 24" width="10" height="10" fill="none">
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/>
-            </svg>
-          </span>
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
+        <div className="brand-mark has-logo">
+          <img src="image/bare-logo.png" alt="بارع" />
+        </div>
         <div className="brand-text">
           <div className="brand-name">بطولة</div>
-          {editingName ? (
-            <input
-              className="brand-sub-input"
-              value={tempName}
-              autoFocus
-              onChange={(e) => setTempName(e.target.value)}
-              onBlur={() => { onNameChange(tempName.trim() || "أكاديمية"); setEditingName(false); }}
-              onKeyDown={(e) => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") { setTempName(academyName); setEditingName(false); } }}
-            />
-          ) : (
-            <button className="brand-sub" type="button" onClick={() => { setTempName(academyName); setEditingName(true); }}>
-              {academyName}
-            </button>
-          )}
+          <div className="brand-sub">{academyName}</div>
         </div>
-        {academyLogo && (
-          <button
-            type="button"
-            className="brand-logo-clear"
-            title="إزالة الشعار"
-            onClick={() => onLogoChange("")}
-          >
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-          </button>
-        )}
       </div>
 
       <button className="new-tournament-btn" onClick={onNew}>
@@ -332,10 +288,10 @@ function Sidebar({ tournaments, view, onNew, onHome, onOpen, academyName, academ
 
       <div className="sidebar-footer">
         <div className="footer-user">
-          <div className="user-avatar">م</div>
+          <div className="user-avatar">{initial}</div>
           <div>
-            <div className="user-name">المدرب أحمد</div>
-            <div className="user-role">مدرب أول</div>
+            <div className="user-name">{userName}</div>
+            <div className="user-role">{roleLabel}</div>
           </div>
         </div>
       </div>
@@ -386,13 +342,14 @@ function TopBar({ view, draft, tournaments, onHome }) {
 }
 
 // ====================== DASHBOARD ======================
-function Dashboard({ tournaments, onNew, onOpen }) {
+function Dashboard({ tournaments, onNew, onOpen, user }) {
+  const userName = user?.username || 'زائر';
   return (
     <div className="dashboard" data-screen-label="00 Dashboard">
       <header className="dashboard-hero">
         <div>
           <div className="eyebrow">لوحة التحكم</div>
-          <h1>أهلاً، المدرب أحمد 👋</h1>
+          <h1>أهلاً، {userName} 👋</h1>
           <p className="lede">عندك {toArabicNum(tournaments.filter(t => t.status === "active").length)} بطولات جارية. أنشئ بطولة جديدة أو افتح وحدة من اللي تحت.</p>
         </div>
         <button className="btn-primary btn-lg" onClick={onNew}>
