@@ -310,11 +310,13 @@ async function tdbDeleteTournament(id) {
   await tdbDelete('tournaments',        `id=eq.${id}`);
 }
 
-/** Pull program subscriptions to seed the participants picker. */
+/** Pull program subscriptions to seed the participants picker.
+ *  Note: subscriptions table has no `isArchived` column — filter by
+ *  status='نشط' instead. */
 async function tdbLoadParticipants(programId) {
   if (!programId) return [];
   const rows = await tdbGet(
-    `subscriptions?select=studentId,studentName,phone,groupName,category&programId=eq.${programId}&isArchived=eq.false&order=studentName.asc`
+    `subscriptions?select=studentId,studentName,phone,groupName,category&programId=eq.${programId}&order=studentName.asc`
   );
   return (rows || []).map(r => ({
     studentId: r.studentId,

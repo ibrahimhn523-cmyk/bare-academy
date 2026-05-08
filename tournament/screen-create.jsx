@@ -6,6 +6,28 @@ const { useState } = React;
 function ScreenCreate({ draft, setDraft, onNext }) {
   const { SPORTS } = window.TournamentData;
   const [customSport, setCustomSport] = useState("");
+  const [programs, setPrograms] = useState([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+
+  // Load programs from Supabase on mount (active programs first)
+  React.useEffect(() => {
+    let cancelled = false;
+    window.TDB.loadPrograms()
+      .then(list => {
+        if (cancelled) return;
+        // Sort: active first, then by id desc (most recent)
+        const sorted = [...(list || [])].sort((a, b) => {
+          const aActive = a.status === 'نشط' ? 0 : 1;
+          const bActive = b.status === 'نشط' ? 0 : 1;
+          if (aActive !== bActive) return aActive - bActive;
+          return b.id - a.id;
+        });
+        setPrograms(sorted);
+        setLoadingPrograms(false);
+      })
+      .catch(e => { if (!cancelled) { console.warn('loadPrograms failed:', e.message); setLoadingPrograms(false); } });
+    return () => { cancelled = true; };
+  }, []);
 
   const setField = (k, v) => setDraft({ ...draft, [k]: v });
 
@@ -22,7 +44,7 @@ function ScreenCreate({ draft, setDraft, onNext }) {
     { id: "groups_knockout", label: "مجموعات + خروج مغلوب", desc: "نظام كأس العالم", icon: "▦" },
   ];
 
-  const valid = draft.name?.trim() && draft.sport && draft.competitionType && draft.type;
+  const valid = draft.programId && draft.name?.trim() && draft.sport && draft.competitionType && draft.type;
 
   return (
     <div className="screen">
@@ -35,6 +57,33 @@ function ScreenCreate({ draft, setDraft, onNext }) {
       </header>
 
       <div className="form-stack">
+        {/* Program picker — sources participants list later */}
+        <section className="field-group">
+          <label className="field-label">البرنامج <span style={{color:'#C0392B'}}>*</span></label>
+          {loadingPrograms ? (
+            <div className="text-input lg" style={{display:'flex',alignItems:'center',color:'var(--c-text-3)'}}>⏳ جاري تحميل البرامج…</div>
+          ) : programs.length === 0 ? (
+            <div className="text-input lg" style={{display:'flex',alignItems:'center',color:'var(--c-warning)'}}>⚠️ لا توجد برامج — أضف برنامجاً من dashboard أولاً</div>
+          ) : (
+            <select
+              className="text-input lg"
+              value={draft.programId || ''}
+              onChange={e => setField('programId', e.target.value ? parseInt(e.target.value) : null)}
+              style={{cursor:'pointer'}}
+            >
+              <option value="">— اختر البرنامج —</option>
+              {programs.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name} {p.status === 'نشط' ? '(نشط)' : `(${p.status})`}
+                </option>
+              ))}
+            </select>
+          )}
+          <div style={{fontSize:'.75rem',color:'var(--c-text-3)',marginTop:6}}>
+            المشاركون يُسحبون من مشتركي هذا البرنامج لاحقاً
+          </div>
+        </section>
+
         {/* Tournament name */}
         <section className="field-group">
           <label className="field-label">اسم البطولة</label>

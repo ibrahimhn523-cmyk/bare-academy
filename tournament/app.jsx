@@ -213,6 +213,7 @@ function App() {
 
 function emptyDraft() {
   return {
+    programId: null,
     name: "", sport: null, competitionType: null, type: null,
     config: { points: { win: 3, draw: 1, loss: 0 }, tiebreak: "gd", bestOf: 1, thirdPlace: true, seeding: "auto" },
     participants: [],
