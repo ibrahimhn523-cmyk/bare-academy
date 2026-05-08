@@ -515,10 +515,27 @@ function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit,
   // playerTeamMap: { [studentId]: {teamId, teamName, playerId} }
   // onCommit(adds: studentId[], moves: {studentId, fromTeamId, fromPlayerId}[])
   const [search, setSearch] = React.useState("");
+  const [groupFilter, setGroupFilter] = React.useState("");
   // selected: Map(studentId -> { kind: 'add' | 'move', from?: {teamId, teamName, playerId} })
   const [selected, setSelected] = React.useState(new Map());
 
-  const filtered = pool.filter(p => (p.label || '').includes(search));
+  const groups = React.useMemo(() => {
+    const set = new Set();
+    pool.forEach(p => {
+      const g = (p.sub || '').replace(/^·\s*/, '').trim();
+      if (g) set.add(g);
+    });
+    return [...set].sort();
+  }, [pool]);
+
+  const filtered = pool.filter(p => {
+    if (search && !(p.label || '').includes(search)) return false;
+    if (groupFilter) {
+      const g = (p.sub || '').replace(/^·\s*/, '').trim();
+      if (g !== groupFilter) return false;
+    }
+    return true;
+  });
 
   const toggle = (p) => {
     const next = new Map(selected);
@@ -556,6 +573,16 @@ function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit,
             <path d="M16 16l4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
           </svg>
           <input type="text" placeholder="بحث في اللاعبين…" value={search} onChange={e => setSearch(e.target.value)} />
+          {groups.length > 1 && (
+            <select
+              value={groupFilter}
+              onChange={e => setGroupFilter(e.target.value)}
+              style={{padding:'6px 10px',border:'1px solid var(--c-border)',borderRadius:'var(--r-sm)',background:'var(--c-surface)',color:'var(--c-text)',fontSize:'.85rem',fontFamily:'inherit',cursor:'pointer',marginInlineStart:8}}
+            >
+              <option value="">كل المجموعات</option>
+              {groups.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          )}
         </div>
         <div className="modal-body">
           {loading && (
@@ -623,8 +650,26 @@ function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title, loading, 
   const existingSet = React.useMemo(() => new Set(existing), [existing]);
   const [selected, setSelected] = React.useState(new Set());
   const [search, setSearch] = React.useState("");
+  const [groupFilter, setGroupFilter] = React.useState("");
 
-  const filtered = pool.filter(p => (p.label || '').includes(search));
+  // Unique groups (from `sub` — students carry "· مجموعة الكذا" or "· رابع ابتدائي")
+  const groups = React.useMemo(() => {
+    const set = new Set();
+    pool.forEach(p => {
+      const g = (p.sub || '').replace(/^·\s*/, '').trim();
+      if (g) set.add(g);
+    });
+    return [...set].sort();
+  }, [pool]);
+
+  const filtered = pool.filter(p => {
+    if (search && !(p.label || '').includes(search)) return false;
+    if (groupFilter) {
+      const g = (p.sub || '').replace(/^·\s*/, '').trim();
+      if (g !== groupFilter) return false;
+    }
+    return true;
+  });
   const selectableInFiltered = filtered.filter(p => !existingSet.has(p.value));
   const allSelected = selectableInFiltered.length > 0 &&
     selectableInFiltered.every(p => selected.has(p.value));
@@ -668,6 +713,16 @@ function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title, loading, 
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
+          {!isTeam && groups.length > 1 && (
+            <select
+              value={groupFilter}
+              onChange={e => setGroupFilter(e.target.value)}
+              style={{padding:'6px 10px',border:'1px solid var(--c-border)',borderRadius:'var(--r-sm)',background:'var(--c-surface)',color:'var(--c-text)',fontSize:'.85rem',fontFamily:'inherit',cursor:'pointer',marginInlineStart:8}}
+            >
+              <option value="">كل المجموعات</option>
+              {groups.map(g => <option key={g} value={g}>{g}</option>)}
+            </select>
+          )}
           <button className="link-btn" onClick={toggleAll} type="button">
             {allSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
           </button>
@@ -682,7 +737,10 @@ function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title, loading, 
           {!loading && !error && emptyHint && (
             <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>{emptyHint}</div>
           )}
-          {!loading && !error && !emptyHint && (
+          {!loading && !error && !emptyHint && filtered.length === 0 && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>لا نتائج للفلتر الحالي</div>
+          )}
+          {!loading && !error && !emptyHint && filtered.length > 0 && (
             <div className="program-grid">
               {filtered.map(p => {
                 const isExisting = existingSet.has(p.value);
