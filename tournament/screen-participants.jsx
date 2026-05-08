@@ -3,13 +3,38 @@
 // =====================================================================
 
 function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
-  const { SAUDI_NAMES, SAUDI_TEAMS, uid } = window.TournamentData;
+  const { SAUDI_TEAMS, uid } = window.TournamentData;
   const [showProgramModal, setShowProgramModal] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [dragId, setDragId] = React.useState(null);
   const [dragOverId, setDragOverId] = React.useState(null);
   const [expandedId, setExpandedId] = React.useState(null);
   const [rosterPickerFor, setRosterPickerFor] = React.useState(null);
+
+  // Pull participants from the selected program's subscriptions (ADR-011 wire-up).
+  const [programStudents, setProgramStudents] = React.useState([]);
+  const [loadingStudents, setLoadingStudents] = React.useState(false);
+  const [studentsError, setStudentsError] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!draft.programId) { setProgramStudents([]); return; }
+    let cancelled = false;
+    setLoadingStudents(true);
+    setStudentsError(null);
+    window.TDB.loadParticipants(draft.programId)
+      .then(list => {
+        if (cancelled) return;
+        setProgramStudents(list || []);
+        setLoadingStudents(false);
+      })
+      .catch(e => {
+        if (cancelled) return;
+        console.warn('loadParticipants failed:', e.message);
+        setStudentsError(e.message);
+        setLoadingStudents(false);
+      });
+    return () => { cancelled = true; };
+  }, [draft.programId]);
 
   const participants = draft.participants || [];
   const setParticipants = (p) => setDraft({ ...draft, participants: p });
@@ -62,7 +87,18 @@ function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
 
   const isTeam = draft.competitionType === "team";
   const isDouble = draft.competitionType === "double";
-  const programPool = isTeam ? SAUDI_TEAMS : SAUDI_NAMES;
+
+  // Pool format: [{value, label, sub?}] — `value` is the stable id sent back
+  // through onAdd. For students we pass studentId; for team-mode (no DB) we
+  // fall back to the static SAUDI_TEAMS array keyed by name.
+  const studentPool = programStudents.map(s => ({
+    value: s.studentId,
+    label: s.name,
+    sub:   s.group ? `· ${s.group}` : (s.category ? `· ${s.category}` : ''),
+  }));
+  const teamPool = SAUDI_TEAMS.map(n => ({ value: n, label: n }));
+  const programPool = isTeam ? teamPool : studentPool;
+
   const requiredCount = computeRequiredCount(draft);
 
   // Doubles: track pair players inline
@@ -206,7 +242,8 @@ function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
                         onChange={e => updatePair(p.id, idx, e.target.value)}
                       />
                       <datalist id={`pair-pool-${p.id}-${idx}`}>
-                        {SAUDI_NAMES
+                        {programStudents
+                          .map(s => s.name)
                           .filter(n => !usedInPairs.has(n) || players[idx] === n)
                           .map(n => <option key={n} value={n} />)}
                       </datalist>
@@ -285,11 +322,29 @@ function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
           isTeam={isTeam}
           title={isTeam ? "سحب الفرق من البرنامج" : "سحب اللاعبين من البرنامج"}
           pool={programPool}
-          existing={participants.map(p => p.name)}
+          existing={isTeam
+            ? participants.map(p => p.name)             // team mode: existence by name
+            : participants.map(p => p.studentId).filter(Boolean) // individual: by studentId
+          }
+          loading={!isTeam && loadingStudents}
+          error={!isTeam && studentsError}
+          emptyHint={!isTeam && !programStudents.length && !loadingStudents
+            ? 'لا يوجد مشتركون في البرنامج المحدد'
+            : null}
           onClose={() => setShowProgramModal(false)}
-          onAdd={(names) => {
-            const fresh = names.filter(n => !participants.find(p => p.name === n))
-              .map(n => ({ id: uid(), name: n, roster: [] }));
+          onAdd={(values) => {
+            const fresh = values.map(v => {
+              if (isTeam) {
+                return { id: uid(), name: v, roster: [] };
+              }
+              const student = programStudents.find(s => s.studentId === v);
+              return {
+                id:        uid(),
+                name:      student?.name || String(v),
+                studentId: student?.studentId || null,
+                roster:    [],
+              };
+            });
             setParticipants([...participants, ...fresh]);
             setShowProgramModal(false);
           }}
@@ -298,19 +353,32 @@ function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
 
       {rosterPickerFor && (() => {
         const team = participants.find(p => p.id === rosterPickerFor);
-        // build map: playerName -> teamName (across all teams)
+        // Map studentId → {teamId, teamName, playerId} so RosterPicker can flag
+        // students already on another team. Only DB-sourced roster entries (those
+        // with studentId) participate; manual additions stay invisible to the
+        // picker.
         const playerTeamMap = {};
         participants.forEach(t => {
-          (t.roster || []).forEach(pl => { playerTeamMap[pl.name] = { teamId: t.id, teamName: t.name, playerId: pl.id }; });
+          (t.roster || []).forEach(pl => {
+            if (pl.studentId) {
+              playerTeamMap[pl.studentId] = { teamId: t.id, teamName: t.name, playerId: pl.id };
+            }
+          });
         });
         return (
           <RosterPickerModal
             targetTeam={team}
-            pool={SAUDI_NAMES}
+            pool={studentPool}
             playerTeamMap={playerTeamMap}
+            studentsById={new Map(programStudents.map(s => [s.studentId, s]))}
+            loading={loadingStudents}
+            error={studentsError}
+            emptyHint={!programStudents.length && !loadingStudents
+              ? 'لا يوجد مشتركون في البرنامج المحدد'
+              : null}
             onClose={() => setRosterPickerFor(null)}
             onCommit={(adds, moves) => {
-              // adds: array of names (new), moves: array of {name, fromTeamId, fromPlayerId}
+              // adds: array of studentIds (new), moves: array of {studentId, fromTeamId, fromPlayerId}
               let next = participants.map(p => ({ ...p, roster: [...(p.roster || [])] }));
               // remove from source teams
               moves.forEach(m => {
@@ -320,8 +388,14 @@ function ScreenParticipants({ draft, setDraft, onNext, onBack }) {
               // add to target
               const target = next.find(p => p.id === rosterPickerFor);
               if (target) {
-                adds.forEach(n => target.roster.push({ id: uid(), name: n }));
-                moves.forEach(m => target.roster.push({ id: uid(), name: m.name }));
+                adds.forEach(sid => {
+                  const s = programStudents.find(x => x.studentId === sid);
+                  target.roster.push({ id: uid(), name: s?.name || String(sid), studentId: sid });
+                });
+                moves.forEach(m => {
+                  const s = programStudents.find(x => x.studentId === m.studentId);
+                  target.roster.push({ id: uid(), name: s?.name || String(m.studentId), studentId: m.studentId });
+                });
               }
               setParticipants(next);
               setRosterPickerFor(null);
@@ -436,30 +510,33 @@ function RosterPanel({ team, roster, onAdd, onRemove, onPickFromProgram }) {
   );
 }
 
-function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit }) {
+function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit, loading, error, emptyHint }) {
+  // pool: Array<{value, label, sub?}>             (value = studentId)
+  // playerTeamMap: { [studentId]: {teamId, teamName, playerId} }
+  // onCommit(adds: studentId[], moves: {studentId, fromTeamId, fromPlayerId}[])
   const [search, setSearch] = React.useState("");
-  // selected: Map(name -> { kind: 'add' | 'move', from?: {teamId, teamName, playerId} })
+  // selected: Map(studentId -> { kind: 'add' | 'move', from?: {teamId, teamName, playerId} })
   const [selected, setSelected] = React.useState(new Map());
 
-  const filtered = pool.filter(n => n.includes(search));
+  const filtered = pool.filter(p => (p.label || '').includes(search));
 
-  const toggle = (n) => {
+  const toggle = (p) => {
     const next = new Map(selected);
-    if (next.has(n)) {
-      next.delete(n);
+    if (next.has(p.value)) {
+      next.delete(p.value);
     } else {
-      const owned = playerTeamMap[n];
+      const owned = playerTeamMap[p.value];
       if (owned && owned.teamId === targetTeam.id) return; // already in this team
-      next.set(n, owned ? { kind: "move", from: owned } : { kind: "add" });
+      next.set(p.value, owned ? { kind: "move", from: owned } : { kind: "add" });
     }
     setSelected(next);
   };
 
   const adds = [];
   const moves = [];
-  selected.forEach((v, n) => {
-    if (v.kind === "add") adds.push(n);
-    else moves.push({ name: n, fromTeamId: v.from.teamId, fromPlayerId: v.from.playerId });
+  selected.forEach((v, sid) => {
+    if (v.kind === "add") adds.push(sid);
+    else moves.push({ studentId: sid, fromTeamId: v.from.teamId, fromPlayerId: v.from.playerId });
   });
 
   return (
@@ -481,34 +558,45 @@ function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit 
           <input type="text" placeholder="بحث في اللاعبين…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="modal-body">
-          <div className="program-grid">
-            {filtered.map(n => {
-              const owned = playerTeamMap[n];
-              const inThisTeam = owned && owned.teamId === targetTeam.id;
-              const inOtherTeam = owned && owned.teamId !== targetTeam.id;
-              const sel = selected.get(n);
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={`program-chip ${sel ? "is-selected" : ""} ${inThisTeam ? "is-existing" : ""} ${inOtherTeam ? "is-other-team" : ""}`}
-                  onClick={() => toggle(n)}
-                  disabled={inThisTeam}
-                >
-                  <span className="program-chip-dot">{n.charAt(0)}</span>
-                  <span className="program-chip-name">{n}</span>
-                  {inThisTeam && <span className="program-chip-meta">في الفريق</span>}
-                  {inOtherTeam && !sel && <span className="program-chip-meta program-chip-other">في {owned.teamName}</span>}
-                  {sel?.kind === "move" && <span className="program-chip-meta program-chip-move">سينتقل من {sel.from.teamName}</span>}
-                  {sel && (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" className="program-chip-check">
-                      <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {loading && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>⏳ جاري تحميل المشتركين…</div>
+          )}
+          {!loading && error && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-warning)'}}>⚠️ خطأ: {error}</div>
+          )}
+          {!loading && !error && emptyHint && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>{emptyHint}</div>
+          )}
+          {!loading && !error && !emptyHint && (
+            <div className="program-grid">
+              {filtered.map(p => {
+                const owned = playerTeamMap[p.value];
+                const inThisTeam = owned && owned.teamId === targetTeam.id;
+                const inOtherTeam = owned && owned.teamId !== targetTeam.id;
+                const sel = selected.get(p.value);
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`program-chip ${sel ? "is-selected" : ""} ${inThisTeam ? "is-existing" : ""} ${inOtherTeam ? "is-other-team" : ""}`}
+                    onClick={() => toggle(p)}
+                    disabled={inThisTeam}
+                  >
+                    <span className="program-chip-dot">{(p.label || '?').charAt(0)}</span>
+                    <span className="program-chip-name">{p.label}{p.sub ? <span style={{color:'var(--c-text-3)',fontSize:'.8em',marginInlineStart:6}}>{p.sub}</span> : null}</span>
+                    {inThisTeam && <span className="program-chip-meta">في الفريق</span>}
+                    {inOtherTeam && !sel && <span className="program-chip-meta program-chip-other">في {owned.teamName}</span>}
+                    {sel?.kind === "move" && <span className="program-chip-meta program-chip-move">سينتقل من {sel.from.teamName}</span>}
+                    {sel && (
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" className="program-chip-check">
+                        <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <footer className="modal-footer">
           <span className="modal-meta">
@@ -529,29 +617,33 @@ function RosterPickerModal({ targetTeam, pool, playerTeamMap, onClose, onCommit 
   );
 }
 
-function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title }) {
+function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title, loading, error, emptyHint }) {
+  // pool: Array<{value, label, sub?}>  (value is the stable id sent through onAdd)
+  // existing: Array<value>            (already-added values to disable in the grid)
+  const existingSet = React.useMemo(() => new Set(existing), [existing]);
   const [selected, setSelected] = React.useState(new Set());
   const [search, setSearch] = React.useState("");
 
-  const filtered = pool.filter(n => n.includes(search));
-  const allSelected = filtered.length > 0 && filtered.every(n => selected.has(n));
+  const filtered = pool.filter(p => (p.label || '').includes(search));
+  const selectableInFiltered = filtered.filter(p => !existingSet.has(p.value));
+  const allSelected = selectableInFiltered.length > 0 &&
+    selectableInFiltered.every(p => selected.has(p.value));
 
-  const toggle = (n) => {
+  const toggle = (p) => {
+    if (existingSet.has(p.value)) return;
     const next = new Set(selected);
-    if (next.has(n)) next.delete(n); else next.add(n);
+    if (next.has(p.value)) next.delete(p.value); else next.add(p.value);
     setSelected(next);
   };
 
   const toggleAll = () => {
+    const next = new Set(selected);
     if (allSelected) {
-      const next = new Set(selected);
-      filtered.forEach(n => next.delete(n));
-      setSelected(next);
+      selectableInFiltered.forEach(p => next.delete(p.value));
     } else {
-      const next = new Set(selected);
-      filtered.forEach(n => next.add(n));
-      setSelected(next);
+      selectableInFiltered.forEach(p => next.add(p.value));
     }
+    setSelected(next);
   };
 
   return (
@@ -581,29 +673,41 @@ function ProgramModal({ isTeam, pool, existing, onClose, onAdd, title }) {
           </button>
         </div>
         <div className="modal-body">
-          <div className="program-grid">
-            {filtered.map(n => {
-              const isExisting = existing.includes(n);
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={`program-chip ${selected.has(n) ? "is-selected" : ""} ${isExisting ? "is-existing" : ""}`}
-                  onClick={() => !isExisting && toggle(n)}
-                  disabled={isExisting}
-                >
-                  <span className="program-chip-dot">{n.charAt(0)}</span>
-                  <span>{n}</span>
-                  {selected.has(n) && (
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" className="program-chip-check">
-                      <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  )}
-                  {isExisting && <span className="program-chip-meta">مضاف</span>}
-                </button>
-              );
-            })}
-          </div>
+          {loading && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>⏳ جاري تحميل المشتركين…</div>
+          )}
+          {!loading && error && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-warning)'}}>⚠️ خطأ: {error}</div>
+          )}
+          {!loading && !error && emptyHint && (
+            <div style={{padding:40,textAlign:'center',color:'var(--c-text-3)'}}>{emptyHint}</div>
+          )}
+          {!loading && !error && !emptyHint && (
+            <div className="program-grid">
+              {filtered.map(p => {
+                const isExisting = existingSet.has(p.value);
+                const isSel = selected.has(p.value);
+                return (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={`program-chip ${isSel ? "is-selected" : ""} ${isExisting ? "is-existing" : ""}`}
+                    onClick={() => toggle(p)}
+                    disabled={isExisting}
+                  >
+                    <span className="program-chip-dot">{(p.label || '?').charAt(0)}</span>
+                    <span>{p.label}{p.sub ? <span style={{color:'var(--c-text-3)',fontSize:'.8em',marginInlineStart:6}}>{p.sub}</span> : null}</span>
+                    {isSel && (
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" className="program-chip-check">
+                        <path d="M5 12l5 5L20 7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                    {isExisting && <span className="program-chip-meta">مضاف</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
         <footer className="modal-footer">
           <span className="modal-meta">{toArabicNum(selected.size)} محدد</span>
