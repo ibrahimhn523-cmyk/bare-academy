@@ -284,6 +284,37 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
   - **Migration لمرة واحدة:** عند الدخول الأول للتحضير، يُنقل ما في `localStorage('bare_att_mock')` إلى DB إن أمكن (مع فلترة على الطلاب المعروفين فقط)، ثم يُمسح localStorage.
   - 3 commits متسلسلة: DDL في Supabase Studio (يدوي) → ربط القراءة → ربط الكتابة + migration + audit.
 
+### ADR-011 — صفحة البطولة الجديدة (tournament.html) — React inline + DB موجود
+- **التاريخ:** 2026-05-07
+- **السياق:** بعد ADR-010 (حذف الرياضي القديم)، احتاج المشروع نظام بطولات أحدث وأكثر وظيفة. توفّر بروتوتايب React جاهز (~7700 سطر) يغطي wizard، dashboard، League/Bracket/Calendar/Stats، modals للمباريات وإحصائيات اللاعبين، public share عبر URL hash. الجداول الخمسة في DB كانت موجودة مسبقاً (`tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`).
+- **القرار:**
+  - **صفحة مستقلة:** `tournament.html` في root، مع كل الكود في `tournament/` subfolder. لا تتداخل مع portal.html / dashboard.html.
+  - **React 18 + Babel inline من CDN** — يطابق نمط البروتوتايب، لا build step.
+  - **Schema موجود مسبقاً** — لا DDL جديد. الكود يكيّف نفسه:
+    - `sport` JSONB → نخزن full object {id,name,emoji,team}
+    - `tournament_events`: حقول `team` (string 'home'/'away')، `player`, `scorer`, `assist` منفصلة (لا `playerId/teamId`)
+    - `tournament_matches`: لا `phase` — استخدام `groupId`, `isBye`, `isThirdPlace` flags
+    - `tournament_matches.winnerId` (مش `winnerTeamId`)
+    - `tournament_ratings`: UNIQUE(matchId, playerId) → دعم upsert
+  - **TweaksPanel محذوف** — كان edit-mode tool للمطورين (يسمح بتغيير اسم/شعار الأكاديمية والثيم في localStorage). إزالته من الإنتاج لمنع التلاعب من المستخدمين.
+  - **الألوان:** البروتوتايب يستخدم نفس palette بارع (`#2D3651`, `#D4AF37`, `#F5E6D3`) — لا تعديل ألوان.
+  - **Public share:** `tournament.html#/view/<id>` → readOnly mode (موجود في البروتوتايب).
+  - **Participants:** يُسحبون من `subscriptions` حسب `programId` المحدد.
+- **البدائل المرفوضة:**
+  - (أ) ضمن portal.html — يكسر استقلالية الصفحة + يخلط React مع vanilla JS الموجود.
+  - (ب) إعادة كتابة بـ vanilla JS — ضياع لـ ~7700 سطر جاهز ومُختبَر.
+  - (ج) Build step (Vite/Webpack) — يخالف ADR-001 (المشروع بدون build).
+  - (د) إنشاء جداول جديدة — موجودة مسبقاً، إعادة استخدام أفضل.
+- **النتيجة:**
+  - **4 commits متسلسلة:**
+    1. UI port (~7100 سطر منسوخ + إزالة TweaksPanel)
+    2. ADR-011 + F19 (هذا)
+    3. DB integration (`tournament/supabase.jsx` + adapt mutations)
+    4. Portal integration + Hijri dates + polish
+  - **التواريخ هجرية** عبر تطبيق ADR-005 على `formatArabicDate` في `data.jsx` (commit 4).
+  - **Babel inline** بطيء قليلاً عند التحميل الأول (compile 14 jsx) لكنه خيار صحيح للنطاق الحالي.
+  - **Mobile-first:** البروتوتايب responsive من الأصل، لا تعديل مطلوب لأحجام الشاشات.
+
 ### ADR-010 — حذف القسم الرياضي القديم بالكامل
 - **التاريخ:** 2026-05-07
 - **السياق:** ميزة البطولات الرياضية (Sports Tournaments) كانت موجودة في portal كقسم رئيسي مع شاشتين (قائمة البطولات + الإحصائيات) و wizard من 4 خطوات و 4 modals، إضافة لـ tournament-view.html (صفحة عامة مستقلة) و 4 جداول في DB. المساحة الكلية ~1900 سطر. الميزة لم تُستخدم تشغيلياً ولم تُحقق العائد المتوقع. القرار: حذف نهائي مع نية إعادة بناء بتصميم جديد لاحقاً (نمط مماثل لـ ADR-006 للتحضير).
@@ -441,6 +472,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F16 | **ربط التحضير بـ Supabase** (ADR-008): DDL لـ `attendance` + `attendance_log`، قراءة من DB، كتابة optimistic مع rollback، audit log، migration لمرة واحدة من localStorage | ✅ | 2026-05-02 | `b4e3ffe, 72eb2c2` |
 | F17 | **تبويب التحضير في dashboard** (ADR-009): 3 شاشات داخلية (ملخص/يوم/تسجيل) في صفحة البرنامج، تنبيهات غياب 3+، Excel export، نفس الـ schema مع portal | ✅ | 2026-05-03 | `2679b97` |
 | F18 | **حذف القسم الرياضي القديم بالكامل** (ADR-010): 5 commits متسلسلة — portal.html (-170) + portal.js (-923) + portal.css (-80) + dashboard/leaderboard/tournament-view (-585) + ADR-010 | ✅ | 2026-05-07 | `d62de36, cc6bfef, 7cf1043, 8906737, 90dd7d8` |
+| F19 | **صفحة البطولة الجديدة** (ADR-011): `tournament.html` مستقل + 16 ملف React inline + DB layer `tournament/supabase.jsx` + Hijri dates + رابط في portal sidebar | ✅ | 2026-05-07 | `9d3d954, 819ae5a, dbb4fc9, f034d6f` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
