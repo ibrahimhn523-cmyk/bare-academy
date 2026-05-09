@@ -103,6 +103,7 @@ function App() {
 
   // Update path: persist meta to DB, then refresh local state from DB.
   const updateTournament = async (updated) => {
+    if (view.readOnly) return;  // belt-and-suspenders against UI bypass
     // Optimistic in-memory update for instant feedback
     setTournaments(tournaments.map(t => t.id === updated.id ? updated : t));
     try {
@@ -123,6 +124,7 @@ function App() {
   // Launch path: insert tournament + teams + matches, then load the persisted
   // version (which has DB-issued ids) and switch to its detail view.
   const launchDraft = async () => {
+    if (view.readOnly) return;  // public view must not create
     const programId = draft.programId || draft.config?.programId;
     if (!programId) {
       alert('يجب اختيار البرنامج قبل إطلاق البطولة');
@@ -200,6 +202,7 @@ function App() {
               readOnly={!!view.readOnly}
               onShare={() => setShareForId(view.id)}
               onDelete={async () => {
+                if (view.readOnly) return;  // public view cannot delete
                 try {
                   await window.TDB.deleteTournament(view.id);
                   setTournaments(tournaments.filter(x => x.id !== view.id));
@@ -209,8 +212,14 @@ function App() {
                 }
               }}
               onExitPreview={() => {
-                window.location.hash = "";
-                setView({ kind: "tournament", id: view.id });
+                // Public share viewers must not transition to edit mode.
+                // If owner-initiated preview (had access before), close popup
+                // or redirect to the academy home; never just clear the hash.
+                if (window.opener && !window.opener.closed) {
+                  window.close();
+                } else {
+                  window.location.href = '/';
+                }
               }}
             />
           )}
