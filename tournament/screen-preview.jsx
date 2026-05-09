@@ -5,23 +5,21 @@
 function ScreenPreview({ draft, setDraft, onBack, onLaunch }) {
   const { generateLeagueFixtures, generateBracket } = window.TournamentData;
 
-  // generate fixtures/bracket on entry if not yet generated
-  React.useEffect(() => {
-    if (draft.fixtures || draft.bracket) return;
-    const next = { ...draft };
+  // Build fixtures/bracket/groups for the given participant order.
+  const buildSchedule = React.useCallback((participants) => {
+    const out = { participants, fixtures: null, bracket: null, groups: null };
     if (draft.type === "league") {
-      next.fixtures = generateLeagueFixtures(draft.participants, !!draft.config?.doubleRound);
+      out.fixtures = generateLeagueFixtures(participants, !!draft.config?.doubleRound);
     } else if (draft.type === "knockout") {
-      next.bracket = generateBracket(draft.participants, !!draft.config?.thirdPlace);
+      out.bracket = generateBracket(participants, !!draft.config?.thirdPlace);
     } else if (draft.type === "league_knockout") {
-      next.fixtures = generateLeagueFixtures(draft.participants, !!draft.config?.doubleRound);
+      out.fixtures = generateLeagueFixtures(participants, !!draft.config?.doubleRound);
     } else if (draft.type === "groups_knockout") {
-      // build groups
-      const perGroup = draft.config?.perGroup || 4;
+      const perGroup   = draft.config?.perGroup   || 4;
       const groupCount = draft.config?.groupCount || 4;
       const groups = [];
       for (let g = 0; g < groupCount; g++) {
-        const slice = draft.participants.slice(g * perGroup, (g + 1) * perGroup);
+        const slice = participants.slice(g * perGroup, (g + 1) * perGroup);
         if (slice.length >= 2) {
           groups.push({
             id: `group_${g}`,
@@ -31,11 +29,27 @@ function ScreenPreview({ draft, setDraft, onBack, onLaunch }) {
           });
         }
       }
-      next.groups = groups;
+      out.groups = groups;
     }
-    setDraft(next);
+    return out;
+  }, [draft.type, draft.config, generateLeagueFixtures, generateBracket]);
+
+  // Generate on entry if not yet generated.
+  React.useEffect(() => {
+    if (draft.fixtures || draft.bracket || draft.groups) return;
+    setDraft({ ...draft, ...buildSchedule(draft.participants) });
   // eslint-disable-next-line
   }, []);
+
+  // Fisher-Yates shuffle, then regenerate.
+  const drawLots = () => {
+    const shuffled = [...(draft.participants || [])];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setDraft({ ...draft, ...buildSchedule(shuffled) });
+  };
 
   const totalMatches = countMatches(draft);
 
@@ -54,6 +68,16 @@ function ScreenPreview({ draft, setDraft, onBack, onLaunch }) {
           <SummaryStat label="النوع" value={tournamentTypeLabel(draft.type)} />
           <SummaryStat label="المشاركون" value={toArabicNum(draft.participants?.length || 0)} />
           <SummaryStat label="المباريات" value={toArabicNum(totalMatches)} />
+        </div>
+        <div className="preview-actions">
+          <button
+            type="button"
+            className="btn-secondary btn-draw"
+            onClick={drawLots}
+            title="إعادة ترتيب المشاركين عشوائياً وإعادة توليد الجدول"
+          >
+            🎲 سحب القرعة
+          </button>
         </div>
       </header>
 
