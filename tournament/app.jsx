@@ -59,12 +59,22 @@ function App() {
     return () => { cancelled = true; };
   }, []);
   // Detect view-only mode from URL hash #/view/<id>
-  const initialView = (() => {
+  // DB ids are numeric (BIGINT) — coerce numeric strings so === finds them.
+  const parseHash = () => {
     const m = (window.location.hash || "").match(/^#\/view\/([\w-]+)/);
-    if (m) return { kind: "tournament", id: m[1], readOnly: true };
-    return { kind: "dashboard" };
-  })();
-  const [view, setView] = appUseState(initialView);
+    if (!m) return { kind: "dashboard" };
+    const raw = m[1];
+    const id = /^\d+$/.test(raw) ? parseInt(raw, 10) : raw;
+    return { kind: "tournament", id, readOnly: true };
+  };
+  const [view, setView] = appUseState(parseHash);
+
+  // Respond to hash changes (back/forward, manual edits, links).
+  appUseEffect(() => {
+    const onHash = () => setView(parseHash());
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
   const [shareForId, setShareForId] = appUseState(null);
   // view kinds: dashboard | wizard:N | tournament:id (with optional readOnly)
 
@@ -168,7 +178,20 @@ function App() {
               onCancel={() => setView({ kind: "dashboard" })}
             />
           )}
-          {view.kind === "tournament" && (
+          {view.kind === "tournament" && loadingTournaments && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-text-3)' }}>⏳ جاري تحميل البطولة…</div>
+          )}
+          {view.kind === "tournament" && !loadingTournaments && loadError && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-warning)' }}>⚠️ خطأ في التحميل: {loadError}</div>
+          )}
+          {view.kind === "tournament" && !loadingTournaments && !loadError && !tournaments.find(x => x.id === view.id) && (
+            <div style={{ padding: 60, textAlign: 'center', color: 'var(--c-text-3)' }}>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+              <div style={{ fontSize: 18, color: 'var(--c-text)', marginBottom: 8 }}>البطولة غير موجودة</div>
+              <div style={{ fontSize: 14 }}>الرابط قد يكون قديماً أو البطولة محذوفة</div>
+            </div>
+          )}
+          {view.kind === "tournament" && !loadingTournaments && !loadError && tournaments.find(x => x.id === view.id) && (
             <TournamentDetail
               tournament={tournaments.find(x => x.id === view.id)}
               onUpdate={updateTournament}
