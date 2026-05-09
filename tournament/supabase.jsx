@@ -224,6 +224,7 @@ async function tdbCreate(draft, programId) {
           awayTeamId: localToDbTeamId.get(m.away?.id) || null,
           played:    false,
           isBye:     !!(m.home?.bye || m.away?.bye),
+          isThirdPlace: false,
         });
       });
     });
@@ -239,6 +240,7 @@ async function tdbCreate(draft, programId) {
           awayTeamId: localToDbTeamId.get(m.away?.id) || null,
           played:    false,
           isBye:     !!(m.home?.bye || m.away?.bye),
+          isThirdPlace: false,
         });
       });
     });
@@ -250,6 +252,7 @@ async function tdbCreate(draft, programId) {
         homeTeamId: null,
         awayTeamId: null,
         played:    false,
+        isBye:     false,
         isThirdPlace: true,
       });
     }
