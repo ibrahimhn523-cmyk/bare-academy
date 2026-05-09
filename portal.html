@@ -116,6 +116,16 @@
         <button class="btn btn-sm btn-danger"  onclick="openBulkPoints('deduct')">➖ خصم نقاط</button>
         <button class="btn btn-sm btn-outline" onclick="clearBulkSel()">✕ إلغاء التحديد</button>
       </div>
+      <!-- بحث + فرز -->
+      <div class="pts-controls" id="pts-controls" style="display:none">
+        <input type="text" id="pts-search" placeholder="🔍 بحث بالاسم" oninput="renderPointsTable()">
+        <select id="pts-sort" onchange="renderPointsTable()">
+          <option value="pts-desc">الأعلى نقاطاً</option>
+          <option value="pts-asc">الأدنى نقاطاً</option>
+          <option value="name">أبجدي</option>
+          <option value="group">حسب المجموعة</option>
+        </select>
+      </div>
       <div id="pts-body">
         <div class="empty"><div class="ei">⭐</div><p>اختر البرنامج لعرض نقاط الطلاب</p></div>
       </div>

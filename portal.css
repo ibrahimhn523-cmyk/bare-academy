@@ -402,6 +402,28 @@ tbody tr:hover { background:#f8faff; }
 .bulk-count {
   font-size:.85rem; font-weight:700; color:var(--gold); flex:1;
 }
+/* Search + sort controls above the points table */
+.pts-controls {
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  margin-bottom:12px;
+}
+.pts-controls input[type="text"] {
+  flex:1; min-width:180px;
+  padding:8px 12px;
+  font-family:inherit; font-size:.9rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  color:var(--text);
+}
+.pts-controls input[type="text"]:focus {
+  outline:none; border-color:var(--gold);
+}
+.pts-controls select {
+  padding:8px 12px;
+  font-family:inherit; font-size:.88rem;
+  background:var(--bg); border:1px solid var(--border); border-radius:8px;
+  color:var(--text); cursor:pointer;
+}
+.pts-controls select:focus { outline:none; border-color:var(--gold); }
 .bulk-students-wrap {
   max-height:78px; overflow-y:auto;
   background:var(--bg); border:1px solid var(--border);
