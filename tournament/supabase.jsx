@@ -303,6 +303,12 @@ async function tdbSaveMatch(match, events) {
   }
 }
 
+/** Advance a team into the next-round match slot (knockout). */
+async function tdbAdvanceTeam(matchId, side, teamId) {
+  const patch = side === 'home' ? { homeTeamId: teamId } : { awayTeamId: teamId };
+  await tdbPatch('tournament_matches', matchId, patch);
+}
+
 /** Delete a tournament (cascades teams, matches, events via FK on the tables). */
 async function tdbDeleteTournament(id) {
   await tdbDelete('tournament_events',  `tournamentId=eq.${id}`);
@@ -341,6 +347,7 @@ window.TDB = {
   create:          tdbCreate,
   updateMeta:      tdbUpdateMeta,
   saveMatch:       tdbSaveMatch,
+  advanceTeam:     tdbAdvanceTeam,
   deleteTournament: tdbDeleteTournament,
   loadParticipants: tdbLoadParticipants,
   loadPrograms:     tdbLoadPrograms,

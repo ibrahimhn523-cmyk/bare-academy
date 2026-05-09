@@ -2,7 +2,7 @@
 // bracket-view.jsx — Interactive bracket renderer
 // =====================================================================
 
-function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", sport, getRoster, readOnly = false }) {
+function BracketView({ bracket, onUpdate, onSaveMatch, tournamentId, bestOf = 1, style = "horizontal", sport, getRoster, readOnly = false }) {
   const [editingMatch, setEditingMatch] = React.useState(null);
   const [selectedRound, setSelectedRound] = React.useState("all");
 
@@ -12,6 +12,7 @@ function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", spor
   const updateMatch = (matchId, payload) => {
     const next = JSON.parse(JSON.stringify(bracket));
     let changed = null;
+    let advance = null;  // { matchId, side, teamId } for next-round propagation
     next.rounds.forEach(round => round.forEach(m => {
       if (m.id === matchId) {
         m.homeScore = payload.homeScore;
@@ -30,8 +31,12 @@ function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", spor
         const idx = round.findIndex(m => m.id === changed.id);
         if (idx >= 0) {
           const nextSlot = next.rounds[r + 1][Math.floor(idx / 2)];
-          if (idx % 2 === 0) nextSlot.home = changed.winner;
+          const side = idx % 2 === 0 ? 'home' : 'away';
+          if (side === 'home') nextSlot.home = changed.winner;
           else nextSlot.away = changed.winner;
+          if (changed.winner?.id) {
+            advance = { matchId: nextSlot.id, side, teamId: changed.winner.id };
+          }
           break;
         }
       }
@@ -44,8 +49,13 @@ function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", spor
       next.thirdPlace.ratings = payload.ratings;
       next.thirdPlace.played = true;
       next.thirdPlace.winner = payload.homeScore > payload.awayScore ? next.thirdPlace.home : next.thirdPlace.away;
+      changed = next.thirdPlace;
     }
-    onUpdate(next);
+    onUpdate(next);  // optimistic local update
+    if (onSaveMatch && changed) {
+      const eventsForDb = (payload.events || []).map(e => ({ ...e, tournamentId }));
+      onSaveMatch(changed, eventsForDb, advance ? [advance] : []);
+    }
     setEditingMatch(null);
   };
 

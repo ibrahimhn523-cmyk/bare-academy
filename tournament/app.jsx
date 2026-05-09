@@ -121,6 +121,32 @@ function App() {
     }
   };
 
+  // Save a single match (score + events) and any knockout advances, then
+  // refresh the tournament from DB so derived state (winner propagation,
+  // standings) stays consistent.
+  const saveMatchToDb = async (tournamentId, match, events, advances) => {
+    if (view.readOnly) return;
+    try {
+      await window.TDB.saveMatch(match, events || []);
+      if (advances && advances.length) {
+        for (const a of advances) {
+          if (a.matchId && a.side && a.teamId) {
+            await window.TDB.advanceTeam(a.matchId, a.side, a.teamId);
+          }
+        }
+      }
+      const fresh = await window.TDB.getOne(tournamentId);
+      if (fresh) setTournaments(prev => prev.map(t => t.id === fresh.id ? fresh : t));
+    } catch (e) {
+      console.error('saveMatch failed:', e.message);
+      alert('فشل حفظ المباراة: ' + e.message);
+      try {
+        const fresh = await window.TDB.getOne(tournamentId);
+        if (fresh) setTournaments(prev => prev.map(t => t.id === fresh.id ? fresh : t));
+      } catch {}
+    }
+  };
+
   // Launch path: insert tournament + teams + matches, then load the persisted
   // version (which has DB-issued ids) and switch to its detail view.
   const launchDraft = async () => {
@@ -197,6 +223,7 @@ function App() {
             <TournamentDetail
               tournament={tournaments.find(x => x.id === view.id)}
               onUpdate={updateTournament}
+              onSaveMatch={saveMatchToDb}
               onBack={() => setView({ kind: "dashboard" })}
               bracketStyle={t.bracketStyle}
               readOnly={!!view.readOnly}
@@ -515,7 +542,7 @@ function WizardSteps({ step, onJump }) {
 }
 
 // ====================== TOURNAMENT DETAIL ======================
-function TournamentDetail({ tournament, onUpdate, onBack, bracketStyle, readOnly = false, onShare, onDelete, onExitPreview }) {
+function TournamentDetail({ tournament, onUpdate, onSaveMatch, onBack, bracketStyle, readOnly = false, onShare, onDelete, onExitPreview }) {
   const isLeague = tournament.type === "league";
   const [tab, setTab] = React.useState(isLeague ? "standings" : "matches");
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -536,6 +563,7 @@ function TournamentDetail({ tournament, onUpdate, onBack, bracketStyle, readOnly
   const getRoster = (teamId) => tournament.participants.find(p => p.id === teamId)?.roster || [];
   // In readOnly mode, swallow updates
   const guardedUpdate = readOnly ? () => {} : onUpdate;
+  const guardedSaveMatch = readOnly ? () => {} : ((m, ev, adv) => onSaveMatch && onSaveMatch(tournament.id, m, ev, adv));
 
   return (
     <div className={`screen tournament-detail ${readOnly ? "is-readonly" : ""}`} data-screen-label={`Tournament: ${tournament.name}`}>
@@ -705,10 +733,10 @@ function TournamentDetail({ tournament, onUpdate, onBack, bracketStyle, readOnly
 
       <div className="preview-body">
         {tab === "standings" && isLeague && (
-          <LeagueView tournament={tournament} onUpdate={guardedUpdate} readOnly={readOnly} mode="standings" />
+          <LeagueView tournament={tournament} onUpdate={guardedUpdate} onSaveMatch={guardedSaveMatch} readOnly={readOnly} mode="standings" />
         )}
         {tab === "matches" && isLeague && (
-          <LeagueView tournament={tournament} onUpdate={guardedUpdate} readOnly={readOnly} mode="matches" />
+          <LeagueView tournament={tournament} onUpdate={guardedUpdate} onSaveMatch={guardedSaveMatch} readOnly={readOnly} mode="matches" />
         )}
         {tab === "calendar" && window.CalendarView && (
           <window.CalendarView
@@ -723,6 +751,8 @@ function TournamentDetail({ tournament, onUpdate, onBack, bracketStyle, readOnly
           <BracketView
             bracket={tournament.bracket}
             onUpdate={(b) => guardedUpdate({ ...tournament, bracket: b })}
+            onSaveMatch={guardedSaveMatch}
+            tournamentId={tournament.id}
             bestOf={tournament.config?.bestOf || 1}
             style={bracketStyle}
             sport={tournament.sport}
