@@ -133,7 +133,6 @@ function tournamentFromDb(t, teams, matches, events) {
     status:           t.status,
     config:           t.config || {},
     pointsSystem:     t.pointsSystem || {},
-    progress:         t.progress || 0,
     createdAt:        t.createdAt,
     participants:     teamObjs,
     fixtures,
@@ -190,7 +189,6 @@ async function tdbCreate(draft, programId) {
     status:          'active',
     config:          draft.config || {},
     pointsSystem:    draft.pointsSystem || {},
-    progress:        0,
   });
   const tournamentRow = Array.isArray(tInsert) ? tInsert[0] : tInsert;
   const tournamentId = tournamentRow.id;
@@ -266,7 +264,7 @@ async function tdbCreate(draft, programId) {
 /** Update tournament metadata (name, status, config, etc.) — does NOT touch teams/matches. */
 async function tdbUpdateMeta(tournament) {
   const patch = {};
-  ['name','status','config','pointsSystem','progress','sport','competitionType','type'].forEach(k => {
+  ['name','status','config','pointsSystem','sport','competitionType','type'].forEach(k => {
     if (tournament[k] !== undefined) patch[k] = tournament[k];
   });
   await tdbPatch('tournaments', tournament.id, patch);
