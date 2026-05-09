@@ -4,6 +4,7 @@
 
 function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", sport, getRoster, readOnly = false }) {
   const [editingMatch, setEditingMatch] = React.useState(null);
+  const [selectedRound, setSelectedRound] = React.useState("all");
 
   if (!bracket) return null;
   const winsNeeded = Math.ceil(bestOf / 2);
@@ -58,10 +59,34 @@ function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", spor
     return `الجولة ${toArabicNum(idx + 1)}`;
   };
 
+  const showRound = (key) => selectedRound === "all" || selectedRound === key;
+
   return (
     <div className={`bracket bracket-${style}`}>
+      <div className="bracket-round-filter" role="tablist">
+        <button
+          type="button"
+          className={`round-pill ${selectedRound === "all" ? "is-active" : ""}`}
+          onClick={() => setSelectedRound("all")}
+        >عرض الكل</button>
+        {bracket.rounds.map((_, ri) => (
+          <button
+            key={ri}
+            type="button"
+            className={`round-pill ${selectedRound === ri ? "is-active" : ""}`}
+            onClick={() => setSelectedRound(ri)}
+          >{roundLabel(ri, bracket.rounds.length)}</button>
+        ))}
+        {bracket.thirdPlace && (
+          <button
+            type="button"
+            className={`round-pill ${selectedRound === "third" ? "is-active" : ""}`}
+            onClick={() => setSelectedRound("third")}
+          >المركز الثالث</button>
+        )}
+      </div>
       <div className="bracket-scroller">
-        {bracket.rounds.map((round, ri) => (
+        {bracket.rounds.map((round, ri) => showRound(ri) && (
           <div key={ri} className="bracket-round">
             <div className="bracket-round-label">{roundLabel(ri, bracket.rounds.length)}</div>
             <div className="bracket-matches">
@@ -78,7 +103,7 @@ function BracketView({ bracket, onUpdate, bestOf = 1, style = "horizontal", spor
             </div>
           </div>
         ))}
-        {bracket.thirdPlace && (
+        {bracket.thirdPlace && showRound("third") && (
           <div className="bracket-round bracket-third">
             <div className="bracket-round-label">المركز الثالث</div>
             <div className="bracket-matches">
