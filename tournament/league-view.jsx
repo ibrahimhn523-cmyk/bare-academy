@@ -2,7 +2,7 @@
 // league-view.jsx — League standings + fixtures
 // =====================================================================
 
-function LeagueView({ tournament, onUpdate, readOnly = false, mode = "both" }) {
+function LeagueView({ tournament, onUpdate, onSaveMatch, readOnly = false, mode = "both" }) {
   const [editingMatch, setEditingMatch] = React.useState(null);
   const { computeStandings } = window.TournamentData;
 
@@ -16,6 +16,7 @@ function LeagueView({ tournament, onUpdate, readOnly = false, mode = "both" }) {
 
   const updateMatch = (matchId, payload) => {
     const next = JSON.parse(JSON.stringify(tournament));
+    let updated = null;
     next.fixtures.forEach(round => round.forEach(m => {
       if (m.id === matchId) {
         m.homeScore = payload.homeScore;
@@ -30,9 +31,14 @@ function LeagueView({ tournament, onUpdate, readOnly = false, mode = "both" }) {
         const hasScore = (payload.homeScore || 0) + (payload.awayScore || 0) > 0;
         const hasEvents = (payload.events || []).length > 0;
         m.played = hasScore || hasEvents;
+        updated = m;
       }
     }));
-    onUpdate(next);
+    onUpdate(next);  // optimistic local update
+    if (onSaveMatch && updated) {
+      const eventsForDb = (payload.events || []).map(e => ({ ...e, tournamentId: tournament.id }));
+      onSaveMatch(updated, eventsForDb);
+    }
     setEditingMatch(null);
   };
 
