@@ -157,24 +157,10 @@ function BracketMatch({ match, bestOf, winsNeeded, onClick, isFinal, isThirdPlac
       <div className={`match-side ${homeWon ? "is-winner" : ""} ${match.played && !homeWon ? "is-loser" : ""}`}>
         <span className="match-name">{match.home?.name || "—"}</span>
         {match.played && <span className="match-score">{toArabicNum(match.homeScore)}</span>}
-        {homeWon && (
-          <span className="match-trophy">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-              <path d="M12 2l2.4 5 5.6.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.6-.8z"/>
-            </svg>
-          </span>
-        )}
       </div>
       <div className={`match-side ${awayWon ? "is-winner" : ""} ${match.played && !awayWon ? "is-loser" : ""}`}>
         <span className="match-name">{match.away?.name || "—"}</span>
         {match.played && <span className="match-score">{toArabicNum(match.awayScore)}</span>}
-        {awayWon && (
-          <span className="match-trophy">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
-              <path d="M12 2l2.4 5 5.6.8-4 3.9.9 5.6-4.9-2.6-4.9 2.6.9-5.6-4-3.9 5.6-.8z"/>
-            </svg>
-          </span>
-        )}
       </div>
       {playable && !match.played && (
         <div className="match-cta">إدخال نتيجة</div>
