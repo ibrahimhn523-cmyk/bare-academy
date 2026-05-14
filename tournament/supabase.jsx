@@ -101,27 +101,70 @@ function tournamentFromDb(t, teams, matches, events) {
     return mo;
   });
 
-  // Group matches: league → fixtures (rounds), knockout → bracket
-  let fixtures = null, bracket = null;
-  if (t.type === 'league') {
+  // Group matches: league → fixtures (rounds), knockout → bracket,
+  // league_knockout → fixtures only (bracket generated later after league ends),
+  // groups_knockout → groups[] each with fixtures + optional knockout bracket
+  let fixtures = null, bracket = null, groups = null;
+
+  const buildRoundedFixtures = (arr) => {
     const byRound = {};
-    matchObjs.filter(m => !m.isThirdPlace).forEach(m => {
+    arr.filter(m => !m.isThirdPlace).forEach(m => {
       const r = m.round || 1;
       if (!byRound[r]) byRound[r] = [];
       byRound[r].push(m);
     });
-    fixtures = Object.keys(byRound).sort((a,b) => +a - +b).map(k => byRound[k]);
-  } else if (t.type === 'knockout') {
-    const main = matchObjs.filter(m => !m.isThirdPlace);
-    const third = matchObjs.find(m => m.isThirdPlace);
+    return Object.keys(byRound).sort((a, b) => +a - +b).map(k => byRound[k]);
+  };
+
+  const buildBracket = (arr) => {
+    const main = arr.filter(m => !m.isThirdPlace);
+    const third = arr.find(m => m.isThirdPlace) || null;
     const byRound = {};
     main.forEach(m => {
       const r = m.round || 1;
       if (!byRound[r]) byRound[r] = [];
       byRound[r].push(m);
     });
-    const rounds = Object.keys(byRound).sort((a,b) => +a - +b).map(k => byRound[k]);
-    bracket = { rounds, thirdPlace: third || null };
+    const rounds = Object.keys(byRound).sort((a, b) => +a - +b).map(k => byRound[k]);
+    return { rounds, thirdPlace: third };
+  };
+
+  if (t.type === 'league') {
+    fixtures = buildRoundedFixtures(matchObjs);
+  } else if (t.type === 'knockout') {
+    bracket = buildBracket(matchObjs);
+  } else if (t.type === 'league_knockout') {
+    // League phase matches have groupId=null; knockout bracket matches will have
+    // groupId='knockout' once that phase is generated. Until then fixtures only.
+    const leagueMatches = matchObjs.filter(m => m.groupId !== 'knockout');
+    const knockoutMatches = matchObjs.filter(m => m.groupId === 'knockout');
+    fixtures = buildRoundedFixtures(leagueMatches);
+    if (knockoutMatches.length) bracket = buildBracket(knockoutMatches);
+  } else if (t.type === 'groups_knockout') {
+    const ARABIC_LABELS = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+    const groupMatches = matchObjs.filter(m => m.groupId && m.groupId !== 'knockout');
+    const knockoutMatches = matchObjs.filter(m => !m.groupId || m.groupId === 'knockout');
+    const groupIds = [...new Set(groupMatches.map(m => m.groupId))].sort();
+    groups = groupIds.map((gid, gi) => {
+      const gm = groupMatches.filter(m => m.groupId === gid);
+      const teamSet = new Set();
+      const participants = [];
+      gm.forEach(m => {
+        if (m.home && !m.home.bye && !teamSet.has(m.home.id)) {
+          teamSet.add(m.home.id); participants.push(m.home);
+        }
+        if (m.away && !m.away.bye && !teamSet.has(m.away.id)) {
+          teamSet.add(m.away.id); participants.push(m.away);
+        }
+      });
+      return {
+        id: gid,
+        label: `المجموعة ${ARABIC_LABELS[gi] || (gi + 1)}`,
+        participants,
+        fixtures: buildRoundedFixtures(gm),
+      };
+    });
+    if (knockoutMatches.length) bracket = buildBracket(knockoutMatches);
   }
 
   return {
@@ -137,6 +180,7 @@ function tournamentFromDb(t, teams, matches, events) {
     participants:     teamObjs,
     fixtures,
     bracket,
+    groups,
     _dbTeams:         teams,                     // raw rows for diff-on-save
     _dbMatches:       matches,
     _dbEvents:        events,
@@ -213,7 +257,7 @@ async function tdbCreate(draft, programId) {
 
   // 3) matches (flatten fixtures + bracket + thirdPlace)
   const matchRows = [];
-  if (draft.type === 'league' && draft.fixtures) {
+  if ((draft.type === 'league' || draft.type === 'league_knockout') && draft.fixtures) {
     draft.fixtures.forEach((round, ri) => {
       round.forEach((m, mi) => {
         matchRows.push({
@@ -225,6 +269,26 @@ async function tdbCreate(draft, programId) {
           played:    false,
           isBye:     !!(m.home?.bye || m.away?.bye),
           isThirdPlace: false,
+          groupId:   null,
+        });
+      });
+    });
+  }
+  if (draft.type === 'groups_knockout' && draft.groups) {
+    draft.groups.forEach((group) => {
+      group.fixtures.forEach((round, ri) => {
+        round.forEach((m, mi) => {
+          matchRows.push({
+            tournamentId,
+            round: ri + 1,
+            slot:  mi,
+            homeTeamId: localToDbTeamId.get(m.home?.id) || null,
+            awayTeamId: localToDbTeamId.get(m.away?.id) || null,
+            played:    false,
+            isBye:     !!(m.home?.bye || m.away?.bye),
+            isThirdPlace: false,
+            groupId:   group.id,
+          });
         });
       });
     });
