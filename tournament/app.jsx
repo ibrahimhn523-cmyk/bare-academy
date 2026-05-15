@@ -546,7 +546,7 @@ function WizardSteps({ step, onJump }) {
 
 // ====================== TOURNAMENT DETAIL ======================
 function TournamentDetail({ tournament, onUpdate, onSaveMatch, onBack, bracketStyle, readOnly = false, onShare, onDelete, onExitPreview }) {
-  const isLeague = tournament.type === "league";
+  const isLeague = tournament.type === "league" || tournament.type === "league_knockout";
   const [tab, setTab] = React.useState(isLeague ? "standings" : "matches");
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [editing, setEditing] = React.useState(false);
@@ -762,6 +762,9 @@ function TournamentDetail({ tournament, onUpdate, onSaveMatch, onBack, bracketSt
             getRoster={getRoster}
             readOnly={readOnly}
           />
+        )}
+        {tab === "matches" && tournament.type === "groups_knockout" && window.GroupsView && (
+          <window.GroupsView draft={tournament} setDraft={guardedUpdate} />
         )}
         {tab === "stats" && <StatsView tournament={tournament} />}
       </div>

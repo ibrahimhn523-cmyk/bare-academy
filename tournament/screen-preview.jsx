@@ -248,4 +248,5 @@ function countMatches(draft) {
   return 0;
 }
 
+window.GroupsView = GroupsView;
 window.ScreenPreview = ScreenPreview;
