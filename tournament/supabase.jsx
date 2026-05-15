@@ -397,15 +397,20 @@ async function tdbSaveRatings(matchId, ratings) {
   if (!matchId || !ratings) return;
   const rows = Object.entries(ratings)
     .filter(([, v]) => v > 0)
-    .map(([playerId, rating]) => ({ matchId, playerId: parseInt(playerId, 10), rating }));
+    .map(([playerId, rating]) => ({ matchId, playerId, rating }));
   if (!rows.length) return;
   await tdbRequest('POST', 'tournament_ratings', rows, {
     Prefer: 'resolution=merge-duplicates,return=minimal',
   });
 }
 
-/** Delete a tournament (cascades teams, matches, events via FK on the tables). */
+/** Delete a tournament (cascades teams, matches, events, ratings). */
 async function tdbDeleteTournament(id) {
+  const matches = await tdbRequest('GET', `tournament_matches?tournamentId=eq.${id}&select=id`);
+  if (Array.isArray(matches) && matches.length) {
+    const ids = matches.map(m => m.id).join(',');
+    await tdbDelete('tournament_ratings', `matchId=in.(${ids})`);
+  }
   await tdbDelete('tournament_events',  `tournamentId=eq.${id}`);
   await tdbDelete('tournament_matches', `tournamentId=eq.${id}`);
   await tdbDelete('tournament_teams',   `tournamentId=eq.${id}`);
