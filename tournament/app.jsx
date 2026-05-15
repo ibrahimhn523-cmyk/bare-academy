@@ -128,6 +128,9 @@ function App() {
     if (view.readOnly) return;
     try {
       await window.TDB.saveMatch(match, events || []);
+      if (match.ratings && Object.keys(match.ratings).length) {
+        await window.TDB.saveRatings(match.id, match.ratings);
+      }
       if (advances && advances.length) {
         for (const a of advances) {
           if (a.matchId && a.side && a.teamId) {

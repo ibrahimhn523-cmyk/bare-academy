@@ -87,7 +87,7 @@ function teamFromDb(row) {
 }
 
 /** Build a full prototype-shape tournament from DB rows. */
-function tournamentFromDb(t, teams, matches, events) {
+function tournamentFromDb(t, teams, matches, events, ratings = []) {
   const teamObjs = teams.map(teamFromDb);
   const teamsById = new Map(teamObjs.map(x => [x.id, x]));
   const eventsByMatch = new Map();
@@ -95,33 +95,82 @@ function tournamentFromDb(t, teams, matches, events) {
     if (!eventsByMatch.has(e.matchId)) eventsByMatch.set(e.matchId, []);
     eventsByMatch.get(e.matchId).push(e);
   });
+  const ratingsByMatch = new Map();
+  ratings.forEach(r => {
+    if (!ratingsByMatch.has(r.matchId)) ratingsByMatch.set(r.matchId, {});
+    ratingsByMatch.get(r.matchId)[r.playerId] = r.rating;
+  });
   const matchObjs = matches.map(m => {
     const mo = matchFromDb(m, teamsById);
     mo.events = eventsByMatch.get(m.id) || [];
+    mo.ratings = ratingsByMatch.get(m.id) || {};
     return mo;
   });
 
-  // Group matches: league → fixtures (rounds), knockout → bracket
-  let fixtures = null, bracket = null;
-  if (t.type === 'league') {
+  // Group matches: league → fixtures (rounds), knockout → bracket,
+  // league_knockout → fixtures only (bracket generated later after league ends),
+  // groups_knockout → groups[] each with fixtures + optional knockout bracket
+  let fixtures = null, bracket = null, groups = null;
+
+  const buildRoundedFixtures = (arr) => {
     const byRound = {};
-    matchObjs.filter(m => !m.isThirdPlace).forEach(m => {
+    arr.filter(m => !m.isThirdPlace).forEach(m => {
       const r = m.round || 1;
       if (!byRound[r]) byRound[r] = [];
       byRound[r].push(m);
     });
-    fixtures = Object.keys(byRound).sort((a,b) => +a - +b).map(k => byRound[k]);
-  } else if (t.type === 'knockout') {
-    const main = matchObjs.filter(m => !m.isThirdPlace);
-    const third = matchObjs.find(m => m.isThirdPlace);
+    return Object.keys(byRound).sort((a, b) => +a - +b).map(k => byRound[k]);
+  };
+
+  const buildBracket = (arr) => {
+    const main = arr.filter(m => !m.isThirdPlace);
+    const third = arr.find(m => m.isThirdPlace) || null;
     const byRound = {};
     main.forEach(m => {
       const r = m.round || 1;
       if (!byRound[r]) byRound[r] = [];
       byRound[r].push(m);
     });
-    const rounds = Object.keys(byRound).sort((a,b) => +a - +b).map(k => byRound[k]);
-    bracket = { rounds, thirdPlace: third || null };
+    const rounds = Object.keys(byRound).sort((a, b) => +a - +b).map(k => byRound[k]);
+    return { rounds, thirdPlace: third };
+  };
+
+  if (t.type === 'league') {
+    fixtures = buildRoundedFixtures(matchObjs);
+  } else if (t.type === 'knockout') {
+    bracket = buildBracket(matchObjs);
+  } else if (t.type === 'league_knockout') {
+    // League phase matches have groupId=null; knockout bracket matches will have
+    // groupId='knockout' once that phase is generated. Until then fixtures only.
+    const leagueMatches = matchObjs.filter(m => m.groupId !== 'knockout');
+    const knockoutMatches = matchObjs.filter(m => m.groupId === 'knockout');
+    fixtures = buildRoundedFixtures(leagueMatches);
+    if (knockoutMatches.length) bracket = buildBracket(knockoutMatches);
+  } else if (t.type === 'groups_knockout') {
+    const ARABIC_LABELS = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+    const groupMatches = matchObjs.filter(m => m.groupId && m.groupId !== 'knockout');
+    const knockoutMatches = matchObjs.filter(m => !m.groupId || m.groupId === 'knockout');
+    const groupIds = [...new Set(groupMatches.map(m => m.groupId))].sort();
+    groups = groupIds.map((gid, gi) => {
+      const gm = groupMatches.filter(m => m.groupId === gid);
+      const teamSet = new Set();
+      const participants = [];
+      gm.forEach(m => {
+        if (m.home && !m.home.bye && !teamSet.has(m.home.id)) {
+          teamSet.add(m.home.id); participants.push(m.home);
+        }
+        if (m.away && !m.away.bye && !teamSet.has(m.away.id)) {
+          teamSet.add(m.away.id); participants.push(m.away);
+        }
+      });
+      return {
+        id: gid,
+        label: `المجموعة ${ARABIC_LABELS[gi] || (gi + 1)}`,
+        participants,
+        fixtures: buildRoundedFixtures(gm),
+      };
+    });
+    if (knockoutMatches.length) bracket = buildBracket(knockoutMatches);
   }
 
   return {
@@ -137,6 +186,7 @@ function tournamentFromDb(t, teams, matches, events) {
     participants:     teamObjs,
     fixtures,
     bracket,
+    groups,
     _dbTeams:         teams,                     // raw rows for diff-on-save
     _dbMatches:       matches,
     _dbEvents:        events,
@@ -147,7 +197,7 @@ function tournamentFromDb(t, teams, matches, events) {
 // PUBLIC API — used by app.jsx
 // =====================================================================
 
-/** Load all tournaments (with their teams, matches, events) for the dashboard. */
+/** Load all tournaments (with their teams, matches, events, ratings) for the dashboard. */
 async function tdbList() {
   const ts = await tdbGet('tournaments?select=*&order=createdAt.desc');
   if (!ts || !ts.length) return [];
@@ -157,11 +207,19 @@ async function tdbList() {
     tdbGet(`tournament_matches?select=*&tournamentId=in.(${ids})&order=round.asc,slot.asc`),
     tdbGet(`tournament_events?select=*&tournamentId=in.(${ids})&order=id.asc`),
   ]);
+  let ratings = [];
+  if (matches && matches.length) {
+    const matchIds = matches.map(m => m.id).join(',');
+    ratings = await tdbGet(`tournament_ratings?matchId=in.(${matchIds})`) || [];
+  }
+  // Map each rating to its tournamentId via the matches list for efficient filtering
+  const matchTournamentMap = new Map((matches || []).map(m => [m.id, m.tournamentId]));
   return ts.map(t => tournamentFromDb(
     t,
     (teams || []).filter(x => x.tournamentId === t.id),
     (matches || []).filter(x => x.tournamentId === t.id),
     (events || []).filter(x => x.tournamentId === t.id),
+    ratings.filter(r => matchTournamentMap.get(r.matchId) === t.id),
   ));
 }
 
@@ -174,7 +232,12 @@ async function tdbGetOne(id) {
     tdbGet(`tournament_events?select=*&tournamentId=eq.${id}&order=id.asc`),
   ]);
   if (!t) return null;
-  return tournamentFromDb(t, teams || [], matches || [], events || []);
+  let ratings = [];
+  if (matches && matches.length) {
+    const matchIds = matches.map(m => m.id).join(',');
+    ratings = await tdbGet(`tournament_ratings?matchId=in.(${matchIds})`) || [];
+  }
+  return tournamentFromDb(t, teams || [], matches || [], events || [], ratings);
 }
 
 /** Create a new tournament from wizard draft. Inserts tournament + teams + matches. */
@@ -213,7 +276,7 @@ async function tdbCreate(draft, programId) {
 
   // 3) matches (flatten fixtures + bracket + thirdPlace)
   const matchRows = [];
-  if (draft.type === 'league' && draft.fixtures) {
+  if ((draft.type === 'league' || draft.type === 'league_knockout') && draft.fixtures) {
     draft.fixtures.forEach((round, ri) => {
       round.forEach((m, mi) => {
         matchRows.push({
@@ -225,6 +288,26 @@ async function tdbCreate(draft, programId) {
           played:    false,
           isBye:     !!(m.home?.bye || m.away?.bye),
           isThirdPlace: false,
+          groupId:   null,
+        });
+      });
+    });
+  }
+  if (draft.type === 'groups_knockout' && draft.groups) {
+    draft.groups.forEach((group) => {
+      group.fixtures.forEach((round, ri) => {
+        round.forEach((m, mi) => {
+          matchRows.push({
+            tournamentId,
+            round: ri + 1,
+            slot:  mi,
+            homeTeamId: localToDbTeamId.get(m.home?.id) || null,
+            awayTeamId: localToDbTeamId.get(m.away?.id) || null,
+            played:    false,
+            isBye:     !!(m.home?.bye || m.away?.bye),
+            isThirdPlace: false,
+            groupId:   group.id,
+          });
         });
       });
     });
@@ -309,6 +392,18 @@ async function tdbAdvanceTeam(matchId, side, teamId) {
   await tdbPatch('tournament_matches', matchId, patch);
 }
 
+/** Upsert player ratings for a single match. ratings = {playerId: 1-5, ...} */
+async function tdbSaveRatings(matchId, ratings) {
+  if (!matchId || !ratings) return;
+  const rows = Object.entries(ratings)
+    .filter(([, v]) => v > 0)
+    .map(([playerId, rating]) => ({ matchId, playerId: parseInt(playerId, 10), rating }));
+  if (!rows.length) return;
+  await tdbRequest('POST', 'tournament_ratings', rows, {
+    Prefer: 'resolution=merge-duplicates,return=minimal',
+  });
+}
+
 /** Delete a tournament (cascades teams, matches, events via FK on the tables). */
 async function tdbDeleteTournament(id) {
   await tdbDelete('tournament_events',  `tournamentId=eq.${id}`);
@@ -347,6 +442,7 @@ window.TDB = {
   create:          tdbCreate,
   updateMeta:      tdbUpdateMeta,
   saveMatch:       tdbSaveMatch,
+  saveRatings:     tdbSaveRatings,
   advanceTeam:     tdbAdvanceTeam,
   deleteTournament: tdbDeleteTournament,
   loadParticipants: tdbLoadParticipants,
