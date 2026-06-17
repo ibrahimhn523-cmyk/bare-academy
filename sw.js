@@ -1,4 +1,4 @@
-const CACHE = 'bare-summer-1448-v1';
+const CACHE = 'bare-summer-1448-v2';
 const SHELL = [
   './',
   './index.html',

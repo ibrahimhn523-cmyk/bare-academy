@@ -146,7 +146,7 @@
             position:fixed; left:0; right:0; bottom:0; z-index:1001;
             background:var(--surface);
             border-radius:24px 24px 0 0;
-            max-height:92vh; height:auto;
+            max-height:92vh; height:92vh;
             display:flex; flex-direction:column;
             transform:translateY(100%);
             transition:transform .38s cubic-bezier(.32,.72,0,1);
@@ -160,7 +160,7 @@
                 left:50%; right:auto; bottom:auto; top:50%;
                 width:90%; max-width:620px;
                 transform:translate(-50%,-50%) scale(.96);
-                border-radius:var(--radius); max-height:90vh;
+                border-radius:var(--radius); max-height:90vh; height:90vh;
                 opacity:0; transition:transform .3s ease, opacity .3s ease;
             }
             .sheet.active { transform:translate(-50%,-50%) scale(1); opacity:1; }
@@ -192,7 +192,7 @@
         .sheet-close:active { transform:scale(.9); }
 
         /* مساحة الشاشات المنزلقة */
-        .sheet-viewport { flex:1; overflow:hidden; position:relative; }
+        .sheet-viewport { flex:1; min-height:0; overflow:hidden; position:relative; }
         .sheet-track { display:flex; width:200%; height:100%; transition:transform .35s cubic-bezier(.32,.72,0,1); }
         .sheet-screen { width:50%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px; }
         .sheet-track.show-form { transform:translateX(50%); } /* RTL: ينزلق لليسار */
