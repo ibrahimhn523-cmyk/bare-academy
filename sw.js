@@ -1,4 +1,4 @@
-const CACHE = 'bare-summer-1448-v2';
+const CACHE = 'bare-summer-1448-v3';
 const SHELL = [
   './',
   './index.html',
@@ -30,6 +30,12 @@ self.addEventListener('fetch', (e) => {
 
   // لا نخزّن طلبات Supabase أو الخرائط — نمررها مباشرة للشبكة
   if (url.hostname.includes('supabase.co') || url.hostname.includes('google.com')) {
+    return;
+  }
+
+  // صفحات الإدارة (لوحة التحكم + البوابة) دائماً من الشبكة — لا cache-first.
+  // تتغيّر باستمرار؛ التخزين كان يخدم نسخة قديمة بعد كل نشر (ADR-013).
+  if (/(?:dashboard|portal)/.test(url.pathname)) {
     return;
   }
 
