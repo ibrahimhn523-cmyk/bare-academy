@@ -742,6 +742,46 @@ function renderSubscribers() {
   }).join('');
 }
 
+// تصدير قائمة مشتركي البرنامج الحالي إلى Excel (يتجاهل فلاتر الشاشة)
+function exportSubscribersExcel() {
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel غير محملة بعد، انتظر ثانية', 'warning'); return; }
+  if (!_currentProg)      { toast('افتح برنامجاً أولاً', 'warning'); return; }
+  if (!_progSubs.length)  { toast('لا يوجد مشتركون للتصدير', 'warning'); return; }
+
+  // كل مشتركي البرنامج — لا يتأثر بفلاتر الشاشة (دفع/مدة/بحث)
+  const rows = _progSubs.map((s, i) => {
+    const { due, paid, rem, payStatus } = getSubPayInfo(s);
+    return {
+      '#':            i + 1,
+      'الاسم':        s.studentName,
+      'الجوال':       s.phone || '',          // نص — يحافظ على الصفر البادئ
+      'المجموعة':     s.groupName || '',
+      'نوع الاشتراك': fmtSubType(s.subType),
+      'البداية':      fmtHijri(s.startDate) || '',   // هجري كما يظهر على الشاشة
+      'النهاية':      fmtHijri(s.endDate)   || '',
+      'الحالة':       s.status || '',
+      'الحصص':        s.sessionCount || '',
+      'المستحق':      due,                     // أرقام خام — تسمح بالجمع في Excel
+      'المدفوع':      paid,
+      'المتبقي':      rem,
+      'حالة الدفع':   payStatus
+    };
+  });
+
+  const headers = ['#','الاسم','الجوال','المجموعة','نوع الاشتراك','البداية','النهاية','الحالة','الحصص','المستحق','المدفوع','المتبقي','حالة الدفع'];
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = [{ wch: 5 }, { wch: 24 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 16 }, { wch: 16 }, { wch: 9 }, { wch: 8 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }];
+
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };   // ورقة من اليمين لليسار
+  XLSX.utils.book_append_sheet(wb, ws, 'المشتركون');
+  const safeName = String(_currentProg.name || 'برنامج').replace(/[\\/:*?"<>|]/g, '-').slice(0, 60);
+  XLSX.writeFile(wb, `مشتركو ${safeName} - ${todayDate()}.xlsx`);
+
+  addLog('export_subscribers', `تصدير مشتركي ${_currentProg.name} (${rows.length} مشترك) إلى Excel`);
+  toast(`تم تصدير ${rows.length} مشترك ✅`, 'success');
+}
+
 /* ── Add Subscriber Modal ── */
 function openAddSub() {
   if (!_currentProg) return;
@@ -2516,6 +2556,43 @@ function downloadStudentTemplate() {
 
   XLSX.utils.book_append_sheet(wb, ws, 'الطلاب');
   XLSX.writeFile(wb, 'قالب_استيراد_الطلاب.xlsx');
+}
+
+// تصدير سجل الطلاب كاملاً (يشمل المؤرشفين) بنفس أعمدة الشاشة وأرقامها
+function exportStudentsExcel() {
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel غير محملة بعد، انتظر ثانية', 'warning'); return; }
+  if (!_students.length) { toast('لا يوجد طلاب للتصدير', 'warning'); return; }
+
+  // كل الطلاب — لا يتأثر بفلاتر الشاشة (مصدر/حالة/بحث)
+  const rows = _students.map((s, i) => {
+    const subs     = _allSubs.filter(sub => sub.studentId === s.id);
+    const progs    = [...new Set(subs.map(sub => sub.programName).filter(Boolean))].join('، ') || '—';
+    const isActive = subs.some(sub => subStatus(sub.endDate) === 'نشط');
+    const status   = s.isArchived ? 'مؤرشف' : isActive ? 'مشترك' : 'غير مشترك';
+    return {
+      '#':         i + 1,
+      'الاسم':     s.fullName,
+      'الجوال':    s.phone || '',          // نص — يحافظ على الصفر البادئ
+      'جوال 2':    s.phone2 || '',
+      'المرحلة':   s.category || '',
+      'المصدر':    s.source || '',
+      'البرامج':   progs,
+      'أول تواصل': fmtHijri(s.firstContactDate) || '',  // هجري كما يظهر على الشاشة
+      'الحالة':    status
+    };
+  });
+
+  const headers = ['#','الاسم','الجوال','جوال 2','المرحلة','المصدر','البرامج','أول تواصل','الحالة'];
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = [{ wch: 5 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 12 }, { wch: 26 }, { wch: 18 }, { wch: 12 }];
+
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };   // ورقة من اليمين لليسار
+  XLSX.utils.book_append_sheet(wb, ws, 'سجل الطلاب');
+  XLSX.writeFile(wb, `سجل الطلاب - ${todayDate()}.xlsx`);
+
+  addLog('export_students', `تصدير سجل الطلاب (${rows.length} طالب) إلى Excel`);
+  toast(`تم تصدير ${rows.length} طالب ✅`, 'success');
 }
 
 function openImportModal() {
