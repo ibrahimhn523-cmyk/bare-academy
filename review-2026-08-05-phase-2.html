@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير مراجعة — Phase 2: المكتبات المشتركة (Trader Event Evaluation Platform)</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; }
+    .critical { background: #FFE5E5; border-right: 4px solid #CC0000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .warning  { background: #FFF5E5; border-right: 4px solid #FF8C00; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .info     { background: #E5F5FF; border-right: 4px solid #0066CC; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .clean    { background: #E5FFE5; border-right: 4px solid #008000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .notes    { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; }
+  </style>
+</head>
+<body>
+  <h1>🔍 تقرير مراجعة — Phase 2: المكتبات المشتركة (Trader Event Evaluation Platform)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المراجَع:</strong> <code>trader/lib/supabase-client.js</code>، <code>trader/lib/session.js</code>، <code>trader/lib/ar.js</code>، <code>trader/lib/ui.js</code>، <code>trader/styles.css</code></p>
+  <p>راجعتُ الملفات الخمسة فعلياً سطراً بسطر، مقارنةً بـ Section D/F/H/I/L/M من <code>CLAUDE_CODE_INSTRUCTIONS_v2.md</code>، وبقرارات <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code> (خصوصاً القرار ج: مصادقة يدوية plaintext)، وبقواعد <code>CLAUDE.md</code> العامة للمستودع.</p>
+
+  <h2>🔴 حرج — يجب إصلاحه قبل الاعتماد</h2>
+  <p><em>لا توجد نتائج حرجة. الملفات الخمسة نظيفة من الناحية الأمنية الأساسية ومطابقة للقرارات المعتمدة سابقاً.</em></p>
+
+  <h2>⚠️ مهم — يُفضّل إصلاحه</h2>
+
+  <div class="warning">
+    <strong>توسيط الـ toast مكسور منطقياً في RTL — <code>styles.css</code> سطر 82-100</strong>
+    <p>الكود:</p>
+    <pre><code>.trader-toast {
+  position: fixed;
+  bottom: 20px;
+  inset-inline-start: 50%;
+  transform: translateX(-50%) translateY(16px);
+  ...
+}</code></pre>
+    <p>هذا خطأ منطقي حقيقي وليس مجرد أسلوب: خدعة "توسيط عنصر أفقياً" (<code>left:50%; transform:translateX(-50%)</code>) تعتمد على أن الخاصية المستخدمة <strong>فيزيائية غير موجَّهة (direction-agnostic)</strong> — التوسيط لا علاقة له بـ RTL/LTR أصلاً. لكن الكود هنا استخدم <code>inset-inline-start</code> (خاصية منطقية تُترجَم في RTL إلى <code>right</code>) بدل <code>left</code>. النتيجة: <code>right:50%</code> يضع الحافة اليمنى للعنصر عند 50% من العرض (بدل الحافة اليسرى)، فيصبح مركز العنصر منزاحاً لليسار بمقدار نصف عرضه قبل حتى تطبيق <code>transform</code> — ثم <code>translateX(-50%)</code> يزيحه لليسار مرة أخرى بنصف عرضه. المحصّلة: رسالة الـ toast (وهي القناة الوحيدة لتأكيد نجاح/فشل الحفظ في تدفق التقييم بأكمله) ستظهر منزاحة بشدة عن المنتصف، وقد تُقطَع عند حافة الشاشة على الموبايل الضيق.</p>
+    <p><strong>الإصلاح:</strong> استخدم <code>left: 50%</code> (فيزيائي) بدل <code>inset-inline-start: 50%</code> في هذه الحالة تحديداً، لأن التوسيط الأفقي لا يُفترض أن يُعكَس مع اتجاه الكتابة. هذا استثناء صحيح من قاعدة "استخدم دائماً logical properties" — القاعدة صحيحة للمسافات والحشوات الموجَّهة (padding-inline, margin-inline)، لكنها تكسر التوسيط المتماثل.</p>
+    <p><strong>الأثر إن لم يُعالَج الآن:</strong> غير ظاهر بعد لأن Phase 3 (أول صفحة فعلية تستخدم <code>showToast</code>) لم تُبنَ. لكن يجب إصلاحه <strong>قبل</strong> أن تُستخدَم الدالة فعلياً في أي شاشة، وإلا فكل رسائل النجاح/الخطأ في التطبيق ستُعرَض بشكل مكسور من أول استخدام.</p>
+  </div>
+
+  <div class="warning">
+    <strong>خطر XSS كامن في <code>ui.js</code> — <code>openModal()</code> و<code>confirmAction()</code> يُدرجان HTML خام بلا تعقيم</strong>
+    <p><code>openModal(innerHtml)</code> (سطر 24-36) يعمل <code>card.innerHTML = innerHtml</code> مباشرة، و<code>confirmAction({title, body, ...})</code> (سطر 47-56) يُدرج <code>title</code> و<code>body</code> داخل template literal ثم يمرّرها لـ <code>openModal</code> بلا أي تعقيم أو escape. حالياً (Phase 2) لا يوجد استدعاء فعلي بمحتوى مستخدم، فلا ثغرة نشطة اليوم. لكن Section K.3/K.4 من التعليمات تصف استخدامات قادمة ستمرّر بيانات يُدخلها المستخدم مباشرة إلى هذه الدوال — مثال متوقع في Phase 4/5: <code>confirmAction({ title: 'حذف ' + store.first_name + ' ' + store.last_name, ... })</code> أو رسالة تأكيد حذف تحتوي اسم متجر أو مقيّم أدخله شخص آخر عبر لوحة الإدارة. أي اسم يحتوي <code>&lt;img src=x onerror=...&gt;</code> سيُنفَّذ كـ HTML حي داخل المودال.</p>
+    <p><strong>الإصلاح المقترح قبل Phase 4/5:</strong> إضافة دالة <code>escapeHtml(str)</code> بسيطة في <code>ui.js</code> أو <code>ar.js</code>، واستخدامها إلزامياً على أي نص مصدره بيانات مستخدم (اسم متجر، اسم مقيّم، أي حقل نصي حر) قبل تمريره لـ <code>openModal</code>/<code>confirmAction</code>/<code>showToast</code> (الأخيرة تستخدم <code>textContent</code> بأمان بالفعل — لا مشكلة فيها). المشكلة محصورة في <code>openModal</code> و<code>confirmAction</code>.</p>
+  </div>
+
+  <h2>💡 تحسين — اختياري</h2>
+
+  <div class="info">
+    <strong>كلمة المرور تُرسَل كـ query parameter نصي في طلب GET — موروثة من نمط PostgREST المعتمد في Section H.1، وليست انحرافاً جديداً</strong>
+    <p><code>session.js</code> سطر 23-27 يبني <code>username=eq....&password=eq....</code> ويُرسلها عبر <code>sbSelect</code> (GET). هذا يطابق حرفياً الشيفرة المرجعية في Section H.1 من التعليمات (نفس نمط <code>.eq('password', password)</code> عبر supabase-js يترجَم لنفس الشيء على السلك). التعقيم عبر <code>encodeURIComponent</code> موجود وصحيح ويحمي من كسر بنية الفلتر — هذا جيد. لكن يستحق تنويهاً دائماً: كلمة المرور النصية تظهر الآن في عنوان URL الكامل لطلب HTTP، ما يعني احتمال تسجيلها في: سجلات (logs) Supabase/Vercel، تاريخ متصفح لو فُتحت أدوات المطوّر، وربما Referer headers لو وُجد أي طلب تابع. هذا يُضاعف الأثر السلبي لقرار "كلمة مرور نصية" (القرار ج، Phase 1) لأنه لم يعد فقط "مخزَّنة نصية في DB" بل أيضاً "تسافر عبر الشبكة كنص واضح في URL في كل تسجيل دخول". لا إصلاح مطلوب الآن (يخالف Section D "Auth: Custom... plaintext" المعتمد أصلاً)، لكن يستحق توثيقه في TRADER_NOTES.md النهائي كأثر إضافي لقرار الراعي، وليس مفاجأة تُكتشف لاحقاً.</p>
+  </div>
+
+  <div class="info">
+    <strong>عدم وجود escaping قسري داخل <code>sbSelect(table, query)</code> نفسها</strong>
+    <p>الدالة تقبل <code>query</code> كنص خام من المستدعي (مثل <code>'is_active=eq.true&order=sort_order.asc'</code>). هذا مقصود ومرن، لكن لا يوجد ما يذكّر المستدعين المستقبليين (Phase 3-6) بضرورة استخدام <code>encodeURIComponent</code> يدوياً على أي قيمة ديناميكية (اسم مستخدم، معرّف متجر من URL) تُدرَج داخل هذا النص. لا يشكّل ثغرة SQL injection حقيقية (PostgREST آمن من ذلك بنيوياً)، لكن قيمة غير مُرمَّزة تحتوي <code>&amp;</code> أو <code>,</code> يمكن أن تكسر الفلتر أو تُغيّر معناه بشكل غير متوقّع. اقتراح اختياري: دالة مساعدة صغيرة <code>eq(col, val)</code> تُرجع <code>`${col}=eq.${encodeURIComponent(val)}`</code> لتوحيد النمط بدل تكراره يدوياً (كما فُعل بشكل صحيح في <code>session.js</code>).</p>
+  </div>
+
+  <h2>✅ سليم</h2>
+
+  <div class="clean">
+    <strong>مفتاح Supabase anon مطابق حرفياً للموجود في portal.js وdashboard.js</strong>
+    <p>تحقّقتُ بالمقارنة المباشرة: <code>SB_URL</code> و<code>SB_KEY</code> في <code>trader/lib/supabase-client.js</code> يطابقان حرفياً القيم في <code>portal.js</code> (سطر 5-6) و<code>dashboard.js</code> (سطر 4-5) حرفاً بحرف. لا مفتاح مختلق أو خاطئ، ولا محاولة استخدام <code>service_role</code> بالخطأ.</p>
+  </div>
+
+  <div class="clean">
+    <strong><code>sbUpsert</code> يدعم فعلياً UNIQUE(store_id, evaluator_username)</strong>
+    <p>الدالة تبني <code>?on_conflict=store_id,evaluator_username</code> مع <code>Prefer: resolution=merge-duplicates,return=representation</code> — هذا يطابق قيد UNIQUE المعرَّف في <code>trader_evaluations</code> (Section G / Phase 1). ملاحظة إيجابية: هذا التصميم أفضل من مثال <code>saveEvaluation</code> ثنائي الخطوة (SELECT ثم INSERT/UPDATE) الوارد في Section J.3 من التعليمات — upsert أحادي الطلب يتفادى حالة race condition لو ضغط نفس المقيّم "حفظ" مرتين بسرعة أو من جهازين. تحسين حقيقي على المرجع، لا انحراف سلبي.</p>
+  </div>
+
+  <div class="clean">
+    <strong>session.js يطابق متطلبات الأمان الثلاثة المطلوبة في Section H واستدعاء security-check</strong>
+    <ul>
+      <li>كلمة المرور لا تُطبع ولا تُسجَّل في أي <code>console.log</code> بكامل الملف (تحقّق مباشر بالقراءة).</li>
+      <li>الجلسة لها انتهاء صلاحية فعلي: <code>SESSION_TTL_MS = 12 * 60 * 60 * 1000</code>، ويُتحقَّق منها في كل استدعاء لـ <code>getSession()</code> (سطر 74-77) قبل إرجاع الجلسة.</li>
+      <li><code>JSON.parse(raw)</code> (سطر 63) محاط بـ try/catch، ويُمسَح ويُعاد <code>null</code> عند فشل التحليل بدل رمي استثناء يكسر الصفحة. إضافة جيدة غير مطلوبة صراحة في المرجع: فحص إضافي لبنية الكائن بعد التحليل (<code>typeof s.at !== 'number' || !s.username || !s.role</code>) يحمي من جلسة "صالحة JSON لكنها بلا الحقول المطلوبة" — أقوى من نسخة Section H.1 المرجعية.</li>
+      <li><code>encodeURIComponent</code> مطبَّق على <code>username</code> و<code>password</code> في استعلام PostgREST (سطر 24-26) — يحمي بنية الفلتر من كسر ناتج عن رموز خاصة كالفاصلة أو علامة الاقتباس في المُدخل.</li>
+    </ul>
+  </div>
+
+  <div class="clean">
+    <strong>لا انحراف عن Section H.1/H.2 يستحق تنبيهاً حرجاً</strong>
+    <p>منطق <code>login/getSession/logout/requireRole</code> يطابق بنيوياً الكود المرجعي في Section H.1، مع إضافات دفاعية معقولة (try/catch حول localStorage نفسه في حال تصفح خاص يمنع التخزين، رسائل خطأ عربية واضحة لكل حالة فشل). لا Supabase Auth استُخدم (يطابق Anti-requirement M). لا يوجد فرق جوهري يستدعي قلقاً.</p>
+  </div>
+
+  <div class="clean">
+    <strong>ui.js لا يخالف Anti-requirement M</strong>
+    <p>لا وجود لأي <code>&lt;form&gt;</code>. كل الأزرار <code>&lt;button type="button"&gt;</code> بأحداث <code>addEventListener</code> (مثل نمط <code>data-act</code> في <code>confirmAction</code>) — بلا <code>onclick=</code> inline إطلاقاً، وهذا أفضل حتى من المثال المرجعي الذي يذكر "button onClick handlers" بشكل عام؛ التطبيق الفعلي هنا أنظف ويطابق روح TD-9 الموثّقة في CLAUDE.md (تجنّب inline onclick).</p>
+  </div>
+
+  <div class="clean">
+    <strong>ar.js صحيح منطقياً ومطابق حرفياً لأمثلة Section I.3</strong>
+    <p><code>toArabic</code> يطابق حرفياً نمط الاستبدال المرجعي. <code>num()</code> يطابق نفس السلوك (تقريب لخانتين + حذف ".٠٠" الزائدة) مع إضافة حماية <code>Number.isNaN</code> غير موجودة في المرجع — تحسين. <code>toWestern</code> دالة إضافية غير مطلوبة صراحة في Section I.3 لكنها منطقية (ستحتاجها Phase 4/5 لتحويل مُدخلات عربية-هندية محتملة إلى أرقام قابلة للحساب) ومنطقها صحيح (بحث عكسي في نفس مصفوفة الأرقام).</p>
+  </div>
+
+  <div class="clean">
+    <strong>styles.css: الألوان مطابقة حرفياً لـ Section I.1، وlogical properties مستخدمة بشكل شبه كامل</strong>
+    <p>كل متغيرات <code>:root</code> (navy #2D3651, gold #D4AF37, beige #F5E6D3, maroon #8F1A1D, black #1D1D1B, success #1A7A4A, gray #8a8a8a, silver #C0C0C0, bronze #CD7F32, input-bg #FBF6EF, input-border #E6D9C6) مطابقة حرفاً بحرف للقيم المطلوبة. لا استخدام لـ <code>padding-left/right</code> أو <code>margin-left/right</code> في أي مكان — الكود يستخدم <code>padding-inline</code>/<code>padding-block</code>/<code>margin-block-end</code>/<code>inset-inline-start</code> بشكل ممنهج (الاستثناء الوحيد الخاطئ هو حالة توسيط الـ toast المذكورة أعلاه في قسم ⚠️). لا <code>letter-spacing</code> على أي نص عربي. <code>line-height</code> بين 1.45 و1.65 في كل الحالات المفحوصة (1.45 للعناوين، 1.5-1.6 للنصوص). <code>dir="rtl"</code>/<code>direction:rtl</code> مطبَّقان على <code>html</code> و<code>body</code>. حجم الأزرار وأزرار الدرجات <code>min-height/min-width: 44px</code> يطابق متطلب Section I.4 (٤٤×٤٤ بكسل كحد أدنى للمس).</p>
+  </div>
+
+  <div class="clean">
+    <strong>ES modules تعمل بدون build step — لا تعارض مع ADR-001</strong>
+    <p>كل الملفات الخمسة تستخدم <code>export</code>/<code>import</code> قياسي (مثل <code>import { TABLES, sbSelect } from './supabase-client.js'</code> في <code>session.js</code>). هذا يعمل مباشرة في المتصفح عبر <code>&lt;script type="module" src="..."&gt;</code> بلا أي bundler أو build step — يطابق قيد "لا build step" في CLAUDE.md وADR-001، وسيُختبَر عملياً في Phase 3 عند إنشاء <code>trader/index.html</code>. لا مشكلة متوقَّعة (كل المتصفحات الحديثة تدعم ES modules أصلاً، وBare Academy تطبيق داخلي بمتصفحات معروفة).</p>
+  </div>
+
+  <div class="clean">
+    <strong>تعليقات عربية كافية وذات سياق</strong>
+    <p>كل ملف يبدأ بتعليق يشرح الغرض ويربط القرار بمصدره (مثال: تعليق أعلى <code>session.js</code> يشير صراحة إلى "القرار ج، plan-phase-1-foundation.html"). هذا يسهّل على أي جلسة قادمة (أو مراجعة لاحقة) فهم لماذا اتُّخذ قرار "بلا Supabase Auth" بدون الحاجة للرجوع لملفات أخرى.</p>
+  </div>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ردّك على التقرير — ما توافق على إصلاحه وما تؤجّله. تحديداً: هل تريد إصلاح توسيط الـ toast الآن (قبل Phase 3) أم بعده؟ وهل تريد إضافة دالة escapeHtml قبل Phase 4/5 أم عند أول استخدام فعلي ببيانات مستخدم؟</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة/تقرير Phase 2 — المكتبات المشتركة</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>خطة/تقرير Phase 2 — المكتبات المشتركة (Shared Libraries)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">
+    نُفِّذت هذه المرحلة بسرعة بناءً على طلب إبراهيم (عبر الجلسة المنسِّقة) بعدم التوقف بين المراحل الصغيرة. دُمج التخطيط والتنفيذ في ملف واحد لتسريع الوتيرة — الملفات الفعلية مكتوبة على القرص فعلاً وقت هذا التقرير (ليست مقترحة فقط).
+  </div>
+
+  <h2>١. الهدف</h2>
+  <p>بناء 5 ملفات أساسية يعتمد عليها كل من Phase 3-6 لاحقاً: عميل Supabase، إدارة الجلسة، تحويل الأرقام العربية، مساعدات الواجهة (toast/modal)، والأنماط المشتركة.</p>
+
+  <h2>٢. الملفات المُنشأة</h2>
+  <table>
+    <tr><th>الملف</th><th>الوصف</th></tr>
+    <tr><td><code>trader/lib/supabase-client.js</code></td><td>fetch مباشر لـ Supabase REST (نفس مفتاح anon المستخدَم في portal.js/dashboard.js — القرار ب من Phase 1). دوال: sbSelect/sbInsert/sbUpdate/sbUpsert/sbDelete.</td></tr>
+    <tr><td><code>trader/lib/session.js</code></td><td>login/getSession/logout/requireRole. مصادقة يدوية (القرار ج من Phase 1). جلسة 12 ساعة في localStorage.</td></tr>
+    <tr><td><code>trader/lib/ar.js</code></td><td>toArabic/num/toWestern — تحويل الأرقام العربية-الهندية (إلزامي، Section M).</td></tr>
+    <tr><td><code>trader/lib/ui.js</code></td><td>showToast/openModal/closeModal/confirmAction/vibrate — بلا &lt;form&gt; وبلا onclick= inline.</td></tr>
+    <tr><td><code>trader/styles.css</code></td><td>أنماط مشتركة: بطاقات، أزرار، شارات، toast، modal، حقول، شبكة درجات — logical properties (RTL) كما تشترط arabic-context.</td></tr>
+  </table>
+
+  <h2>٣. مهارات استُدعيت فعلياً</h2>
+  <ul>
+    <li><strong>arabic-context</strong> — على ar.js وstyles.css قبل الكتابة: أكّدت استخدام logical properties (padding-inline-*, inset-inline-start بدل left/right)، تجنّب letter-spacing، line-height 1.45–1.65، خطوط Cairo/Noto Kufi Arabic، عدم خلط الأرقام العربية/الغربية في نفس المخرج — طُبِّقت جميعها في الكود.</li>
+    <li><strong>security-check</strong> — على session.js قبل الكتابة: أكّد أن كلمة المرور غير مُسجَّلة في أي console.log، الجلسة لها انتهاء صلاحية فعلي (12 ساعة)، JSON.parse محاط بـ try/catch (حماية من بيانات جلسة تالفة)، وencodeURIComponent على username/password في استعلام PostgREST. أعاد التذكير بأن غياب Supabase Auth تحديداً مقايضة معتمدة سلفاً (القرار ج، Phase 1) — لم تُعالَج هنا لأنها ليست ثغرة جديدة، بل قرار سابق موافَق عليه.</li>
+  </ul>
+
+  <h2>٤. قرارات معمارية كبرى ظهرت في هذه المرحلة</h2>
+  <p>لا يوجد قرار جديد يستدعي decision-guard. الملفات تنفّذ فقط ما ورد في Section D/F/H/I/L من التعليمات المعتمدة أصلاً. القرار الوحيد التنفيذي البسيط: استخدام ES modules (<code>export</code>/<code>import</code>) بدل ملفات عادية — مطابق حرفياً لصيغة أكواد Section H.1/H.2 في ملف التعليمات نفسه (لا يحتاج build step، مدعوم مباشرة من المتصفح عبر <code>&lt;script type="module"&gt;</code> في Phase 3).</p>
+
+  <h2>٥. ما لم يحدث بعد</h2>
+  <p>لا شاشات فعلية (login/admin/stores-list/rate) بعد — تلك Phase 3-5. هذه المرحلة مكتبات فقط، لا واجهة قابلة للتشغيل بعد لأن <code>trader/index.html</code> (Phase 3) لم يُنشأ بعد.</p>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا أي ملاحظات على هذه المكتبات قبل استخدامها في Phase 3.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

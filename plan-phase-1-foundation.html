@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة Phase 1 — تأسيس منصة تقييم فعالية التاجر الصغير</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; color: #1D1D1B; line-height: 1.6; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 36px; }
+    h3 { color: #2D3651; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+    .badge-plan { background: #FFF7E0; color: #8a6d1a; }
+    .badge-notdone { background: #FDE8E8; color: #8F1A1D; }
+    table { border-collapse: collapse; width: 100%; margin: 14px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 16px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; line-height: 1.5; }
+    code { font-family: 'Courier New', monospace; }
+    .tree { background: #FBF6EF; border: 1px solid #E6D9C6; border-radius: 10px; padding: 14px 18px; direction: ltr; text-align: left; font-family: 'Courier New', monospace; font-size: 13px; white-space: pre; }
+    .decision { background: #fff; border: 2px solid #2D3651; border-radius: 12px; padding: 18px 20px; margin: 16px 0; }
+    .decision.critical { border-color: #8F1A1D; }
+    .decision h4 { margin-top: 0; color: #2D3651; font-size: 16px; }
+    .decision.critical h4 { color: #8F1A1D; }
+    .decision p { margin: 6px 0; }
+    .decision .label { font-weight: 700; color: #2D3651; }
+    .decision.critical .label { color: #8F1A1D; }
+    .q-box { background: #FFF7E0; border-right: 4px solid #D4AF37; padding: 10px 16px; margin: 10px 0; border-radius: 6px; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+    .ok { color: #1A7A4A; font-weight: 700; }
+    .warn { color: #8F1A1D; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <h1>خطة Phase 1 — التأسيس (Foundation)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform (منصة تقييم فعالية التاجر الصغير) — يُضاف داخل مستودع bare-academy</p>
+  <p><span class="badge badge-plan">📋 خطة فقط</span> <span class="badge badge-notdone">⛔ لم يُنفَّذ أي شيء بعد</span></p>
+
+  <div class="status">
+    <strong>الحالة:</strong> هذه خطة Phase 1 فقط بناءً على طلبك الصريح "نعم، ابدأ Phase 1 (خطة فقط أولاً)". لا SQL نُفِّذ على Supabase، لا vercel.json حقيقي أُنشئ، لا ملفات تحت <code>trader/</code> أو <code>view/</code> أُنشئت. كل ما يلي مقترح ينتظر موافقتك في قسم "ملاحظات الراعي" أسفل الصفحة.
+  </div>
+
+  <h2>١. ما هذا المشروع (باختصار)</h2>
+  <p>
+    منصة صغيرة مستقلة لتقييم "فعالية التاجر الصغير" — تُضاف كصفحات جديدة (<code>/trader/*</code> و <code>/view</code>) داخل نفس موقع bare-academy الحالي، بدون أن تلمس صفحات الأكاديمية (index/dashboard/portal/tournament) إلا لغرض التوجيه (routing). فيها 3 أنواع مستخدمين: مدير (يدير المعايير/المستخدمين/المتاجر)، مقيّمون (يسجّلون درجات لكل متجر)، وجمهور (يشاهد لوحة صدارة حية بدون تسجيل دخول).
+  </p>
+
+  <h2>٢. مصادر القراءة (تمت قبل كتابة هذه الخطة)</h2>
+  <ul>
+    <li><code>C:\Users\ibrah\Downloads\CLAUDE_CODE_INSTRUCTIONS_v2.md</code> — قُرئ بالكامل (1025 سطر، الأقسام A–S).</li>
+    <li><code>C:\Users\ibrah\Downloads\Trader Event Evaluation v2.dc.html</code> — قُرئ كمرجع تصميم/منطق فقط (ليس كوداً قابلاً للتشغيل). استُخرج منه: الألوان، أنماط البطاقات/الأزرار، ومنطق كلاس <code>Component</code> (aggregateForStore، login، dirty state).</li>
+    <li><code>CLAUDE.md</code> في جذر bare-academy — قواعد العمل مع إبراهيم (لا بناء قبل إذن، خطوات صغيرة متسلسلة، توثيق ADR).</li>
+    <li>لا يوجد <code>plan-*.html</code> أو <code>report-*.html</code> أو <code>pm-log.md</code> سابق لهذا المشروع — بداية من الصفر فعلاً (تأكّد عبر مهارة project-memory).</li>
+  </ul>
+
+  <h2>٣. ما وجدته في المستودع الحالي (reality-check)</h2>
+  <table>
+    <tr><th>الفحص</th><th>النتيجة</th></tr>
+    <tr><td>vercel.json</td><td>غير موجود — سيُنشأ لأول مرة</td></tr>
+    <tr><td>package.json</td><td>غير موجود — لا build step، يطابق الالتزام بـ Vanilla JS بدون framework</td></tr>
+    <tr><td>مجلد trader/ أو view/</td><td>غير موجودين حالياً</td></tr>
+    <tr><td>pm-log.md</td><td>غير موجود سابقاً — أُنشئ الآن في هذه الجلسة</td></tr>
+    <tr><td>sw.js</td><td>موجود (كاش v3). يستثني <code>/dashboard/</code> و <code>/portal/</code> من cache-first فقط (ADR-013). <strong>لا يستثني</strong> <code>/trader</code> أو <code>/view</code> — نقطة تحتاج قرارك (انظر القرار السادس أدناه).</td></tr>
+    <tr><td>git status</td><td>نظيف نسبياً، آخر commit <code>a09e714</code>. لا تعارض مع بدء عمل جديد.</td></tr>
+  </table>
+
+  <h2>٤. مخطط قاعدة البيانات المقترح (Supabase)</h2>
+  <p>4 جداول جديدة، بادئة <code>trader_</code> لتفادي أي تصادم مع جداول bare-academy الحالية (students, programs, users...). منسوخ حرفياً من Section G في ملف التعليمات، مع RLS مفعّل لكل جدول (حتى لو بسياسة متساهلة):</p>
+
+  <pre><code>-- 1) المستخدمون (مقيّمون + مدير)
+CREATE TABLE trader_users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,              -- نص صريح، بقرار المالك (انظر القرار الأمني ج)
+  full_name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'evaluator')),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2) معايير التقييم (ديناميكية، المدير يضيف/يعدّل)
+CREATE TABLE trader_criteria (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL,
+  max_score INT NOT NULL CHECK (max_score BETWEEN 1 AND 10),
+  sort_order INT NOT NULL DEFAULT 1,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 3) المتاجر
+CREATE TABLE trader_stores (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  first_name TEXT NOT NULL,
+  last_name TEXT NOT NULL,
+  store_type TEXT,
+  created_by TEXT NOT NULL REFERENCES trader_users(username) ON UPDATE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 4) التقييمات
+CREATE TABLE trader_evaluations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL REFERENCES trader_stores(id) ON DELETE CASCADE,
+  evaluator_username TEXT NOT NULL REFERENCES trader_users(username) ON UPDATE CASCADE,
+  scores JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (store_id, evaluator_username)
+);
+
+CREATE INDEX trader_eval_store_idx ON trader_evaluations(store_id);
+CREATE INDEX trader_eval_user_idx ON trader_evaluations(evaluator_username);
+CREATE INDEX trader_criteria_active_idx ON trader_criteria(is_active, sort_order);
+
+CREATE OR REPLACE FUNCTION trader_touch_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN NEW.updated_at = NOW(); RETURN NEW; END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trader_evaluations_touch
+BEFORE UPDATE ON trader_evaluations
+FOR EACH ROW EXECUTE FUNCTION trader_touch_updated_at();
+
+-- Row Level Security
+ALTER TABLE trader_users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trader_criteria ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trader_stores ENABLE ROW LEVEL SECURITY;
+ALTER TABLE trader_evaluations ENABLE ROW LEVEL SECURITY;
+
+-- سياسات متساهلة (مقايضة مقصودة لفعالية داخلية — انظر القرار ج)
+CREATE POLICY "trader_users_anon_all" ON trader_users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "trader_criteria_anon_all" ON trader_criteria FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "trader_stores_anon_all" ON trader_stores FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "trader_evaluations_anon_all" ON trader_evaluations FOR ALL USING (true) WITH CHECK (true);
+
+-- بيانات أولية (seed)
+INSERT INTO trader_users (username, password, full_name, role) VALUES
+  ('admin', '[محجوبة — انظر trader-schema.sql محلياً]', 'المدير', 'admin');
+
+INSERT INTO trader_criteria (name, max_score, sort_order, is_active) VALUES
+  ('التميز وجمالية المكان',   5, 1, TRUE),
+  ('كثرة البيع',              5, 2, TRUE),
+  ('نظافة المكان',            5, 3, TRUE),
+  ('التسويق وحسن الاستقبال',  5, 4, TRUE);</code></pre>
+
+  <p><strong>ملاحظة تصميم مهمة:</strong> عمود <code>id</code> هنا <code>UUID DEFAULT gen_random_uuid()</code> — يولّده Supabase تلقائياً، فلا يتكرر خطأ ADR-012 (فقدان الترقيم التلقائي). هذا متوافق مع القاعدة الملزمة "لا id يدوي من العميل" الموثّقة في CLAUDE.md.</p>
+
+  <h2>٥. المقايضة الأمنية (RLS + Plaintext) — ولماذا تشبه ADR-001</h2>
+  <p>
+    نفس النمط المستخدم في bare-academy الحالي (ADR-001: استدعاء Supabase REST مباشرة من المتصفح بمفتاح anon واحد، بدون طبقة API وسيطة) وADR-003 (جدول users يدوي، كلمات مرور نصية). الفرق الوحيد: هنا نبنيه من الصفر ونحن **نعرف مسبقاً** أنه يحمل نفس المخاطر C1/C2/C3/C5 الموثّقة في §٣ من CLAUDE.md — أي أننا لا "نكتشف" ديناً أمنياً جديداً، بل نصنع نسخة موازية منه بوعي كامل لأنه يناسب سياق فعالية داخلية مؤقتة بعدد مستخدمين صغير جداً (مدير + 3-4 مقيّمين معروفين شخصياً). هذا القرار **يحتاج موافقتك الصريحة** — انظر القرار (ج) في قسم الأسئلة المفتوحة.
+  </p>
+
+  <h2>٦. vercel.json المقترح (لم يُنشأ بعد)</h2>
+  <pre><code>{
+  "rewrites": [
+    { "source": "/trader/:path*", "destination": "/trader/index.html" },
+    { "source": "/view/:path*", "destination": "/view/index.html" }
+  ]
+}</code></pre>
+  <p>هذا أول ملف <code>vercel.json</code> في تاريخ المستودع. لا نعرف حالياً إن كانت لوحة تحكم Vercel (Vercel dashboard settings) تحتوي إعدادات ضمنية تتعارض معه — يحتاج اختبار على رابط معاينة (preview) قبل الدفع لـ main، وليس افتراض أنه آمن 100%.</p>
+
+  <h2>٧. هيكل الملفات المقترح للإنشاء (بعد الموافقة، عبر المراحل 2-7 لاحقاً — لا شيء منها الآن)</h2>
+  <div class="tree">bare-academy/
+├── vercel.json                    (جديد — القرار د)
+├── trader/
+│   ├── index.html                 SPA shell
+│   ├── app.js                     التوجيه والحالة
+│   ├── views/
+│   │   ├── login.js
+│   │   ├── admin.js
+│   │   ├── stores-list.js
+│   │   └── rate.js
+│   ├── lib/
+│   │   ├── supabase-client.js
+│   │   ├── session.js
+│   │   ├── ar.js                  (تحويل أرقام عربية)
+│   │   └── ui.js                  (toast, modal)
+│   └── styles.css
+├── view/
+│   ├── index.html                 لوحة الصدارة العامة
+│   ├── board.js
+│   └── board.css
+├── plan-phase-N-*.html            (خطة كل مرحلة)
+├── report-phase-N-*.html          (تقرير كل مرحلة)
+├── review-YYYY-MM-DD-phase-N.html (مراجعة reviewer)
+├── pm-log.md                      (هذا الملف — مستمر عبر كل المراحل)
+└── TRADER_NOTES.md                (ملاحظات تسليم نهائية — Phase 7)</div>
+  <p><strong>لن يُلمس:</strong> index.html، dashboard.*، portal.*، sw.js، manifest.json — إلا لإضافة استثناء cache في sw.js إذا وافقت على القرار السادس أدناه.</p>
+
+  <h2>٨. الأسئلة المفتوحة — تحتاج موافقتك الصريحة قبل أي تنفيذ</h2>
+  <p>عبر مهارة <strong>decision-guard</strong>، كل قرار مطروح بصيغة قصيرة: القرار، لماذا، ماذا تخسر لو غيّرت رأيك، وهل توافق. اقرأها كلها قبل الرد — لا توقّع موافقة عامة سريعة.</p>
+
+  <div class="decision">
+    <h4>القرار (أ) — دمج المشروعين في نفس المستودع والاستضافة</h4>
+    <p><span class="label">القرار:</span> نضيف نظام "تقييم فعالية التاجر" كصفحات جديدة (<code>/trader</code>, <code>/view</code>) داخل نفس موقع bare-academy، بدل موقع/مستودع منفصل.</p>
+    <p><span class="label">لماذا:</span> البديل (مستودع ونشر Vercel منفصلين) يعني حساب استضافة جديد ونطاق جديد وصيانة مضاعفة لنظام يُستخدم غالباً لفعالية مؤقتة. الدمج أرخص وأسرع لأنه يستفيد من استضافة مجانية موجودة أصلاً.</p>
+    <p><span class="label">ماذا تخسر لو غيّرت رأيك لاحقاً:</span> لو كبر هذا المنتج (فعاليات متكررة، مستخدمون أكثر) وأردنا فصله لاحقاً، النقل ممكن لأن الملفات مستقلة في مجلدين (<code>trader/</code>, <code>view/</code>) — يتطلب ساعات عمل لا دقائق، لكنه ليس مستحيلاً.</p>
+    <p><span class="label">هل توافق؟</span></p>
+  </div>
+
+  <div class="decision">
+    <h4>القرار (ب) — إعادة استخدام نفس Supabase project الحالي</h4>
+    <p><span class="label">القرار:</span> نستخدم نفس قاعدة بيانات bare-academy الحالية ونفس المفتاح، ونضيف لها 4 جداول جديدة بادئتها <code>trader_</code>، بدل فتح قاعدة بيانات Supabase مستقلة جديدة.</p>
+    <p><span class="label">لماذا:</span> قاعدة جديدة تعني مفتاح جديد وإعداد RLS من الصفر وخدمة إضافية تُدار وتُراقب — تعقيد غير مبرر بما أن الجداول منفصلة بالاسم ولا تتقاطع مع بيانات الطلاب أو المدفوعات.</p>
+    <p><span class="label">ماذا تخسر لو غيّرت رأيك لاحقاً:</span> نفس مفتاح anon المكشوف حالياً في كل ملفات bare-academy (C3) يصبح الباب أيضاً لجداول trader_. لو تسرّب هذا المفتاح مستقبلاً، تتأثر بيانات المدرسة وبيانات فعالية التاجر معاً بدل واحدة فقط. الفصل لاحقاً ممكن (الجداول قابلة للتصدير/النقل) لكنه غير تلقائي ويحتاج عملاً يدوياً.</p>
+    <p><span class="label">هل توافق؟</span> وهل هذا هو Supabase project الصحيح فعلاً (<code>oytfhgqhibbcsqbnvwyv</code>) أم تقصد مشروعاً آخر؟</p>
+  </div>
+
+  <div class="decision critical">
+    <h4>⚠️ القرار (ج) — الأخطر من الأربعة: كلمات مرور نصية + صلاحيات مفتوحة</h4>
+    <p><span class="label">القرار:</span> كلمات مرور المدير والمقيّمين في نظام "تقييم التاجر" تُخزَّن بالنص الصريح (بدون تشفير) في قاعدة البيانات. وأي شخص يعرف كيف يستخدم أدوات المتصفح يقدر تقنياً يقرأ أو يعدّل بيانات جداول <code>trader_*</code> مباشرة بدون تسجيل دخول أصلاً — لأن الحماية الوحيدة هي واجهة الموقع، لا قاعدة البيانات نفسها.</p>
+    <p><span class="label">لماذا:</span> البديل (تشفير كلمات المرور + Supabase Auth) أكثر أماناً لكنه يحتاج بناء وتكامل إضافي، وهذا نظام لفعالية داخلية مؤقتة بعدد مستخدمين صغير جداً ومعروفين شخصياً (المدير + 3-4 مقيّمين) — بنفس منطق القرار المتخذ أصلاً لنظام portal.html الحالي في bare-academy.</p>
+    <p><span class="label">ماذا تخسر لو غيّرت رأيك لاحقاً:</span> هذا القرار **يضاعف** ديون الأمان الحرجة الموثّقة أصلاً في CLAUDE.md (C1: كلمات مرور نصية، C2: مصادقة client-side فقط، C3: مفتاح مكشوف، C5: صلاحيات غير ملزمة على السيرفر) بنظام مصادقة موازٍ ثانٍ منفصل تماماً عن نظام portal. لو تسرّب رابط قاعدة البيانات أو حصل خطأ بسيط في الإعداد، بيانات هذا النظام (تقييمات، كلمات مرور مقيّمين) مكشوفة بالكامل. إصلاحه لاحقاً ممكن لكنه بنفس حجم TD-1/TD-2 الموجودة أصلاً في backlog bare-academy — أي دين أمني إضافي فوق دين قائم.</p>
+    <p><span class="label">هل توافق؟</span> هذا القرار يحتاج تأكيدك الصريح تحديداً — لا موافقة عامة على "الخطة كلها".</p>
+  </div>
+
+  <div class="decision">
+    <h4>القرار (د) — إنشاء vercel.json لأول مرة</h4>
+    <p><span class="label">القرار:</span> ننشئ ملف إعدادات جديد اسمه <code>vercel.json</code> (لم يوجد من قبل في تاريخ المشروع) لتوجيه روابط <code>/trader</code> و <code>/view</code> للصفحة الصحيحة بروابط نظيفة.</p>
+    <p><span class="label">لماذا:</span> بدونه، الروابط تصبح طويلة وغير عملية (مثل <code>/trader/index.html#admin</code> بدل <code>/trader/admin</code>). البديل (بدون الملف) يخالف مواصفة الروابط في Section E من التعليمات.</p>
+    <p><span class="label">ماذا تخسر لو غيّرت رأيك لاحقاً:</span> لا نعرف حالياً إن كانت إعدادات Vercel dashboard الحالية (خارج الكود) تتعارض مع rewrites الجديدة. الأثر قابل للتراجع الكامل (حذف الملف يعيد السلوك القديم)، لكن يستوجب اختبار على رابط معاينة (preview deployment) قبل الدفع لـ main — لن يُدفع مباشرة بدون اختبار.</p>
+    <p><span class="label">هل توافق؟</span></p>
+  </div>
+
+  <div class="decision">
+    <h4>القرار الإضافي (Service Worker) — هل نستثني /trader و /view من التخزين المؤقت؟</h4>
+    <p><span class="label">القرار:</span> نضيف <code>/trader</code> و <code>/view</code> لنفس استثناء dashboard/portal في sw.js (شبكة مباشرة دائماً، بلا تخزين)، بدل تركهما يُخزَّنان تلقائياً (cache-first) مثل باقي صفحات الموقع.</p>
+    <p><span class="label">لماذا:</span> اكتشفنا في reality-check أن sw.js الحالي لا يستثني هذين المسارين. هذا المشروع سيمر بـ 7 مراحل تطوير نشط، ولوحة الصدارة الحية (<code>/view</code>) تُحدَّث كل 10 ثوانٍ وقد تُعرض على شاشة كبيرة يوم الفعالية — نفس سيناريو ADR-013 بالضبط (نسخة قديمة عالقة بعد كل نشر) لكن بأثر أوضح هنا لأنه يوم فعالية حي.</p>
+    <p><span class="label">ماذا تخسر لو غيّرت رأيك لاحقاً:</span> بدون تخزين، هاتان الصفحتان تحتاجان اتصال إنترنت دائماً (لا offline) — لكن هذا متوقع أصلاً لأنهما تعتمدان بالكامل على Supabase الحي، فلا فائدة حقيقية من العمل دون اتصال هنا أساساً.</p>
+    <p><span class="label">هل توافق؟</span> أم تفضّل تأجيل هذا لـ Phase 7 (كما ورد في التعليمات الأصلية Section O) بدل معالجته الآن في Phase 1؟</p>
+  </div>
+
+  <div class="q-box">
+    <strong>سؤال إضافي (أقل حسماً، لكن يحتاج ردك):</strong> تعليمات Section G تزرع مستخدم <code>admin</code> واحد فقط. لكن ملف التصميم المرجعي (<code>.dc.html</code>) يزرع أيضاً 3 مقيّمين تجريبيين (karim/karim2026، ibrahim/ibrahim2026، culture/cul2026) و6 متاجر تجريبية للعرض. هل تريد:
+    <br>(أ) الاكتفاء بمستخدم admin واحد فقط كما في Section G، وأنت تضيف باقي المقيّمين لاحقاً من لوحة الإدارة في Phase 4، أو
+    <br>(ب) زرع نفس بيانات المقيّمين التجريبيين من ملف التصميم أيضاً في Phase 1 لتسهيل الاختبار عبر المراحل القادمة (يمكن حذفها لاحقاً قبل الفعالية الحقيقية)؟
+  </div>
+
+  <h2>٩. خطوات تنفيذ Phase 1 (بعد موافقتك فقط — لن تبدأ قبلها)</h2>
+  <ol>
+    <li>تنفيذ DDL في Supabase SQL Editor (القسم ٤ أعلاه) — يدوياً، بنفس نمط ADR-008/ADR-012 (DDL خارج الـ repo).</li>
+    <li>استدعاء مهارة <code>security-check</code> على الـ SQL فعلياً (قبل التنفيذ على القاعدة الحية) للتأكد من: لا مفتاح service_role مكشوف، RLS مفعّل فعلاً على الجداول الأربعة، لا ثغرة SQL injection مستقبلية في نمط الاستعلامات المخطّط لها.</li>
+    <li>إنشاء <code>vercel.json</code> بالمحتوى في القسم ٦.</li>
+    <li>اختبار الـ rewrites على رابط معاينة (Vercel preview) قبل أي دفع لـ main.</li>
+    <li>تحديث <code>sw.js</code> بإضافة استثناء trader/view إن وافقت على القرار السادس أعلاه.</li>
+    <li>استدعاء وكيل <code>reviewer</code> لمراجعة مستقلة (schema + RLS + vercel.json) قبل أي commit.</li>
+    <li>كتابة <code>report-phase-1-foundation.html</code> بنتيجة التنفيذ الفعلي.</li>
+    <li>تسجيل قرار معماري (ADR) داخل <code>DECISIONS.md</code> جديد لهذا المشروع الفرعي، يوثّق القرارات (أ)-(د) بعد اعتمادها.</li>
+    <li>تحديث <code>pm-log.md</code> بكل خطوة تنفيذية فعلية.</li>
+    <li><code>git commit</code> بعنوان: <code>feat(trader): add DB schema and routing rewrites</code>.</li>
+  </ol>
+
+  <h2>١٠. ما لم يُنفَّذ في هذه الجلسة (تأكيد صريح)</h2>
+  <ul>
+    <li><span class="warn">لا</span> SQL نُفِّذ على Supabase.</li>
+    <li><span class="warn">لا</span> vercel.json حقيقي أُنشئ.</li>
+    <li><span class="warn">لا</span> أي ملف تحت <code>trader/</code> أو <code>view/</code> أُنشئ.</li>
+    <li><span class="warn">لا</span> تعديل على sw.js أو أي ملف موجود.</li>
+    <li><span class="warn">لا</span> git commit.</li>
+    <li><span class="ok">تم فقط:</span> هذا الملف + <code>pm-log.md</code>.</li>
+  </ul>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك وتعديلاتك مباشرة في هذا الملف. تحديداً: ردّك على القرارات (أ)، (ب)، (ج)، (د)، والقرار الإضافي عن Service Worker، والسؤال الإضافي عن بيانات الاختبار.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

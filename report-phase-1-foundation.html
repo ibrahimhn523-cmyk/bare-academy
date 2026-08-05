@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير Phase 1 — تأسيس منصة تقييم فعالية التاجر الصغير</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; color: #1D1D1B; line-height: 1.6; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { font-family: 'Courier New', monospace; background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .fixed { background: #E5FFE5; border-right: 4px solid #008000; padding: 12px 16px; margin: 10px 0; border-radius: 4px; }
+    .pending { background: #FFF5E5; border-right: 4px solid #FF8C00; padding: 12px 16px; margin: 10px 0; border-radius: 4px; }
+    .blocked { background: #FFE5E5; border-right: 4px solid #CC0000; padding: 12px 16px; margin: 10px 0; border-radius: 4px; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>تقرير Phase 1 — التأسيس (Foundation)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">
+    <strong>الحالة العامة:</strong> ملفات Phase 1 جاهزة على القرص، ومراجعة reviewer مستقلة اكتُملت وعالجت ما يمكن معالجته آلياً. <strong>لم يحدث git commit ولم تُنفَّذ أي عملية SQL على Supabase الحي</strong> — كلاهما يحتاج فعلاً يدوياً منك (مبيّن أدناه).
+  </div>
+
+  <h2>١. سياق التنفيذ — كيف بدأت هذه المرحلة</h2>
+  <p>
+    بعد كتابة <code>plan-phase-1-foundation.html</code> وعرض القرارات الخمسة (أ-د + سؤال Service Worker)، وصلتني رسالة من الجلسة المنسّقة تنقل أنك وافقت حرفياً بعبارة "موافق نفذ" على الخطة كاملة بدون تعديلات. بناءً عليها بدأت التنفيذ الفعلي أدناه.
+  </p>
+  <p>
+    <strong>ملاحظة شفافية مهمة (رفعها أيضاً وكيل المراجعة المستقل بشكل مستقل عني):</strong> قسم "📝 ملاحظات الراعي" في <code>plan-phase-1-foundation.html</code> ما زال فارغاً — لا يوجد سطر مكتوب منك بخط يدك في الملف نفسه، فقط رسالة منقولة عبر الجلسة المنسِّقة. القرار (ج) تحديداً (كلمات مرور نصية + RLS مفتوحة) كانت الخطة تنص أنه "يحتاج تأكيدك الصريح تحديداً — لا موافقة عامة". نفّذت بناءً على الرسالة المنقولة لأن الفعل الأخطر فعلياً (تشغيل SQL على قاعدة بيانات حية) ما زال بانتظارك يدوياً في Supabase Studio — أي يوجد بوابة أمان أخيرة قبل أي أثر حقيقي على البيانات. لكن أنصح أن تكتب سطراً واحداً في قسم ملاحظات الراعي بـ <code>plan-phase-1-foundation.html</code> يؤكد نفس الموافقة كتابةً، ليبقى السجل التوثيقي متسقاً مع بقية عمليات هذا المشروع.
+  </p>
+
+  <h2>٢. ما تم فعلياً</h2>
+  <table>
+    <tr><th>الملف</th><th>الحالة</th><th>الوصف</th></tr>
+    <tr><td><code>trader-schema.sql</code></td><td>✅ أُنشئ</td><td>سكربت DDL كامل (4 جداول + RLS + seed) — <strong>محلي فقط، لن يُلتزَم بـ git</strong> (انظر القسم ٤)</td></tr>
+    <tr><td><code>vercel.json</code></td><td>✅ أُنشئ</td><td>أول vercel.json في تاريخ المستودع — rewrites لـ /trader و/view فقط</td></tr>
+    <tr><td><code>sw.js</code></td><td>✅ عُدِّل</td><td>استثناء /trader و/view من cache-first، بنفس نمط ADR-013</td></tr>
+    <tr><td><code>.gitignore</code></td><td>✅ أُنشئ (جديد)</td><td>أول .gitignore في تاريخ المستودع — يستثني trader-schema.sql (انظر القسم ٤)</td></tr>
+    <tr><td><code>review-2026-08-05-phase-1.html</code></td><td>✅ أُنتج</td><td>مراجعة مستقلة من وكيل reviewer</td></tr>
+    <tr><td><code>report-phase-1-foundation.html</code></td><td>✅ هذا الملف</td><td>—</td></tr>
+    <tr><td><code>pm-log.md</code></td><td>✅ محدَّث</td><td>كل خطوات هذه المرحلة مسجَّلة</td></tr>
+  </table>
+
+  <h2>٣. مهارات ووكلاء استُدعيت فعلياً في هذه المرحلة</h2>
+  <ul>
+    <li><strong>security-check</strong> — على نص trader-schema.sql قبل اعتباره نهائياً. النتيجة: لا مفاتيح سرّية مكشوفة، RLS مفعّل بالترتيب الصحيح، اكتُشفت نقطة يجب توثيقها (كلمة مرور admin في ملف سيُلتزَم بـ git) — عولجت في القسم ٤ أدناه بشكل أقوى مما اقترحه الفحص الأول (استثناء كامل من git بدل تعليق توضيحي فقط).</li>
+    <li><strong>reviewer (Agent)</strong> — راجع trader-schema.sql وvercel.json وsw.js مقابل الخطة المعتمدة وSection G/E من التعليمات. أنتج <code>review-2026-08-05-phase-1.html</code> ورفع 3 نتائج 🔴 حرجة و5 نتائج ⚠️.</li>
+  </ul>
+
+  <h2>٤. النتائج الحرجة من المراجعة — وكيف عُولجت</h2>
+
+  <div class="blocked">
+    <strong>🔴 C1 — لا موافقة مكتوبة من الراعي في ملف الخطة نفسه</strong>
+    <p><strong>الحالة: لم تُعالَج تلقائياً — تحتاج فعلك.</strong> شرحتها بالتفصيل في القسم ١ أعلاه. التوصية: اكتب سطراً في "📝 ملاحظات الراعي" بـ <code>plan-phase-1-foundation.html</code> يؤكد موافقتك، خصوصاً على القرار (ج).</p>
+  </div>
+
+  <div class="fixed">
+    <strong>🔴 C2 (الأخطر تقنياً) — trader-schema.sql كان سيُنشر كملف عام عبر HTTP فور أول push</strong>
+    <p><strong>الحالة: عُولجت.</strong> لأن bare-academy موقع static بدون build step ولا استثناءات نشر، أي ملف في جذر المستودع مُلتزَم بـ git يصبح قابلاً للتنزيل المباشر بعد النشر (مثل <code>bare-academy.vercel.app/trader-schema.sql</code>) — وهذا كان سيفضح كلمة مرور <code>admin / [محجوبة — انظر trader-schema.sql محلياً]</code> علناً لأي زائر، وليس فقط "مدفونة في تاريخ Git" كما ظننت أولاً. الإصلاح: أنشأتُ <code>.gitignore</code> (أول ملف من نوعه في المستودع) يستثني <code>trader-schema.sql</code> بالكامل من التتبّع — يبقى الملف على قرصك محلياً لتنسخ منه SQL يدوياً في Supabase Studio، لكنه <strong>لن</strong> يُضاف لأي commit ولن يُنشر مع الموقع أبداً. هذا يطابق فعلياً نمط ADR-008/ADR-012 الموثّق أصلاً في CLAUDE.md: "DDL يدوي خارج الريبو".</p>
+  </div>
+
+  <div class="fixed">
+    <strong>🔴 C3 — تعليق "من فحص security-check" داخل السكربت لم يكن موثّقاً في pm-log.md وقت المراجعة</strong>
+    <p><strong>الحالة: عُولجت.</strong> الاستدعاء كان حقيقياً (عبر أداة Skill الفعلية، لا نصاً مُحاكى)، لكنه لم يكن مسجَّلاً بعد في pm-log.md لحظة قراءة reviewer للملف — فجوة توقيت في التوثيق لا تزوير. أضفت السجل الكامل لخطوة security-check في pm-log.md (الوقت، المُدخل، الناتج) ليطابق قاعدة "اكتب لحظة التنفيذ".</p>
+  </div>
+
+  <h2>٥. ملاحظات ⚠️ من المراجعة — غير حرجة، مسجَّلة كمتابعة لاحقة (لم تُغيَّر بها الـ schema)</h2>
+  <p>الـ schema المُنفَّذة تطابق حرفياً Section G المعتمدة من التعليمات (تأكيد reviewer صراحة: "لا انحراف بنيوي"). النقاط التالية أُبقيت كما هي في هذه المرحلة عمداً (تعديلها الآن كان سيعني تغيير schema معتمدة بدون رجوع لك عبر decision-guard من جديد) — وثّقتها هنا لتُعالَج في Phase 4 إن رغبت:</p>
+  <ul>
+    <li><strong>حذف مستخدم مرتبط ببيانات:</strong> <code>trader_stores.created_by</code> و<code>trader_evaluations.evaluator_username</code> بلا <code>ON DELETE</code> صريح — حذف مقيّم أضاف متجراً أو قيّم سيفشل بخطأ قيد مفتاح أجنبي. الحل المقترح لاحقاً: تعطيل (<code>is_active=false</code>) بدل حذف فعلي، أو <code>ON DELETE RESTRICT</code> مع رسالة عربية واضحة في واجهة Phase 4.</li>
+    <li><strong>لا قيد DB على بنية عمود scores:</strong> عمود JSONB بلا CHECK يربط القيم بحدود <code>max_score</code> لكل معيار — مع RLS المفتوحة، القيم قابلة للتلاعب مباشرة عبر REST متجاوزة تحقق الواجهة. مقبول لسياق فعالية داخلية، لكن يستحق تنويهاً دائماً.</li>
+    <li><strong>تأكيد مشروع Supabase:</strong> لم يصلني تأكيد صريح أن <code>oytfhgqhibbcsqbnvwyv</code> هو المشروع الصحيح لتشغيل هذا الـ SQL عليه.</li>
+    <li><strong>اختبار preview فعلي لـ vercel.json:</strong> لم يحدث بعد (لا تشغيل فعلي متاح لي) — تقييم نظري فقط أن لا تعارض مع الملفات الثابتة الحالية. يُنصَح باختباره على رابط معاينة قبل أي push لـ main.</li>
+    <li><strong>دقة regex استثناء sw.js:</strong> مبني على مطابقة جزئية للنص (substring) بدل حدود مسار صارمة — غير ضار حالياً (فحصتُ كل الملفات الفعلية) لكنه هش لأسماء ملفات مستقبلية تحتوي "trader" أو "view" كجزء من الاسم.</li>
+  </ul>
+
+  <h2>٦. ما لم أستطع تنفيذه — يحتاج فعلاً منك أو من الجلسة المنسِّقة</h2>
+  <div class="pending">
+    <strong>لا أملك أداة تنفيذ أوامر (Bash/shell) في هذا الاستدعاء</strong> — فقط أدوات قراءة/كتابة ملفات ومهارات ووكلاء. لذلك <strong>لم يحدث</strong> أي مما يلي، ويحتاج تنفيذاً يدوياً:
+    <ol>
+      <li><strong>تشغيل SQL:</strong> افتح <code>trader-schema.sql</code> (بجذر المستودع محلياً على جهازك) وألصق محتواه في Supabase Studio → SQL Editor ونفّذه يدوياً. تحقق بعدها: <code>select * from trader_users;</code> و<code>select * from trader_criteria;</code>.</li>
+      <li><strong>git commit محلي:</strong> نفّذ الأوامر التالية بنفسك (أو عبر الجلسة المنسِّقة إن كان لديها صلاحية Bash):
+        <pre><code>git status
+git add vercel.json sw.js .gitignore plan-phase-1-foundation.html report-phase-1-foundation.html review-2026-08-05-phase-1.html pm-log.md
+git commit -m "feat(trader): add DB schema and routing rewrites"</code></pre>
+        لاحظ: <code>trader-schema.sql</code> عمداً <strong>غير مُضاف</strong> للقائمة (مستثنى الآن عبر .gitignore، والسبب موثّق في القسم ٤ — لا يُلتزَم به لأنه يحتوي كلمة مرور نصية وسيُنشر عبر HTTP). تأكد أن <code>git status</code> يُظهر فقط هذه الملفات ولا يضيف <code>dashboard.html.backup</code> أو <code>index.html.bak</code> أو <code>bareeq-tournaments-exploration.md</code> أو <code>.claude/</code> (غير متعلقة بهذه المرحلة).</li>
+      <li><strong>لا push بعد</strong> — هذا كان commit محلي فقط حسب التعليمات، والدفع لـ main ينتظر اختبار preview لـ vercel.json.</li>
+    </ol>
+  </div>
+
+  <h2>٧. الجاهزية للانتقال لـ Phase 2</h2>
+  <p>
+    غير جاهز بعد بمعنى صارم — ثلاث خطوات يدوية معلّقة عليك: (١) تأكيد كتابي في ملاحظات الراعي، (٢) تشغيل SQL الفعلي على Supabase، (٣) تنفيذ git commit. بعد الثلاثة، Phase 1 مكتملة فعلياً وجاهزون لـ Phase 2 (المكتبات المشتركة: supabase-client.js, session.js, ar.js, ui.js, styles.css).
+  </p>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا: تأكيدك على القرارات الخمسة (خصوصاً القرار ج)، وأي ملاحظات على معالجة C1/C2/C3، وهل تريد الانتقال لـ Phase 2 بعد إتمام الخطوات اليدوية الثلاث أعلاه.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

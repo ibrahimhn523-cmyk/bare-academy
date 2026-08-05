@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/trader/:path*", "destination": "/trader/index.html" },
+    { "source": "/view/:path*", "destination": "/view/index.html" }
+  ]
+}

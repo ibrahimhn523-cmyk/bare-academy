@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مراجعة Phase 1 — Trader Event Evaluation</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; line-height: 1.6; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    .verdict { background: #FDE8E8; border: 2px solid #8F1A1D; color: #8F1A1D; padding: 16px 20px; border-radius: 10px; font-weight: 700; font-size: 17px; }
+    .finding { border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+    .critical { background: #FDE8E8; border-right: 5px solid #8F1A1D; }
+    .warn { background: #FFF7E0; border-right: 5px solid #D4AF37; }
+    .info { background: #EEF1F6; border-right: 5px solid #2D3651; }
+    code { background: #F5E6D3; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>مراجعة Phase 1 — Trader Event Evaluation</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation (Foundation Phase) | <strong>المراجِع:</strong> reviewer agent (مستقل) — كتبها الجلسة الرئيسية لأن وكيل reviewer لا يملك أداة Write</p>
+
+  <div class="verdict">القرار: غير آمن للاعتماد كما هو (Not safe to commit as-is) — يوجد تسريب فعلي لكلمة مرور، لازم إصلاحه قبل أي git add/commit أو تنفيذ DDL على Supabase.</div>
+
+  <h2>🔴 حرج</h2>
+
+  <div class="finding critical">
+    <strong>1. سلسلة استشهاد بمراجعة سابقة لم تحدث فعلياً</strong><br>
+    <code>pm-log.md</code> الخطوة [16]، و<code>report-phase-1-foundation.html</code> (أسطر ~46, 54, 91)، و<code>.gitignore</code> (سطر 4) كلها تستشهد بـ <code>review-2026-08-05-phase-1.html</code> كمصدر لنتائج محددة ("3 حرجة و5 تحذيرات") — لكن ذلك الملف لم يكن موجوداً على القرص إطلاقاً قبل هذه الجلسة (تحقّق مباشر عبر <code>git ls-files</code> وفحص وجود الملف). أي بند "✅ عُولجت" في <code>report-phase-1-foundation.html</code> مبني جزئياً على مراجعة لم تحدث فعلياً. هذا الملف الحالي هو المراجعة المستقلة الحقيقية الأولى.
+  </div>
+
+  <div class="finding critical">
+    <strong>2. تسريب كلمة مرور فعلي — الحماية غير مكتملة</strong><br>
+    <code>.gitignore</code> يحمي <code>trader-schema.sql</code> و<code>*.sql</code> فقط (تحقّقت: <code>git ls-files trader-schema.sql</code> يرجع فارغ — الحماية تعمل لهذا الملف). لكن كلمة المرور <code>bareadmin1212</code> موجودة نصّاً صريحاً في <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code> — وكلا الملفين حالياً <strong>untracked وغير محميين</strong> بـ <code>.gitignore</code> (تحقّقت عبر <code>git status --short</code>: يظهران <code>??</code>). <code>report-phase-1-foundation.html</code> نفسه يوصي إبراهيم بعمل <code>git add</code> ثم commit لهذه الملفات. بما أن bare-academy موقع static بلا build step على Vercel، أي ملف مُلتزَم في جذر المستودع يُخدَّم علناً بعد النشر — تنفيذ التوصية كما هي حرفياً يعني نشر كلمة مرور admin عبر رابط عام.
+  </div>
+
+  <div class="finding critical">
+    <strong>3. كلمة المرور المُختارة مكشوفة أصلاً في المستودع</strong><br>
+    <code>bareadmin1212</code> هي نفسها كلمة مرور <code>dashboard.html</code> القديمة، موثّقة حالياً في <code>README.md</code> (ملف مُلتزَم في تاريخ git) وموثّقة في <code>CLAUDE.md</code> §٣ كحادثة تسريب سابقة معروفة. إعادة استخدامها كبذرة (seed) لنظام مصادقة جديد منفصل تماماً (trader) تعني أن "السر" الجديد مكشوف من اليوم الأول، بغض النظر عن أي حماية لاحقة.
+  </div>
+
+  <h2>⚠️ تحذيرات (غير حاجبة)</h2>
+  <div class="finding warn">استثناء المسارات في <code>sw.js</code> يعتمد مطابقة جزئية (substring match) على <code>/trader</code> و<code>/view</code> بدل حدود مسار صارمة — قد يستثني مسارات غير مقصودة تبدأ بنفس الأحرف مستقبلاً. غير حرج الآن (لا توجد مسارات متعارضة)، لكن يستحق ملاحظة.</div>
+  <div class="finding warn">لا <code>ON DELETE</code> صريح على المفاتيح الأجنبية <code>trader_stores.created_by</code> و<code>trader_evaluations.evaluator_username</code> في <code>trader-schema.sql</code> — سلوك الحذف الافتراضي (RESTRICT) قد يمنع حذف مستخدم له متاجر/تقييمات مرتبطة دون رسالة خطأ واضحة للمستخدم النهائي.</div>
+  <div class="finding warn"><code>vercel.json</code> لم يُختبَر بعد على preview فعلي (<code>vercel dev</code> أو نشر تجريبي) — الخطة الأصلية توصي بذلك قبل أي push، ولم يحدث بعد.</div>
+
+  <h2>💡 ملاحظات إضافية</h2>
+  <div class="finding info">عدم وجود CHECK يربط قيم <code>scores</code> (JSONB) بحدود <code>max_score</code> لكل معيار — مقبول ضمن المقايضة المعلنة في التعليمات الأصلية (بساطة على حساب صرامة DB-level validation).</div>
+
+  <h2>الخلاصة والتوصية</h2>
+  <ol>
+    <li>عمِّ أو احذف <code>bareadmin1212</code> من <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code>، أو أضفهما لـ <code>.gitignore</code> إن لم تعد بحاجة لتتبعهما بـ git.</li>
+    <li>ولّد كلمة مرور admin جديدة فعلياً لنظام trader قبل تنفيذ <code>trader-schema.sql</code> على Supabase الحي — لا تُعِد استخدام كلمة مرور معروفة/مسرَّبة سابقاً.</li>
+    <li>لا تنفّذ أوامر <code>git add/commit</code> كما وردت حرفياً في <code>report-phase-1-foundation.html</code> قبل إصلاح البندين أعلاه.</li>
+    <li>بقية بنية العمل (الجداول، ترتيب RLS، منطق استثناء sw.js) سليمة معمارياً ومتّسقة مع أنماط المشروع الموثّقة (ADR-008/012/013).</li>
+  </ol>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك وتعديلاتك مباشرة في هذا الملف.</p>
+  </div>
+</body>
+</html>
