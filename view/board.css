@@ -1,0 +1,149 @@
+/* view/board.css — لوحة الصدارة العامة (Trader Event Evaluation, Section K.5) */
+
+:root {
+  --navy: #2D3651;
+  --gold: #D4AF37;
+  --beige: #F5E6D3;
+  --maroon: #8F1A1D;
+  --black: #1D1D1B;
+  --success: #1A7A4A;
+  --gray: #8a8a8a;
+  --silver: #C0C0C0;
+  --bronze: #CD7F32;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { direction: rtl; }
+
+body {
+  margin: 0;
+  background: var(--navy);
+  color: #fff;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+  line-height: 1.55;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+button { font-family: inherit; cursor: pointer; border: 0; }
+
+@keyframes board-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.75); } }
+@keyframes board-fall { 0% { transform: translateY(-12vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(112vh) rotate(760deg); opacity: .9; } }
+@keyframes board-pop { 0% { opacity: 0; transform: scale(.72); } 60% { transform: scale(1.04); } 100% { opacity: 1; transform: scale(1); } }
+
+.board-hero {
+  text-align: center;
+  padding: 32px 20px 20px;
+}
+.board-hero .logo-box {
+  width: 56px; height: 56px; border-radius: 16px; background: var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font: 900 26px 'Noto Kufi Arabic', Cairo, sans-serif; color: var(--navy);
+  margin: 0 auto 12px;
+}
+.board-hero h1 {
+  font: 900 22px 'Noto Kufi Arabic', Cairo, sans-serif;
+  margin: 0 0 4px;
+  line-height: 1.45;
+}
+.board-hero .subtitle {
+  font: 700 14px Cairo, sans-serif;
+  color: var(--gold);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.board-live {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(26,122,74,.18); border: 1px solid rgba(26,122,74,.5);
+  border-radius: 999px; padding: 6px 14px; font: 700 12px Cairo, sans-serif; color: #7CE0A8;
+}
+.board-live-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A7A4A; animation: board-pulse 1.6s ease-in-out infinite; }
+
+.board-login-wrap { margin-block-start: 14px; }
+.board-login-link {
+  display: inline-block;
+  background: rgba(245,230,211,.1); border: 1px solid rgba(212,175,55,.5);
+  color: var(--gold); font: 700 13px Cairo, sans-serif; padding: 10px 18px;
+  border-radius: 11px; text-decoration: none; min-height: 44px; line-height: 24px;
+}
+
+.board-toolbar {
+  max-width: 640px; margin: 0 auto; padding: 0 18px 14px;
+  display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
+}
+.board-toolbar-btn {
+  min-height: 44px; border-radius: 11px; padding: 10px 16px;
+  font: 700 13px Cairo, sans-serif; background: rgba(245,230,211,.1);
+  border: 1px solid rgba(245,230,211,.25); color: #F5E6D3;
+}
+.board-toolbar-btn--winner { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+.board-list {
+  max-width: 640px; margin: 0 auto; padding: 0 18px 60px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.board-row {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  text-align: start;
+  width: 100%;
+  color: #fff;
+}
+.board-row--top1 { border-color: var(--gold); background: rgba(212,175,55,.12); }
+.board-row--top2 { border-color: var(--silver); background: rgba(192,192,192,.10); }
+.board-row--top3 { border-color: var(--bronze); background: rgba(205,127,50,.10); }
+
+.board-medal {
+  width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font: 900 14px Cairo, sans-serif; flex: 0 0 auto;
+}
+.board-medal--1 { background: var(--gold); color: var(--navy); font-size: 18px; }
+.board-medal--2 { background: var(--silver); color: var(--navy); font-size: 18px; }
+.board-medal--3 { background: var(--bronze); color: #fff; font-size: 18px; }
+.board-medal--rank { background: rgba(255,255,255,.1); color: #fff; }
+
+.board-row-name { font: 700 16px Cairo, sans-serif; }
+.board-row-type { font: 600 12px Cairo, sans-serif; color: rgba(245,230,211,.6); margin-block-start: 2px; }
+.board-row-total { font: 900 17px 'Noto Kufi Arabic', Cairo, sans-serif; color: var(--gold); white-space: nowrap; }
+
+.board-detail {
+  margin-block-start: 10px; padding-block-start: 10px;
+  border-top: 1px dashed rgba(255,255,255,.15);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.board-detail-row { display: flex; justify-content: space-between; gap: 10px; font: 600 13px Cairo, sans-serif; color: rgba(245,230,211,.85); }
+
+.board-empty { text-align: center; color: rgba(245,230,211,.6); padding: 40px 20px; font: 600 14px Cairo, sans-serif; line-height: 1.6; }
+
+.board-winner-overlay {
+  position: fixed; inset: 0; background: rgba(10,12,20,.85);
+  display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 300;
+  overflow: hidden;
+}
+.board-winner-card {
+  background: #fff; color: var(--black); border-radius: 20px; padding: 32px 24px;
+  max-width: 380px; width: 100%; text-align: center; position: relative; z-index: 2;
+  animation: board-pop .4s ease;
+}
+.board-winner-crown { font-size: 40px; margin-block-end: 10px; }
+.board-winner-title { font: 700 13px Cairo, sans-serif; color: var(--gray); margin-block-end: 6px; line-height: 1.5; }
+.board-winner-name { font: 900 24px 'Noto Kufi Arabic', Cairo, sans-serif; color: var(--navy); margin-block-end: 10px; line-height: 1.45; }
+.board-winner-score { font: 800 16px Cairo, sans-serif; color: #8a6d1a; }
+.board-winner-close {
+  margin-block-start: 20px; min-height: 44px; border-radius: 11px; padding: 10px 20px;
+  background: var(--navy); color: #fff; font: 700 14px Cairo, sans-serif; border: 0; cursor: pointer;
+}
+.board-confetti-piece {
+  position: absolute; top: 0; width: 8px; height: 14px; z-index: 1;
+  animation-name: board-fall; animation-timing-function: linear; animation-fill-mode: forwards;
+}
+
+@media (max-width: 380px) {
+  .board-winner-card { padding: 24px 18px; }
+  .board-hero h1 { font-size: 19px; }
+}

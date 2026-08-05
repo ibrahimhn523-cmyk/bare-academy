@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة/تقرير Phase 6 — لوحة الصدارة العامة</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>خطة/تقرير Phase 6 — لوحة الصدارة العامة (Public Leaderboard)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">نُفِّذت بسرعة (خطة/تنفيذ مدمجان). أول ملفات تحت <code>view/</code> — مسار مستقل تماماً بلا تسجيل دخول.</div>
+
+  <h2>١. الملفات</h2>
+  <table>
+    <tr><th>الملف</th><th>الوصف</th></tr>
+    <tr><td><code>view/index.html</code></td><td>صفحة مستقلة (Section E.2) — لا تشارك trader/index.html أو app.js.</td></tr>
+    <tr><td><code>view/board.js</code></td><td>تجميع، ترتيب تنازلي، ميداليات أول 3، توسيع صف لعرض متوسط كل معيار، auto-refresh كل 10 ثوانٍ، مودال فائز مع confetti، Escape يغلق.</td></tr>
+    <tr><td><code>view/board.css</code></td><td>خلفية داكنة navy، نبضة "مباشر" الخضراء، تدرّجات الميداليات (ذهبي/فضي/برونزي).</td></tr>
+    <tr><td><code>trader/lib/supabase-client.js</code> (معدَّل)</td><td>إضافة <code>sbSelectCols(table, columns, query)</code> — قراءة أعمدة محدَّدة فقط بدل <code>select=*</code>.</td></tr>
+  </table>
+
+  <h2>٢. نقطة الأمان المحورية (طلبها إبراهيم صراحة): لا تسريب لهوية المقيّمين</h2>
+  <p>
+    <code>/view</code> عام بلا تسجيل دخول. المعالجة: <code>board.js</code> يستخدم <code>sbSelectCols</code> الجديدة لجلب أعمدة التجميع فقط:
+  </p>
+  <ul>
+    <li><code>trader_stores</code>: <code>id,first_name,last_name,store_type</code> فقط — بلا <code>created_by</code> (يخفي هوية من أضاف كل متجر).</li>
+    <li><code>trader_criteria</code>: <code>id,name,max_score</code> فقط.</li>
+    <li><code>trader_evaluations</code>: <code>store_id,scores</code> فقط — بلا <code>evaluator_username</code> ولا <code>id</code> التقييم نفسه ولا <code>created_at/updated_at</code>.</li>
+  </ul>
+  <p>
+    <strong>صدق تقني مهم (وليس مبالغة في الأمان):</strong> هذا يمنع التسريب <em>العرضي</em> في الاستجابة الطبيعية للموقع (مثلاً فتح تبويب Network بالمتصفح أثناء تصفّح <code>/view</code> عادياً). لكنه <strong>لا يمنع</strong> نظرياً شخصاً يعرف كيف يستخدم مفتاح anon المكشوف أصلاً (في نفس ملف <code>supabase-client.js</code>، وفي كل ملفات bare-academy الأخرى) من استعلام الجدول الكامل مباشرة عبر <code>curl</code> أو Postman. هذا قيد معروف من القرار (ج) المعتمد في Phase 1 (RLS permissive) — لا حل حقيقي له إلا RLS مُحكمة أو Supabase Auth (TD قائم في backlog bare-academy الأساسي). هذه الخطوة تحسين دفاع بالعمق (defense-in-depth) لا حل جذري، وموثَّقة كذلك بوضوح في تعليقات الكود.
+  </p>
+
+  <h2>٣. مطابقة Section K.5 وL</h2>
+  <ul>
+    <li>خلفية داكنة، Hero (شعار + عنوان + "أكاديمية بارع" + نقطة "مباشر" نابضة + رابط "دخول" اختياري لـ /trader). ✅</li>
+    <li>شريط أدوات: "🔄 تحديث يدوي" + "👑 إعلان الفائز" (يظهر فقط لو وجدت متاجر مرتّبة). ✅</li>
+    <li>قائمة مرتّبة تنازلياً بالمجموع، أول 3 بتنسيق ميدالية (ذهبي/فضي/برونزي). ✅</li>
+    <li>ضغط الصف يوسّعه لعرض متوسط كل معيار نشط. ✅</li>
+    <li>Auto-refresh كل 10 ثوانٍ + تحديث يدوي. ✅</li>
+    <li>مودال فائز مع confetti (CSS keyframes فقط، بلا مكتبة خارجية) + Escape يغلق + النقر خارج البطاقة يغلق أيضاً. ✅</li>
+    <li>حالة فارغة "لا تقييمات بعد" + حالة تحميل. ✅</li>
+  </ul>
+
+  <h2>٤. مهارات استُدعيت فعلياً</h2>
+  <ul>
+    <li><strong>arabic-context</strong> — تأكيد RTL/الخطوط/الأرقام العربية-الهندية في كل مكان (الترتيب، المجموع، متوسط كل معيار). استثناء واحد راجعته الأمانة: توسيط شظايا الـ confetti يستخدم <code>inset-inline-start</code> مع نسبة مئوية عشوائية (ليس <code>translate</code> مركزياً)، فلا يتأثر بنفس مشكلة toast في Phase 2 — سليم.</li>
+    <li><strong>security-check</strong> — تأكيد أن <code>sbSelectCols</code> تحقق الهدف المطلوب، لا console.log لتفاصيل خام، والتذكير الصادق بقيد مفتاح anon الموثَّق في القسم ٢ أعلاه.</li>
+  </ul>
+
+  <h2>٥. لا قرار معماري جديد</h2>
+  <p>إضافة <code>sbSelectCols</code> تحسين تنفيذي على مكتبة موجودة، لا قرار بنية جديد.</p>
+
+  <h2>٦. حدود معروفة</h2>
+  <ul>
+    <li>لا اختبار حي فعلي بعد — لا بيانات حقيقية حتى تشغيل <code>trader-schema.sql</code>.</li>
+    <li>قيد مفتاح anon الموثَّق في القسم ٢ — معروف ومقبول ضمن القرار ج.</li>
+  </ul>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

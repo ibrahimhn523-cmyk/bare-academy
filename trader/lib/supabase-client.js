@@ -38,6 +38,19 @@ export async function sbSelect(table, query = '') {
   return handle(res);
 }
 
+/**
+ * قراءة أعمدة محدَّدة فقط (بدل select=* الكامل) — مستخدَمة في /view (Phase 6)
+ * لتقليل ما يصل للمتصفح العام إلى أعمدة التجميع فقط (لا evaluator_username
+ * مثلاً). ملاحظة أمان صادقة: هذا يقلّل التسريب العرضي في الاستجابة الطبيعية
+ * للموقع، لكنه لا يمنع نظرياً استعلاماً مباشراً لكل الأعمدة عبر مفتاح anon
+ * (مكشوف أصلاً في كل ملفات bare-academy) — قيد معروف من القرار ج (Phase 1، RLS permissive).
+ */
+export async function sbSelectCols(table, columns, query = '') {
+  const url = `${SB_URL}/${table}?select=${encodeURIComponent(columns)}${query ? '&' + query : ''}`;
+  const res = await fetch(url, { headers: headers() });
+  return handle(res);
+}
+
 export async function sbInsert(table, row) {
   const res = await fetch(`${SB_URL}/${table}`, {
     method: 'POST',
