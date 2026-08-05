@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير مراجعة — Phase 5 (تطبيق المقيّم)</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    .critical { background: #FFE5E5; border-right: 4px solid #CC0000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .warning  { background: #FFF5E5; border-right: 4px solid #FF8C00; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .info     { background: #E5F5FF; border-right: 4px solid #0066CC; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .clean    { background: #E5FFE5; border-right: 4px solid #008000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .notes    { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 تقرير مراجعة — Phase 5 (تطبيق المقيّم)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المراجَع:</strong> <code>trader/views/stores-list.js</code> (جديد) + <code>trader/views/rate.js</code> (جديد) + <code>trader/app.js</code> (معدَّل) — فحص سريع مقابل Section K.3/K.4/J.2/J.3/Anti-M من التعليمات</p>
+
+  <h2>🔴 حرج — يجب إصلاحه قبل الاعتماد</h2>
+  <p>لا يوجد. الفحص المطلوب (عزل المقيّمين، صيغة storeId، dirty state/3-way modal، تعطيل زر الحفظ، XSS/أرقام غربية) لم يكشف أي ثغرة أمنية أو باغ منطقي حرج.</p>
+
+  <h2>⚠️ مهم — يُفضّل إصلاحه</h2>
+  <div class="warning">
+    <strong>مودال الخروج بتغييرات غير محفوظة: النقر خارج البطاقة يُطابق "متابعة التقييم" بصمت</strong><br>
+    في <code>threeWayLeaveModal()</code>، النقر على الـ overlay خارج البطاقة يُغلق المودال ويُرجع <code>'stay'</code> — نفس نتيجة الضغط الصريح على زر "متابعة التقييم". وظيفياً صحيح (لا فقدان بيانات)، لكنه قد يُفاجئ مستخدماً ضغط خارج المودال ظناً منه أنه "إلغاء". أثر منخفض.
+  </div>
+  <div class="warning">
+    <strong>Regex الـ UUID متساهل أكثر من اللازم مقارنة بـ UUID v4 الصارم</strong><br>
+    <code>UUID_RE</code> يقبل أي hex في موضعَي الإصدار/المتغيّر بدل التقييد بقيم UUID v4 الدقيقة. غير خطير — الفحص الحاسم يتم في DB على مستوى نوع العمود، والـ regex هنا وظيفته فقط منع استعلام لقيم واضحة الخطأ، وينجح في ذلك.
+  </div>
+
+  <h2>💡 تحسين — اختياري</h2>
+  <div class="info">
+    <code>isDirty()</code> يعتمد على <code>criteria</code> المحمّلة — سيناريو حافة نادر جداً (مصفوفة فارغة بنجاح HTTP غير متوقَّع) قد يُخفي حالة dirty. لا إجراء مطلوب.
+  </div>
+  <div class="info">
+    عند فشل الحفظ من مسار "حفظ ورجوع"، لا يُعاد فتح المودال تلقائياً — المستخدم يضغط "رجوع" مجدداً يدوياً. تحسين اختياري.
+  </div>
+
+  <h2>✅ سليم</h2>
+  <div class="clean">
+    <strong>(أ) عزل المقيّمين (Anti-M) مطبَّق فعلياً في الكود</strong> — كل استعلام لـ trader_evaluations مفلتر بـ evaluator_username=eq.&lt;current&gt; (ومزدوج مع store_id في rate.js). زر الحذف يعمل فقط على تقييم قادم من ذلك الاستعلام المفلتر. لا مسار يسمح برؤية أو حذف تقييم مقيّم آخر.
+  </div>
+  <div class="clean">
+    <strong>(ب) storeId validation قبل أي استعلام فعلياً</strong> — الفحص يحدث قبل استدعاء load() بالكامل، لا استعلام قبل التحقق.
+  </div>
+  <div class="clean">
+    <strong>(ج) dirty state / 3-way modal يطابق K.4 بدقة</strong> — Pristine → رجوع فوري، Dirty → مودال 3 خيارات مطابق تماماً. isDirty() مطابق حرفياً لصيغة J.2. initialScores يُحدَّث فوراً بعد الحفظ.
+  </div>
+  <div class="clean">
+    <strong>(د) زر الحفظ معطَّل فعلياً حتى اكتمال كل المعايير (N.7)</strong> — attribute disabled حقيقي + إعادة تحقق داخلية في saveEvaluation() كخط دفاع ثانٍ.
+  </div>
+  <div class="clean">
+    <strong>(هـ) لا XSS، لا أرقام غربية متسرّبة</strong> — كل نص مستخدم/DB معقّم عبر escapeHtml، كل الأرقام المعروضة عبر toArabic/num.
+  </div>
+  <div class="clean">
+    <strong>(و) race condition محلولة فعلاً بـ upsert ذرّي على مستوى DB</strong> — sbUpsert مع on_conflict مطابق لقيد UNIQUE الأصلي، أفضل من نمط SELECT-then-write اليدوي في J.3.
+  </div>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ردّك على التقرير — ما توافق على إصلاحه وما تؤجّله.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

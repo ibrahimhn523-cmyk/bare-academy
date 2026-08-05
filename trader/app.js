@@ -3,28 +3,13 @@
    مباشرة عند كل تحميل صفحة (لا history.pushState بعد — كل تنقّل هو reload كامل،
    وهذا متوقَّع طالما vercel.json يعيد كتابة كل مسار إلى /trader/index.html). */
 
-import { getSession, requireRole, logout } from './lib/session.js';
-import { escapeHtml } from './lib/ui.js';
+import { getSession, requireRole } from './lib/session.js';
 import { renderLogin } from './views/login.js';
 import { renderAdmin } from './views/admin.js';
+import { renderStoresList } from './views/stores-list.js';
+import { renderRatePage } from './views/rate.js';
 
 const root = document.getElementById('trader-app');
-
-/**
- * شاشة مؤقتة (placeholder) للمسارات التي لم تُبنَ بعد (evaluator/rate — Phase 5).
- * title/fullName يمرّان دائماً عبر escapeHtml() قبل الإدراج.
- */
-function renderPlaceholder(container, title, session) {
-  container.innerHTML = `
-    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center">
-      <div class="trader-heading" style="font-size:20px">${escapeHtml(title)}</div>
-      <div style="font:600 14px Cairo,sans-serif;color:var(--gray);line-height:1.6">أهلاً ${escapeHtml(session.fullName)} — هذه الشاشة قيد الإنشاء (مرحلة قادمة)</div>
-      <button type="button" id="trader-logout-btn" class="trader-btn trader-btn--ghost">خروج</button>
-    </div>
-  `;
-  const btn = document.getElementById('trader-logout-btn');
-  if (btn) btn.addEventListener('click', () => logout());
-}
 
 function route() {
   const path = location.pathname;
@@ -50,17 +35,17 @@ function route() {
   if (path.startsWith('/trader/evaluator')) {
     const s = requireRole('evaluator');
     if (!s) return;
-    renderPlaceholder(root, 'اختر متجراً لتقييمه', s); // Phase 5
+    renderStoresList(root, s); // Phase 5 — قائمة متاجر المقيّم
     return;
   }
 
   if (path.startsWith('/trader/rate/')) {
     const s = requireRole('evaluator');
     if (!s) return;
-    // storeId يُستخدم فقط كقيمة فلتر PostgREST (id=eq.<value>) في Phase 5 —
-    // لا كمسار ملف. يمر عبر escapeHtml() داخل renderPlaceholder قبل أي عرض.
+    // storeId يُستخدم فقط كقيمة فلتر PostgREST (id=eq.<value>) — لا كمسار ملف.
+    // renderRatePage نفسها تتحقق من صيغة UUID قبل أي استعلام (security-check، Phase 5).
     const storeId = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
-    renderPlaceholder(root, `تقييم متجر (#${storeId ? storeId.slice(0, 8) : '—'})`, s);
+    renderRatePage(root, s, storeId); // Phase 5 — شاشة تقييم متجر
     return;
   }
 

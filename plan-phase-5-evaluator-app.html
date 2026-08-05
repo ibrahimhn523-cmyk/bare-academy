@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة/تقرير Phase 5 — تطبيق المقيّم</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>خطة/تقرير Phase 5 — تطبيق المقيّم (Evaluator App)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">نُفِّذت بسرعة (خطة/تنفيذ مدمجان).</div>
+
+  <h2>١. الملفات</h2>
+  <table>
+    <tr><th>الملف</th><th>الوصف</th></tr>
+    <tr><td><code>trader/views/stores-list.js</code></td><td>قائمة المتاجر (K.3): شارة "✓ قيّمت"/"لم يُقيَّم" مبنية على تقييمات المستخدم الحالي فقط، مودال إضافة متجر بخيارَي "إضافة والتقييم"/"إضافة فقط".</td></tr>
+    <tr><td><code>trader/views/rate.js</code></td><td>شاشة التقييم (K.4، J.2، J.3): بطاقة لكل معيار نشط + شبكة درجات، مجموع حي، حفظ عبر upsert ذرّي، حذف (وضع التعديل فقط)، مودال 3 خيارات عند الرجوع بتغييرات غير محفوظة.</td></tr>
+    <tr><td><code>trader/app.js</code> (معدَّل)</td><td>مساري <code>/trader/evaluator</code> و<code>/trader/rate/[id]</code> يستدعيان الآن الشاشات الحقيقية بدل placeholder.</td></tr>
+  </table>
+
+  <h2>٢. نقاط أمان خاصة بهذه المرحلة (طلبها إبراهيم صراحة)</h2>
+  <ul>
+    <li><strong>storeId validation:</strong> <code>rate.js</code> يتحقق أن القيمة القادمة من الرابط تطابق صيغة UUID (regex) قبل أي استعلام Supabase. لو لم تطابق → رسالة عربية "رابط المتجر غير صالح" فوراً، بدل استعلام فاشل أو صفحة بيضاء.</li>
+    <li><strong>Race condition عند الحفظ:</strong> استُخدم <code>sbUpsert</code> (upsert ذرّي على مستوى DB عبر <code>on_conflict=store_id,evaluator_username</code> + <code>Prefer: resolution=merge-duplicates</code>) بدل نمط SELECT-then-INSERT/UPDATE اليدوي من الشبه كود في J.3 — يمنع تكرار صفوف أو تعارضاً لو فُتحت نافذتان لنفس المقيّم/المتجر.</li>
+    <li><strong>عزل تقييمات المقيّمين (Anti-M):</strong> كل استعلام لجدول <code>trader_evaluations</code> في هذه المرحلة (في stores-list.js وrate.js) مفلتر إلزامياً بـ <code>evaluator_username=eq.&lt;المستخدم الحالي&gt;</code> — لا يُجلَب ولا يُعرَض أي تقييم لمقيّم آخر، وزر الحذف بالتالي آمن ببنائه (لا يمكن أن يحذف تقييم غيره).</li>
+  </ul>
+
+  <h2>٣. مهارات استُدعيت فعلياً</h2>
+  <ul>
+    <li><strong>arabic-context</strong> — تأكيد أن كل الأرقام (الدرجة الحالية، المجموع، أرقام أزرار الدرجات نفسها ٠-٥) تُعرض حصراً بأرقام عربية-هندية.</li>
+    <li><strong>security-check</strong> — الثلاث نقاط في القسم ٢ أعلاه بالتحديد، بناءً على طلب إبراهيم الصريح.</li>
+  </ul>
+
+  <h2>٤. لا قرار معماري جديد</h2>
+  <p>تنفيذ مباشر لـ Section K.3/K.4/J.2/J.3. التحسين الوحيد (upsert ذرّي بدل SELECT-then-write) تحسين تنفيذي لا معماري.</p>
+
+  <h2>٥. حدود معروفة</h2>
+  <ul>
+    <li>لا اختبار حي فعلي بعد — الجداول غير موجودة على القاعدة الحقيقية حتى تشغيل <code>trader-schema.sql</code>.</li>
+    <li>مثل بقية المراحل: مخاطرة انتحال جلسة عبر localStorage تبقى مقبولة بقرار سابق (القرار ج).</li>
+  </ul>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>
