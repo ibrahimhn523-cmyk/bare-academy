@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة/تقرير Phase 4 — لوحة الإدارة</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>خطة/تقرير Phase 4 — لوحة الإدارة (Admin Dashboard)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">نُفِّذت بسرعة (خطة/تنفيذ مدمجان). ملف واحد جديد <code>trader/views/admin.js</code> + سطران في <code>trader/app.js</code> لربطه.</div>
+
+  <h2>١. الملفات</h2>
+  <table>
+    <tr><th>الملف</th><th>الوصف</th></tr>
+    <tr><td><code>trader/views/admin.js</code></td><td>لوحة إدارة كاملة: 3 تبويبات (معايير/مستخدمون/متاجر)، CRUD كامل، تجميع درجات لكل متجر (aggregateForStore حسب J.1).</td></tr>
+    <tr><td><code>trader/app.js</code> (معدَّل)</td><td>مسار <code>/trader/admin</code> يستدعي الآن <code>renderAdmin</code> الحقيقية بدل placeholder.</td></tr>
+  </table>
+
+  <h2>٢. مطابقة Section K.2</h2>
+  <ul>
+    <li><strong>تبويب المعايير:</strong> اسم، حد أقصى، ترتيب، تفعيل/تعطيل بضغطة، تعديل، حذف، مودال إضافة. ✅</li>
+    <li><strong>تبويب المستخدمين:</strong> بانر أصفر "🔓 كلمة المرور ظاهرة عمداً"، كلمة مرور بخط monospace غير مموّهة (type="text" عمداً — مطابق N.4/Anti-M)، زر "توليد" (bare####)، منع تكرار username محلياً + معالجة فشل UNIQUE من الخادم. ✅</li>
+    <li><strong>تبويب المتاجر:</strong> رقم تسلسلي، اسم، نوع (اختياري)، شارة متوسط الدرجة (— إن لا تقييمات)، عدد المقيّمين، حذف يُسقط التقييمات تلقائياً (ON DELETE CASCADE من Phase 1). ✅</li>
+  </ul>
+
+  <h2>٣. مهارات استُدعيت فعلياً</h2>
+  <ul>
+    <li><strong>arabic-context</strong> — تأكيد: كل الأرقام المعروضة (حد أقصى، ترتيب، عدد مقيّمين، متوسط، رقم تسلسلي) تمرّ عبر <code>toArabic</code>/<code>num</code> من ar.js — لا رقم غربي واحد في الواجهة. أنماط مشتركة من Phase 2 فقط.</li>
+    <li><strong>security-check</strong> — تأكيد: (١) type="text" لكلمة المرور قرار متعمَّد لا سهو. (٢) منع تكرار username على طبقتين (محلي + خادم). (٣) حذف مستخدم مرتبط ببيانات يفشل بقيد FK (فجوة W1 من Phase 1) — عولجت هنا برسالة عربية واضحة بدل ترك الخطأ الخام. (٤) كل نص مستخدم (اسم متجر/معيار/مقيّم) يمر عبر <code>escapeHtml()</code> قبل <code>innerHTML</code>.</li>
+  </ul>
+
+  <h2>٤. لا قرار معماري جديد</h2>
+  <p>تنفيذ مباشر لما ورد في Section K.2 المعتمدة. لا شيء يستدعي decision-guard.</p>
+
+  <h2>٥. حدود معروفة</h2>
+  <ul>
+    <li>حذف مستخدم له متاجر/تقييمات يفشل حالياً بدل نقله لـ "معطّل" (soft-delete) — رسالة عربية واضحة بدل خطأ خام، لكن الحل الجذري (W1 من Phase 1) لم يُطبَّق لأنه يغيّر schema معتمدة.</li>
+    <li>لا اختبار حي فعلي بعد — الجدول <code>trader_users</code> غير موجود على القاعدة الحقيقية إلى أن يُشغَّل <code>trader-schema.sql</code> يدوياً.</li>
+  </ul>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

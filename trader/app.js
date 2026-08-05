@@ -6,15 +6,13 @@
 import { getSession, requireRole, logout } from './lib/session.js';
 import { escapeHtml } from './lib/ui.js';
 import { renderLogin } from './views/login.js';
+import { renderAdmin } from './views/admin.js';
 
 const root = document.getElementById('trader-app');
 
 /**
- * شاشة مؤقتة (placeholder) للمسارات التي ستُبنى في مراحل قادمة (Phase 4/5).
- * لا تعرض بيانات حقيقية — فقط تأكيد أن الحماية بالدور تعمل والجلسة صحيحة.
- * title يمرّ دائماً عبر escapeHtml() قبل إدراجه — حتى لو كان المصدر الحالي
- * نصاً ثابتاً، أي مصدر مستقبلي (مثل معرّف من الرابط) يبقى محمياً تلقائياً
- * (ملاحظة من مراجعة review-2026-08-05-phase-3.html).
+ * شاشة مؤقتة (placeholder) للمسارات التي لم تُبنَ بعد (evaluator/rate — Phase 5).
+ * title/fullName يمرّان دائماً عبر escapeHtml() قبل الإدراج.
  */
 function renderPlaceholder(container, title, session) {
   container.innerHTML = `
@@ -45,25 +43,22 @@ function route() {
   if (path.startsWith('/trader/admin')) {
     const s = requireRole('admin');
     if (!s) return; // requireRole نفّذ إعادة التوجيه بالفعل
-    renderPlaceholder(root, 'لوحة الإدارة', s);
+    renderAdmin(root, s); // Phase 4 — لوحة إدارة كاملة (معايير/مستخدمون/متاجر)
     return;
   }
 
   if (path.startsWith('/trader/evaluator')) {
     const s = requireRole('evaluator');
     if (!s) return;
-    renderPlaceholder(root, 'اختر متجراً لتقييمه', s);
+    renderPlaceholder(root, 'اختر متجراً لتقييمه', s); // Phase 5
     return;
   }
 
   if (path.startsWith('/trader/rate/')) {
     const s = requireRole('evaluator');
     if (!s) return;
-    // ملاحظة أمان (صُحِّحت بعد مراجعة Phase 3 — كانت تدّعي عدم استخدام innerHTML
-    // لكن renderPlaceholder يستخدمه فعلاً): storeId يُدرَج فعلياً ضمن HTML أدناه،
-    // لذلك يمر عبر escapeHtml() داخل renderPlaceholder نفسها الآن، لا استثناء.
-    // في Phase 5، لا يُستخدم storeId أبداً كمسار ملف — فقط كقيمة فلتر PostgREST
-    // (id=eq.<value>)، مع التحقق أنه UUID صالح قبل أي طلب فعلي لقاعدة البيانات.
+    // storeId يُستخدم فقط كقيمة فلتر PostgREST (id=eq.<value>) في Phase 5 —
+    // لا كمسار ملف. يمر عبر escapeHtml() داخل renderPlaceholder قبل أي عرض.
     const storeId = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
     renderPlaceholder(root, `تقييم متجر (#${storeId ? storeId.slice(0, 8) : '—'})`, s);
     return;

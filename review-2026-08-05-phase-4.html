@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير مراجعة — Phase 4 (لوحة الإدارة)</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    .critical { background: #FFE5E5; border-right: 4px solid #CC0000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .warning  { background: #FFF5E5; border-right: 4px solid #FF8C00; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .info     { background: #E5F5FF; border-right: 4px solid #0066CC; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .clean    { background: #E5FFE5; border-right: 4px solid #008000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .notes    { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 تقرير مراجعة — Phase 4 (لوحة الإدارة)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المراجَع:</strong> <code>trader/views/admin.js</code> (جديد) + <code>trader/app.js</code> (معدَّل) — فحص سريع مقابل Section K.2/J.1/J.4 من التعليمات و W1 من مراجعة Phase 1</p>
+
+  <h2>🔴 حرج — يجب إصلاحه قبل الاعتماد</h2>
+  <p>لا يوجد. الفحص الخماسي المطلوب (escapeHtml، aggregateForStore، معالجة حذف FK، تسرّب أرقام غربية، منطق state/paint) لم يكشف أي ثغرة أمنية أو باغ منطقي حرج.</p>
+
+  <h2>⚠️ مهم — يُفضّل إصلاحه</h2>
+  <div class="warning">
+    <strong>لا حراسة ضد self-delete / حذف آخر admin</strong><br>
+    تبويب المستخدمين يسمح للمدير الحالي بحذف حسابه الخاص، أو حذف آخر حساب <code>admin</code> متبقٍ في النظام، دون أي تحذير أو منع. <code>trader_users</code> ليس له علاقة self-reference تمنع ذلك على مستوى DB، ولا فحص في <code>deleteUser()</code> (admin.js:353) للتحقق ممن يُحذف مقارنةً بـ <code>state.session</code> أو بعدد الـ admins المتبقين. لو حدث هذا، لا مسار استرجاع من داخل الواجهة (لا تسجيل ذاتي admin) — يتطلب تدخلاً يدوياً في Supabase Studio لاستعادة الوصول.
+  </div>
+  <div class="warning">
+    <strong>تعليق كود مضلِّل حول عرض كلمة المرور بأرقام عربية</strong><br>
+    التعليق في admin.js:285-289 يدّعي أن كلمة المرور "تُعرض دائماً بأرقام عربية في الواجهة عبر <code>toArabic</code> عند اللزوم"، لكن <code>userRowHtml()</code> (admin.js:275) يعرضها عبر <code>escapeHtml(u.password)</code> فقط بلا <code>toArabic</code>. هذا **صحيح وظيفياً وليس خطأً** — لا يوجد <code>toWestern()</code> قبل مقارنة كلمة المرور نصياً في <code>session.js</code>، فلو حُوِّلت الأرقام لعربية-هندية في العرض وكتبها المقيّم حرفياً، ستفشل تسجيل الدخول. المطلوب فقط تصحيح التعليق ليعكس الواقع (استثناء متعمَّد من قاعدة "لا أرقام غربية" لأسباب وظيفية)، لا تعديل السلوك.
+  </div>
+
+  <h2>💡 تحسين — اختياري</h2>
+  <div class="info">
+    <code>aggregateForStore</code> لا يميّز بين "لا معايير نشطة بعد" و"متوسط فعلي = صفر" — لو وُجد متجر له تقييمات (<code>count > 0</code>) لكن لا معايير نشطة حالياً، <code>avgLabel</code> يعرض <code>٠</code> بدل <code>—</code>، ما قد يوحي بدرجة صفرية حقيقية بدل غياب بيانات القياس. حالة حافة نادرة (تتطلب تعطيل كل المعايير بعد وجود تقييمات).
+  </div>
+
+  <h2>✅ سليم</h2>
+  <div class="clean">
+    <strong>(أ) escapeHtml شامل بلا استثناء</strong> — فُحص كل موضع إدراج نص مستخدم في admin.js (اسم معيار/مستخدم/username/password/متجر) في صفوف العرض، مودالات التعديل (<code>value="..."</code>)، ورسائل <code>confirmAction</code>. كلها معقّمة. app.js أيضاً (title، fullName، storeId في placeholder). لا فجوة XSS.
+  </div>
+  <div class="clean">
+    <strong>(ب) aggregateForStore مطابق لـ J.1 حرفياً</strong> — نفس صيغة <code>avg = sum/count</code> لكل معيار نشط ثم <code>total += avg</code>. الفرق الوحيد (عدم بناء <code>perCriterion</code>) غير مؤثر لأن K.2 لا يستخدمه.
+  </div>
+  <div class="clean">
+    <strong>(ج) رسالة حذف مستخدم مرتبط معالَجة فعلاً</strong> — تحقّق: <code>trader_stores.created_by</code> و<code>trader_evaluations.evaluator_username</code> فعلاً <code>ON UPDATE CASCADE</code> بلا <code>ON DELETE</code> (RESTRICT ضمني، فجوة W1 من Phase 1 لا تزال قائمة في DB). لكن <code>deleteUser()</code> يلتقط الاستثناء ويعرض رسالة عربية واضحة بدل ترك خطأ PostgREST الخام يصل المستخدم.
+  </div>
+  <div class="clean">
+    <strong>(د) لا تسرّب أرقام غربية حقيقي</strong> — كل الأرقام (index تسلسلي، max_score، sort_order، عدد المقيّمين، متوسط الدرجة) عبر <code>toArabic</code>/<code>num</code>. الاستثناء الوحيد (كلمة المرور) متعمَّد ومبرَّر وظيفياً (انظر ⚠️ أعلاه).
+  </div>
+  <div class="clean">
+    <strong>(هـ) لا باغ state/paint واضح</strong> — <code>openModal</code>/<code>closeModal</code> (ui.js) يعلّقان على <code>document.body</code> خارج <code>rootEl</code>، فاستبدال <code>rootEl.innerHTML</code> في <code>paint()</code> بعد كل CRUD لا يكسر مودالاً مفتوحاً؛ وعلى كل حال <code>closeModal()</code> يُستدعى قبل <code>paint()</code> في كل مسار. <code>state.tab</code> يبقى محفوظاً بين إعادات الرسم فيبقى المستخدم على نفس التبويب بعد أي عملية.
+  </div>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ردّك على التقرير — ما توافق على إصلاحه وما تؤجّله.</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>
