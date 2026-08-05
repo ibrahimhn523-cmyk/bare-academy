@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>خطة/تقرير Phase 3 — تسجيل الدخول وهيكل التوجيه</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 28px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; }
+    .status { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 5px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>خطة/تقرير Phase 3 — تسجيل الدخول وهيكل التوجيه (Login + Router Shell)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المشروع:</strong> Trader Event Evaluation Platform</p>
+
+  <div class="status">نُفِّذت بسرعة (خطة/تنفيذ مدمجان) بطلب إبراهيم. الملفات مكتوبة فعلياً على القرص.</div>
+
+  <h2>١. الملفات</h2>
+  <table>
+    <tr><th>الملف</th><th>الوصف</th></tr>
+    <tr><td><code>trader/index.html</code></td><td>SPA shell — خطوط Cairo/Noto Kufi Arabic، تحميل styles.css وapp.js كـ ES module.</td></tr>
+    <tr><td><code>trader/app.js</code></td><td>Route guard مطابق لـ Section H.2: / → دخول أو إعادة توجيه حسب الدور، /admin و/evaluator و/rate/[id] محمية بـ requireRole. شاشات admin/evaluator/rate الآن placeholder (تُبنى في Phase 4/5).</td></tr>
+    <tr><td><code>trader/views/login.js</code></td><td>نموذج الدخول: بلا خطأ يفرّغ كلمة المرور (N.2)، Enter يُرسل، toast عند النجاح، إعادة توجيه حسب الدور.</td></tr>
+  </table>
+
+  <h2>٢. مهارات استُدعيت فعلياً</h2>
+  <ul>
+    <li><strong>arabic-context</strong> — على index.html وlogin.js: أكّدت dir=rtl، خطوط Cairo/Noto Kufi، استخدام أنماط trader-input/trader-btn المشتركة (logical properties من Phase 2)، لا نص إنجليزي في الواجهة.</li>
+    <li><strong>security-check</strong> — على app.js (route guards): تأكيد أن storeId من مسار /trader/rate/ لن يُستخدم كمسار ملف أو innerHTML خام لاحقاً (مذكور كتعليق صريح في الكود لـ Phase 5)، بل فقط كقيمة فلتر PostgREST. تحقّق من صحة route guard لكل دور. ذكّرت — كما هو متوقَّع — أن تعديل localStorage يدوياً من console يبقى بإمكانه انتحال جلسة (نفس فئة الخطر C2 الموثّقة في CLAUDE.md لـ portal.js) — هذه مخاطرة معروفة ومقبولة ضمن القرار (ج) المعتمد في Phase 1، وليست ثغرة جديدة.</li>
+  </ul>
+
+  <h2>٣. لا قرار معماري جديد</h2>
+  <p>لا شيء يستدعي decision-guard في هذه المرحلة — تنفيذ مباشر لما ورد في Section H من التعليمات.</p>
+
+  <h2>٤. حدود معروفة (موثّقة لا مُخفاة)</h2>
+  <ul>
+    <li>لا history.pushState — كل تنقّل إعادة تحميل كاملة للصفحة (متوقَّع طالما vercel.json يعيد كتابة كل مسار لنفس index.html).</li>
+    <li>شاشات admin/evaluator/rate حالياً placeholder فقط يعرض اسم المستخدم وزر خروج — يتحقق من عمل الحماية بالدور، لا الوظيفة الكاملة.</li>
+    <li>مثل Phase 1/2: نفس مخاطرة انتحال الجلسة عبر تعديل localStorage يدوياً — مقبولة بقرار سابق، غير معالَجة هنا لأنها ليست خللاً جديداً.</li>
+  </ul>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك — مثلاً هل تريد نص "تجريبي: admin/..." يظهر في شاشة الدخول أم يبقى محذوفاً كما فعلته في ملفات التوثيق؟</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

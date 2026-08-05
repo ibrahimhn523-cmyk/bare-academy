@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير مراجعة — Phase 3: تسجيل الدخول وهيكل التوجيه (Trader Event Evaluation Platform)</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 900px; margin: 40px auto; padding: 20px; direction: rtl; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; }
+    .critical { background: #FFE5E5; border-right: 4px solid #CC0000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .warning  { background: #FFF5E5; border-right: 4px solid #FF8C00; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .info     { background: #E5F5FF; border-right: 4px solid #0066CC; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .clean    { background: #E5FFE5; border-right: 4px solid #008000; padding: 15px; margin: 10px 0; border-radius: 4px; }
+    .notes    { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; }
+  </style>
+</head>
+<body>
+  <h1>🔍 تقرير مراجعة — Phase 3: تسجيل الدخول وهيكل التوجيه (Trader Event Evaluation Platform)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المراجَع:</strong> <code>trader/index.html</code>، <code>trader/app.js</code>، <code>trader/views/login.js</code> — مقارنةً بـ Section H وSection M من <code>CLAUDE_CODE_INSTRUCTIONS_v2.md</code>، وبـ <code>plan-phase-3-login-router.html</code> و<code>review-2026-08-05-phase-2.html</code> (وملاحظاتها).</p>
+
+  <p>فحص سريع بطلب إبراهيم. تحقّقت أن مشكلتَي Phase 2 (توسيط الـ toast، وغياب escapeHtml) عولجتا فعلاً في <code>styles.css</code> و<code>ui.js</code> — <code>trader-toast</code> الآن <code>left: 50%</code> فيزيائي صحيح، و<code>escapeHtml()</code> مضافة في <code>ui.js</code> مع تعليق يوجّه لاستخدامها في Phase 4/5. لا حاجة لإعادة ذكرهما هنا كمشاكل جديدة.</p>
+
+  <h2>🔴 حرج — يجب إصلاحه قبل الاعتماد</h2>
+  <p><em>لا توجد نتائج حرجة فعلية القابلية للاستغلال اليوم. البند الوحيد القريب من الخطورة (تعارض تعليق الأمان مع سلوك الكود الفعلي في storeId) مذكور تحت ⚠️ لأن الاستغلال الفعلي شبه مستحيل حالياً بسبب <code>.slice(0, 8)</code> — لكن يجب تتبّعه بجدية قبل Phase 5.</em></p>
+
+  <h2>⚠️ مهم — يُفضّل إصلاحه</h2>
+
+  <div class="warning">
+    <strong>تعليق الأمان في <code>app.js</code> (سطر 58-62) يقول إن <code>storeId</code> "لن يُستخدم أبداً... داخل innerHTML مباشرة" — لكن نفس السطر التالي يفعل ذلك بالضبط</strong>
+    <p>الكود:</p>
+    <pre><code>const storeId = decodeURIComponent(path.split('/').filter(Boolean).pop() || '');
+renderPlaceholder(root, `تقييم متجر (#${storeId ? storeId.slice(0, 8) : '—'})`, s);</code></pre>
+    <p>و<code>renderPlaceholder</code> نفسها:</p>
+    <pre><code>function renderPlaceholder(container, title, session) {
+  container.innerHTML = `
+    ...
+      &lt;div class="trader-heading" ...&gt;${title}&lt;/div&gt;
+    ...
+  `;
+}</code></pre>
+    <p><code>storeId</code> مصدره <code>location.pathname</code> — أي قيمة يضعها المستخدم (أو رابط تصيّد يُرسَل لمقيّم آخر يحتوي مسار <code>/trader/rate/&lt;payload&gt;</code>) تدخل <code>title</code> ثم تُدرَج <strong>خاماً</strong> عبر <code>container.innerHTML</code> — بلا <code>escapeHtml()</code> الموجودة أصلاً في <code>ui.js</code> منذ Phase 2. هذا هو بالضبط نمط XSS المُحذَّر منه في مراجعة Phase 2 (بند openModal/confirmAction)، لكنه هنا يظهر فعلياً في كود Phase 3 المكتوب على القرص، وليس افتراضاً مستقبلياً.</p>
+    <p><strong>لماذا ليس 🔴 اليوم:</strong> <code>.slice(0, 8)</code> يقصّ القيمة إلى 8 محارف كحد أقصى قبل الإدراج، وهذا يجعل تنفيذ JS فعلي (يحتاج غالباً <code>onerror=</code> أو وسم مغلق كامل) شبه مستحيل عملياً بهذا الطول. لكن هذا ليس دفاعاً مقصوداً — لا يوجد أي تعليق يوضّح أن القصّ لـ8 محارف كان قراراً أمنياً، ويبدو أنه اختيار عرضي (اختصار بصري للـ ID الطويل) وليس تعقيماً. لو تغيّر الطول لاحقاً (مثلاً لعرض ID كامل، أو نسخ نفس النمط لعرض اسم متجر حقيقي في Phase 5 بلا تفكير)، الثغرة تصبح حقيقية فوراً.</p>
+    <p><strong>الإصلاح:</strong> استخدم <code>escapeHtml()</code> من <code>ui.js</code> على <code>title</code> قبل تمريره لـ <code>renderPlaceholder</code> — أو الأفضل: اجعل <code>renderPlaceholder</code> نفسها تستخدم <code>textContent</code> لعنصر العنوان بدل بنائه ضمن innerHTML الكبير (فصل العنصر الديناميكي عن القالب الثابت). يُصحَّح تعليق السطر 58-62 ليعكس الواقع الفعلي بدل الادّعاء غير الدقيق بعدم استخدام innerHTML.</p>
+  </div>
+
+  <h2>💡 تحسين — اختياري</h2>
+
+  <div class="info">
+    <strong>نص "تجريبي: admin / bareadmin1212" المطلوب في Section K.1 غائب من شاشة الدخول — قرار معلّق بالفعل وليس خطأ جديداً</strong>
+    <p><code>login.js</code> يعرض بدلاً منه "تواصل مع المدير للحصول على بيانات الدخول". <code>plan-phase-3-login-router.html</code> يطرح هذا صراحة كسؤال مفتوح لإبراهيم في قسم ملاحظات الراعي — إذاً هذا انحراف موثَّق وواعٍ عن Section K.1، بانتظار رد الراعي، وليس سهواً. أذكره هنا فقط للتأكيد أن القرار لا يزال معلّقاً في وقت هذه المراجعة.</p>
+  </div>
+
+  <div class="info">
+    <strong>عدم معالجة حالة "جلسة صالحة + مسار غير معروف تحت /trader"</strong>
+    <p>في نهاية <code>route()</code>، أي مسار لا يطابق الأنماط الأربعة يُعاد توجيهه مباشرة لـ <code>renderLogin(root)</code> بلا فحص جلسة قائمة أولاً — بخلاف الفرع الأول (`/trader` أو `/trader/`) الذي يتحقق من الجلسة ويعيد التوجيه للوحة الصحيحة. الأثر ضئيل عملياً (مسار غير معروف تحت /trader نادر الحدوث، وvercel.json أصلاً يعيد كل شيء لنفس index.html)، لكنه سلوك غير متسق: مستخدم مسجّل دخول يكتب مساراً خاطئاً يدوياً يرى شاشة دخول فارغة بدل إعادة توجيه فورية للوحته. لا يستدعي إصلاحاً عاجلاً.</p>
+  </div>
+
+  <h2>✅ سليم</h2>
+
+  <div class="clean">
+    <strong>route guard في <code>app.js</code> يطابق منطقياً Section H.2 بدقة، مع تحسينات صغيرة عليه</strong>
+    <p>كل فرع (root / admin / evaluator / rate) يستخدم <code>requireRole()</code> من <code>session.js</code> بنفس منطق المرجع حرفياً: لا جلسة → <code>/trader</code>، دور غير مطابق → إعادة توجيه للوحة الدور الصحيح. إضافة <code>path.endsWith('/trader/index.html')</code> للفرع الأول منطقية (تغطي فتح الملف مباشرة أثناء التطوير المحلي). <code>decodeURIComponent</code> على مقطع الـ storeId قبل الاستخدام تصرّف حذر وصحيح.</p>
+  </div>
+
+  <div class="clean">
+    <strong><code>login.js</code> لا يخالف أي Anti-requirement من Section M</strong>
+    <p>تأكدت بالقراءة الكاملة: لا وجود لوسم <code>&lt;form&gt;</code> إطلاقاً — الحاوية <code>&lt;div&gt;</code> والزر <code>&lt;button type="button"&gt;</code>. لا <code>onclick=</code> inline في أي مكان — الإرسال عبر <code>addEventListener('click', submit)</code> والإرسال بـ Enter عبر <code>addEventListener('keydown', ...)</code> على الحقلين. حقل كلمة المرور <code>type="password"</code> (يطابق K.1 وليس كحقل users tab في Phase 4 الذي يجب أن يبقى نصياً ظاهراً حسب K.2 — هذا سياق مختلف تماماً ولا التباس بينهما هنا).</p>
+  </div>
+
+  <div class="clean">
+    <strong>معالجة <code>storeId</code> آمنة من ناحية path traversal تحديداً (كما يدّعي التعليق) — لكن راجع بند XSS أعلاه</strong>
+    <p><code>storeId</code> لا يُستخدم كمسار ملف، ولا يُمرَّر لأي عملية قراءة نظام ملفات — هذا الجزء من ادّعاء التعليق صحيح تماماً ولا يوجد احتمال path traversal حقيقي. المشكلة ليست في هذا الادّعاء، بل في الجزء الثاني من التعليق الذي يقول إنه لن يُستخدم داخل innerHTML — وهو غير دقيق كما هو موضّح في قسم ⚠️.</p>
+  </div>
+
+  <div class="clean">
+    <strong>لا مخالفات RTL/عربي واضحة في الملفات الثلاثة</strong>
+    <p><code>trader/index.html</code>: <code>dir="rtl" lang="ar"</code> على <code>&lt;html&gt;</code>، خطوط Cairo/Noto Kufi Arabic محمّلة بنفس رابط Section I.2 حرفياً. <code>login.js</code>: كل النصوص عربية ("اسم المستخدم"، "كلمة المرور"، "دخول"، رسائل الخطأ)، لا نص إنجليزي موجَّه للمستخدم، لا <code>letter-spacing</code>، الأنماط المستخدمة (<code>trader-input</code>, <code>trader-btn</code>) موروثة من <code>styles.css</code> المفحوص في Phase 2 ومطابقة لقواعد logical properties. لا أرقام معروضة في هذه الشاشة أصلاً (لا مجال لمخالفة "أرقام عربية-هندية" هنا).</p>
+  </div>
+
+  <div class="clean">
+    <strong>سلوك "كلمة المرور لا تُفرَّغ عند الخطأ" (N.2) منفَّذ بشكل صحيح وأفضل من المطلوب</strong>
+    <p><code>submit()</code> في <code>login.js</code> لا يمسح <code>passEl.value</code> عند فشل الدخول — فقط يركّز عليها ويحدّد نصها (<code>passEl.select()</code>) لتسهيل إعادة الكتابة. تحسين UX حقيقي غير مطلوب صراحة في المرجع.</p>
+  </div>
+
+  <div class="clean">
+    <strong>حماية من double-submit عبر متغير <code>submitting</code> محلي</strong>
+    <p>الزر يُعطَّل (<code>btnEl.disabled = true</code>) أثناء الطلب، ويُمنع أي استدعاء متكرر لـ <code>submit()</code> قبل انتهاء الأول — يطابق روح "لا race conditions" المذكورة في Section O لمرحلة لاحقة (Phase 5)، لكن جيد أن النمط بدأ هنا مبكراً.</p>
+  </div>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ردّك على التقرير — تحديداً: هل تريد إصلاح تعارض storeId/innerHTML الآن (قبل Phase 4) أم عند بناء Phase 5 الفعلية لصفحة التقييم؟ وهل قرار نص "تجريبي: admin/..." استقر أم لا يزال مفتوحاً؟</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>
