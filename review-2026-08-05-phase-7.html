@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>مراجعة شاملة نهائية — Phase 7 (Polish &amp; Deploy) — منصة تقييم فعالية التاجر</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 20px; direction: rtl; line-height: 1.6; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    h3 { color: #2D3651; margin-top: 22px; }
+    .verdict { background: #FDE8E8; border: 2px solid #8F1A1D; color: #8F1A1D; padding: 16px 20px; border-radius: 10px; font-weight: 700; font-size: 17px; }
+    code { background: #F5E6D3; padding: 2px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; }
+    .finding { border-radius: 10px; padding: 14px 18px; margin: 12px 0; }
+    .critical { background: #FDE8E8; border-right: 5px solid #8F1A1D; }
+    .warn { background: #FFF7E0; border-right: 5px solid #D4AF37; }
+    .info { background: #EEF1F6; border-right: 5px solid #2D3651; }
+    .clean { background: #E5FFE5; border-right: 5px solid #008000; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>مراجعة شاملة نهائية — Phase 7 (Polish &amp; Deploy)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-09 | <strong>المشروع:</strong> Trader Event Evaluation Platform | <strong>نوع المراجعة:</strong> تجميعية عابرة للمراحل 1-6 بالكامل (holistic) — وليست مراجعة مرحلة واحدة | <strong>المراجِع:</strong> reviewer agent (مستقل) — كتبها الجلسة الرئيسية لأن وكيل reviewer لا يملك أداة Write</p>
+
+  <div class="verdict">القرار العام: غير آمن للاعتماد/الدفع (push) في وقت المراجعة. اكتشاف حرج جديد لم يُلتقط في أي مراجعة مرحلة سابقة: كلمة مرور admin الفعلية كانت مسرَّبة بالنص الصريح داخل <code>pm-log.md</code> نفسه — الملف الذي يوثّق أن كلمة المرور "حُجبت من ملفات أخرى". <strong>هذا الاكتشاف عُولج فوراً بعد المراجعة</strong> (انظر ملاحظة التحرير أدناه) — باستثنائه، بقية المحاور الأربعة المطلوبة (عزل المقيّمين، مخاطر vercel.json/sw.js، RLS) نظيفة فعلياً بالفحص المباشر.</div>
+
+  <p style="background:#EEF1F6; border-right:5px solid #2D3651; padding:10px 14px; border-radius:8px; font-size:14px; margin-top:16px;"><strong>ملاحظة تحرير لاحقة لنفس الجلسة (فوراً بعد استلام هذه المراجعة):</strong> كل قيمة سرّية وردت في هذا التقرير حُذفت واستُبدلت بوصف مكانها فقط — بما في ذلك سطر <code>pm-log.md</code> الذي وُصف كمصدر التسريب أدناه (كان يحتوي القيمة الحرفية في نسخة مسودة أولى من هذا التقرير نفسه، وحُذفت قبل الحفظ النهائي، تفادياً لتكرار نفس الخطأ الذي يوثّقه). تبقى نقطة C1 الثانية أدناه (فحص تاريخ git المحلي قبل push) معلَّقة — تحتاج أداة git لا أملكها في هذا الاستدعاء، مكتوبة كتوصية صريحة في §٦ من <code>report-phase-7-polish.html</code>.</p>
+
+  <h2>🔴 حرج</h2>
+
+  <div class="finding critical">
+    <strong>C1 — كلمة مرور admin الفعلية كانت مسرَّبة في <code>pm-log.md</code> (على الأرجح مُلتزَمة بالفعل بـ git)</strong>
+    <p><strong>المكان:</strong> <code>pm-log.md</code>، السطر الذي يوثّق خطوة [20] من سجل Phase 1 — الجملة تصف "التحقق أن كلمة المرور حُجبت من ملفَي plan/report الخاصين بـ Phase 1"، لكن الجملة نفسها كانت تتضمّن القيمة الحرفية بدل الإشارة إليها فقط.</p>
+    <p><strong>السبب:</strong> مفارقة توثيقية — توثيق إصلاح تسريب سابق أعاد إنتاج نفس التسريب. <code>pm-log.md</code> غير موجود في <code>.gitignore</code> (الذي يستثني فقط <code>trader-schema.sql</code> و<code>*.sql</code>)، وسطر آخر في نفس الملف يذكر أن كوميت <code>558613b</code> التزم "14 ملف" — و<code>pm-log.md</code> غير مذكور ضمن الملفات غير المتتبَّعة (<code>??</code>) في git status المعطى في بداية الجلسة. دليل قوي (لا يعتمد على تنفيذ أمر git، فقط على قراءة الحالة المعطاة) أن الملف مُلتزَم حالياً بمحتواه.</p>
+    <p><strong>الأثر:</strong> بما أن لا push حدث بعد (مؤكَّد في <code>TRADER_NOTES.md §٦</code>)، الوقت متاح للإصلاح قبل أي دفع لـ remote — إن دُفع كما كان، ستصبح كلمة المرور جزءاً دائماً من تاريخ Git على GitHub (يتطلب rebase/force-push للتنظيف لاحقاً، أصعب بكثير من الإصلاح الآن).</p>
+    <p><strong>التوصية:</strong> (١) حجب القيمة في <code>pm-log.md</code> — <strong>✅ نُفِّذ فوراً بعد استلام هذه المراجعة</strong>. (٢) الأهم والمتبقي: قبل أي push، افحص (عبر <code>git log -p pm-log.md</code>) ما إذا كانت النسخة المُلتزَمة تحتوي كلمة المرور في تاريخها، وإن كانت كذلك ففكّر في <code>git commit --amend</code>/<code>rebase -i</code> لتنظيف التاريخ المحلي طالما لم يُدفع بعد.</p>
+  </div>
+
+  <div class="finding critical">
+    <strong>C2 — كلمة مرور trader admin مُعادة الاستخدام من كلمة مرور dashboard المكشوفة أصلاً في <code>README.md</code></strong>
+    <p><strong>المكان:</strong> <code>README.md</code> (توثيق كلمة مرور dashboard القديمة) مقابل <code>trader-schema.sql</code> (سطر seed حساب admin يستخدم نفس القيمة الحرفية).</p>
+    <p><strong>السبب:</strong> ملاحظة جديدة تحديداً بسياق مشروع trader، وليست تكراراً لملاحظة CLAUDE.md القديمة عن README (تلك كانت عن كلمة مرور dashboard وحدها). النقطة الجديدة: <code>trader-schema.sql</code> يستخدم نفس القيمة الحرفية كـ"seed password مؤقتة" لحساب admin في منصة التقييم، بينما هذه القيمة <strong>منشورة بالفعل عبر HTTP</strong> (README.md ملف عادي في جذر مستودع static site بلا build step — سيُخدَّم على <code>/README.md</code> تماماً مثل أي ملف HTML آخر). كل التبرير الأمني في <code>TRADER_NOTES.md §٢</code> و<code>trader-schema.sql</code> كان يفترض أن كلمة المرور "لن تُنشر عبر HTTP لأنها في ملف SQL مستثنى" — لكنها بالفعل منشورة عبر HTTP، من طريق آخر (README.md)، منذ ما قبل مشروع trader.</p>
+    <p><strong>الأثر:</strong> أي شخص يملك رابط <code>bare-academy.vercel.app/README.md</code> (أو نسخة GitHub للمستودع لاحقاً) يعرف كلمة مرور admin الافتراضية لمنصة trader دون الحاجة لأي تسريب جديد.</p>
+    <p><strong>التوصية:</strong> لا تكتفِ بتوصية TRADER_NOTES.md ("غيّر كلمة المرور بعد أول دخول") كخطوة مستحبة — اجعلها إلزامية قبل تسليم <code>/trader/admin</code> لأي طرف آخر، لأن كلمة الإقلاع ليست سرّاً فعلياً أصلاً.</p>
+  </div>
+
+  <h2>⚠️ تحذير</h2>
+
+  <div class="finding warn">
+    <strong>W1 — <code>dashboard.html.backup</code> (ملف untracked حالياً) يحتوي أسراراً حقيقية — خطر عند أي <code>git add .</code> مستقبلي</strong>
+    <p><strong>المكان:</strong> <code>dashboard.html.backup</code> — يحتوي مفتاح API لجوجل، رابط سكربت، وكلمة سرّ سكربت من مشروع Google Sheets القديم.</p>
+    <p>خارج نطاق ملفات trader مباشرة، لكن هذا الملف untracked في نفس الجلسة التي تُبنى فيها ملفات trader — احتمال التقاطه سهواً ضمن <code>git add .</code> عند تنفيذ commit trader القادم. ليس تسريباً حالياً (غير مُلتزَم)، لا علاقة له بمنصة trader نفسها، فقط تنبيه سياقي.</p>
+  </div>
+
+  <div class="finding warn">
+    <strong>W2 — لا rate limiting على <code>login()</code> في trader (امتداد متوقَّع لقرار "ج" الموافَق عليه، ليس مشكلة جديدة)</strong>
+    <p><strong>المكان:</strong> <code>trader/lib/session.js</code>، دالة <code>login()</code></p>
+    <p>القرار موافَق عليه أصلاً (نفس تسامح portal.js الموروث) — لكن بخلاف portal.js (مستخدمون داخليون معروفون)، رابط <code>/trader</code> قد يُشارَك في فعالية بجمهور أوسع نسبياً (مقيّمون متعددون قد يتشاركون الرابط). فقط توثيق أن نطاق المخاطرة أعلى قليلاً من portal الأصلي.</p>
+  </div>
+
+  <h2>✅ سليم (تحقّق مباشر بالكود، لا افتراضاً)</h2>
+
+  <div class="finding clean">
+    <strong>عزل المقيّمين — مطبَّق فعلياً في كل نقطة فُحصت</strong>
+    <ul>
+      <li><code>trader/views/stores-list.js</code> — استعلام <code>trader_evaluations</code> مفلتر بـ <code>evaluator_username=eq.&lt;session.username&gt;</code> فقط. المقيّم لا يرى حتى عدد تقييمات غيره.</li>
+      <li><code>trader/views/rate.js</code> — استعلام مزدوج <code>store_id=eq.X&amp;evaluator_username=eq.&lt;current&gt;</code> — لا مسار لجلب تقييم مقيّم آخر، وزر الحذف يعمل فقط على <code>existingEvaluation</code> المصدره هذا الاستعلام المفلتر.</li>
+      <li><code>trader/views/admin.js</code> — يحمّل كل التقييمات <strong>بلا فلتر</strong>، لكن هذا صحيح ومتوقَّع لدور admin (تجميع عبر كل المقيّمين). لا مكان في الواجهة يعرض هوية/درجة مقيّم فردي لمقيّم آخر أو لأي طرف — فقط متوسط مجمَّع + عدد.</li>
+      <li><code>view/board.js</code> — إعادة تأكيد بعد Phase 6: الاستعلامات عبر <code>sbSelectCols</code> بأعمدة محدودة صراحة (<code>store_id,scores</code> فقط) — لا <code>evaluator_username</code>، لا <code>created_by</code>. <code>session.js</code> غير مستورَد في <code>board.js</code> أصلاً.</li>
+    </ul>
+  </div>
+
+  <div class="finding clean">
+    <strong>مخاطرة الانحدار على الموقع الأصلي — لا تصادم مكتشَف</strong>
+    <p><code>vercel.json</code> يحتوي فقط rewrites لـ <code>/trader/:path*</code> و<code>/view/:path*</code> — سلوك Vercel الافتراضي يخدم أي ملف مطابق فعلياً (dashboard.html, portal.html, index.html, leaderboard.html, tournament.html) قبل تطبيق أي rewrite؛ لا تقاطع لأنه لا ملف/مسار حالي يبدأ بـ<code>/trader</code> أو <code>/view</code>. <code>sw.js</code> — الـ regex الجديد الذي يستثني مسارات trader/view من cache-first غير مُثبَّت بحدود صارمة، لكن فُحصت كل أسماء الملفات الحالية ولا واحد منها يحتوي "trader"/"view" كسلسلة فرعية غير مقصودة. الأثر العملي الوحيد: ملفات <code>review-*.html</code> الجديدة (تحتوي "view" كسلسلة فرعية) تُستثنى أيضاً من cache-first — غير ضار (صفحات توثيق تُخدَّم من الشبكة).</p>
+  </div>
+
+  <div class="finding clean">
+    <strong>RLS في <code>trader-schema.sql</code> — كما هو موثَّق تماماً، لا فجوة إضافية</strong>
+    <p>الجداول الأربعة كلها: <code>ENABLE ROW LEVEL SECURITY</code> قبل إنشاء السياسات — الترتيب صحيح، لا جدول منسي بلا تفعيل رغم الادّعاء. السياسات الأربع <code>FOR ALL USING (true) WITH CHECK (true)</code> — permissive بالكامل كما هو موثَّق ومقبول (القرار ج)، متسقة بين الجداول.</p>
+  </div>
+
+  <div class="finding clean">
+    <strong>السياق العربي — سليم فيما فُحص</strong>
+    <p>logical properties في كل مكان تقريباً (استثناء موثَّق لـ<code>.trader-toast</code>)، تحويل أرقام عربية-هندية شامل في <code>ar.js</code> (باستثناء موثَّق لكلمة المرور المولَّدة لسبب وظيفي)، لا نصوص إنجليزية ظاهرة للمستخدم.</p>
+  </div>
+
+  <h2>ملخص الإجراء المطلوب قبل أي push</h2>
+  <ol>
+    <li>حجب كلمة المرور الحرفية في <code>pm-log.md</code> — <strong>تم</strong>.</li>
+    <li>التحقق مما إذا كانت الكوميتات المحلية الحالية تحتوي القيمة القديمة في تاريخها، والتفكير في تنظيف التاريخ (rebase/amend) طالما لا push حتى الآن — <strong>معلَّق، يحتاج git</strong>.</li>
+    <li>اعتبار كلمة مرور trader admin الافتراضية غير سرية فعلياً (منشورة أصلاً عبر README.md) — تغييرها إلزامي وليس مستحباً فقط قبل تسليم <code>/trader/admin</code> لأي طرف ثالث — <strong>معلَّق، بيد إبراهيم بعد أول دخول</strong>.</li>
+    <li>الانتباه عند git add القادم لعدم التقاط <code>dashboard.html.backup</code> — <strong>تنبيه فقط</strong>.</li>
+  </ol>
+  <p>لا مشاكل أخرى حرجة في المحاور الأربعة المطلوبة (تسريب الأسرار، عزل المقيّمين، مخاطر الانحدار، RLS). عزل المقيّمين، RLS، وتوافق vercel.json/sw.js مع الموقع الحالي — كلها سليمة بالفحص المباشر.</p>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك — تحديداً: هل تريد فحص/تنظيف تاريخ git بنفسك أو بمساعدة الجلسة المنسِّقة قبل أي push؟</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>

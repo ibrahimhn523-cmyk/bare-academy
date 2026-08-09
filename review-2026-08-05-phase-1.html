@@ -23,6 +23,8 @@
 
   <div class="verdict">القرار: غير آمن للاعتماد كما هو (Not safe to commit as-is) — يوجد تسريب فعلي لكلمة مرور، لازم إصلاحه قبل أي git add/commit أو تنفيذ DDL على Supabase.</div>
 
+  <p style="background:#EEF1F6; border-right:5px solid #2D3651; padding:10px 14px; border-radius:8px; font-size:14px;"><strong>ملاحظة تحرير لاحقة (Phase 7، 2026-08-09):</strong> كلمة المرور الفعلية التي وردت هنا حرفياً في الإصدار الأصلي من هذا الملف استُبدلت بـ <code>[محجوبة]</code> عند مراجعة Phase 7 الشاملة، لأن هذا الملف نفسه git-tracked وغير محمي بـ .gitignore — أي أن توثيق "التسريب" كان يكرر نفس التسريب داخل ملف آخر. المعنى والقرار (غير آمن كما كان وقتها) لم يتغيّرا، فقط حُذفت القيمة الحرفية.</p>
+
   <h2>🔴 حرج</h2>
 
   <div class="finding critical">
@@ -32,12 +34,12 @@
 
   <div class="finding critical">
     <strong>2. تسريب كلمة مرور فعلي — الحماية غير مكتملة</strong><br>
-    <code>.gitignore</code> يحمي <code>trader-schema.sql</code> و<code>*.sql</code> فقط (تحقّقت: <code>git ls-files trader-schema.sql</code> يرجع فارغ — الحماية تعمل لهذا الملف). لكن كلمة المرور <code>bareadmin1212</code> موجودة نصّاً صريحاً في <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code> — وكلا الملفين حالياً <strong>untracked وغير محميين</strong> بـ <code>.gitignore</code> (تحقّقت عبر <code>git status --short</code>: يظهران <code>??</code>). <code>report-phase-1-foundation.html</code> نفسه يوصي إبراهيم بعمل <code>git add</code> ثم commit لهذه الملفات. بما أن bare-academy موقع static بلا build step على Vercel، أي ملف مُلتزَم في جذر المستودع يُخدَّم علناً بعد النشر — تنفيذ التوصية كما هي حرفياً يعني نشر كلمة مرور admin عبر رابط عام.
+    <code>.gitignore</code> يحمي <code>trader-schema.sql</code> و<code>*.sql</code> فقط (تحقّقت: <code>git ls-files trader-schema.sql</code> يرجع فارغ — الحماية تعمل لهذا الملف). لكن كلمة المرور <code>[محجوبة]</code> كانت موجودة نصّاً صريحاً في <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code> — وكلا الملفين حينها <strong>untracked وغير محميين</strong> بـ <code>.gitignore</code> (تحقّقت عبر <code>git status --short</code>: يظهران <code>??</code>). <code>report-phase-1-foundation.html</code> نفسه كان يوصي إبراهيم بعمل <code>git add</code> ثم commit لهذه الملفات. بما أن bare-academy موقع static بلا build step على Vercel، أي ملف مُلتزَم في جذر المستودع يُخدَّم علناً بعد النشر — تنفيذ التوصية كما وردت حرفياً كان يعني نشر كلمة مرور admin عبر رابط عام.
   </div>
 
   <div class="finding critical">
     <strong>3. كلمة المرور المُختارة مكشوفة أصلاً في المستودع</strong><br>
-    <code>bareadmin1212</code> هي نفسها كلمة مرور <code>dashboard.html</code> القديمة، موثّقة حالياً في <code>README.md</code> (ملف مُلتزَم في تاريخ git) وموثّقة في <code>CLAUDE.md</code> §٣ كحادثة تسريب سابقة معروفة. إعادة استخدامها كبذرة (seed) لنظام مصادقة جديد منفصل تماماً (trader) تعني أن "السر" الجديد مكشوف من اليوم الأول، بغض النظر عن أي حماية لاحقة.
+    <code>[محجوبة]</code> هي نفسها كلمة مرور <code>dashboard.html</code> القديمة، موثّقة سابقاً في <code>README.md</code> (ملف مُلتزَم في تاريخ git) وموثّقة في <code>CLAUDE.md</code> §٣ كحادثة تسريب سابقة معروفة. إعادة استخدامها كبذرة (seed) لنظام مصادقة جديد منفصل تماماً (trader) تعني أن "السر" الجديد مكشوف من اليوم الأول، بغض النظر عن أي حماية لاحقة.
   </div>
 
   <h2>⚠️ تحذيرات (غير حاجبة)</h2>
@@ -50,7 +52,7 @@
 
   <h2>الخلاصة والتوصية</h2>
   <ol>
-    <li>عمِّ أو احذف <code>bareadmin1212</code> من <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code>، أو أضفهما لـ <code>.gitignore</code> إن لم تعد بحاجة لتتبعهما بـ git.</li>
+    <li>عمِّ أو احذف كلمة المرور الحرفية من <code>plan-phase-1-foundation.html</code> و<code>report-phase-1-foundation.html</code>، أو أضفهما لـ <code>.gitignore</code> إن لم تعد بحاجة لتتبعهما بـ git. <em>(تم لاحقاً — كلا الملفين مُحجَّبان الآن، تأكد Phase 4/pm-log خطوة [20]).</em></li>
     <li>ولّد كلمة مرور admin جديدة فعلياً لنظام trader قبل تنفيذ <code>trader-schema.sql</code> على Supabase الحي — لا تُعِد استخدام كلمة مرور معروفة/مسرَّبة سابقاً.</li>
     <li>لا تنفّذ أوامر <code>git add/commit</code> كما وردت حرفياً في <code>report-phase-1-foundation.html</code> قبل إصلاح البندين أعلاه.</li>
     <li>بقية بنية العمل (الجداول، ترتيب RLS، منطق استثناء sw.js) سليمة معمارياً ومتّسقة مع أنماط المشروع الموثّقة (ADR-008/012/013).</li>

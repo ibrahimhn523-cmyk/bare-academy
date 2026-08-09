@@ -21,6 +21,8 @@
   <h1>🔍 تقرير مراجعة — Phase 3: تسجيل الدخول وهيكل التوجيه (Trader Event Evaluation Platform)</h1>
   <p><strong>التاريخ:</strong> 2026-08-05 | <strong>المراجَع:</strong> <code>trader/index.html</code>، <code>trader/app.js</code>، <code>trader/views/login.js</code> — مقارنةً بـ Section H وSection M من <code>CLAUDE_CODE_INSTRUCTIONS_v2.md</code>، وبـ <code>plan-phase-3-login-router.html</code> و<code>review-2026-08-05-phase-2.html</code> (وملاحظاتها).</p>
 
+  <p style="background:#E5F5FF; border-right:4px solid #0066CC; padding:10px 14px; border-radius:4px; font-size:14px;"><strong>ملاحظة تحرير لاحقة (Phase 7، 2026-08-09):</strong> بند "💡 تحسين" أدناه كان يقتبس كلمة مرور admin الفعلية حرفياً كجزء من نص Section K.1 المرجعي. استُبدلت بـ <code>[محجوبة]</code> عند مراجعة Phase 7 الشاملة لأن هذا الملف git-tracked وغير محمي بـ .gitignore. المعنى لم يتغيّر.</p>
+
   <p>فحص سريع بطلب إبراهيم. تحقّقت أن مشكلتَي Phase 2 (توسيط الـ toast، وغياب escapeHtml) عولجتا فعلاً في <code>styles.css</code> و<code>ui.js</code> — <code>trader-toast</code> الآن <code>left: 50%</code> فيزيائي صحيح، و<code>escapeHtml()</code> مضافة في <code>ui.js</code> مع تعليق يوجّه لاستخدامها في Phase 4/5. لا حاجة لإعادة ذكرهما هنا كمشاكل جديدة.</p>
 
   <h2>🔴 حرج — يجب إصلاحه قبل الاعتماد</h2>
@@ -49,7 +51,7 @@ renderPlaceholder(root, `تقييم متجر (#${storeId ? storeId.slice(0, 8) :
   <h2>💡 تحسين — اختياري</h2>
 
   <div class="info">
-    <strong>نص "تجريبي: admin / bareadmin1212" المطلوب في Section K.1 غائب من شاشة الدخول — قرار معلّق بالفعل وليس خطأ جديداً</strong>
+    <strong>نص "تجريبي: admin / [محجوبة]" المطلوب في Section K.1 غائب من شاشة الدخول — قرار معلّق بالفعل وليس خطأ جديداً</strong>
     <p><code>login.js</code> يعرض بدلاً منه "تواصل مع المدير للحصول على بيانات الدخول". <code>plan-phase-3-login-router.html</code> يطرح هذا صراحة كسؤال مفتوح لإبراهيم في قسم ملاحظات الراعي — إذاً هذا انحراف موثَّق وواعٍ عن Section K.1، بانتظار رد الراعي، وليس سهواً. أذكره هنا فقط للتأكيد أن القرار لا يزال معلّقاً في وقت هذه المراجعة.</p>
   </div>
 

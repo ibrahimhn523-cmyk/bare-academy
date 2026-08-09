@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تقرير Phase 7 — التلميع والنشر (Trader Event Evaluation Platform)</title>
+  <style>
+    body { font-family: Tajawal, Arial, sans-serif; max-width: 960px; margin: 40px auto; padding: 20px; direction: rtl; line-height: 1.6; }
+    h1 { color: #2D3651; border-bottom: 2px solid #D4AF37; padding-bottom: 10px; }
+    h2 { color: #2D3651; margin-top: 32px; }
+    h3 { color: #2D3651; margin-top: 22px; }
+    table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+    th, td { border: 1px solid #E6D9C6; padding: 8px 10px; text-align: right; font-size: 14px; vertical-align: top; }
+    th { background: #F5E6D3; color: #2D3651; }
+    code { background: #F5E6D3; padding: 1px 6px; border-radius: 4px; font-family: 'Courier New', monospace; }
+    pre { background: #2D3651; color: #F5E6D3; padding: 14px; border-radius: 10px; overflow-x: auto; direction: ltr; text-align: left; font-size: 13px; }
+    .status { background: #f5f5f5; padding: 14px 18px; border-radius: 8px; margin: 10px 0; }
+    .ok { color: #1A7A4A; font-weight: 700; }
+    .pending { color: #8F1A1D; font-weight: 700; }
+    .partial { color: #8B6914; font-weight: 700; }
+    .critical { background: #FDE8E8; border-right: 5px solid #8F1A1D; padding: 14px 18px; border-radius: 8px; margin: 12px 0; }
+    .fixed { background: #E5FFE5; border-right: 5px solid #008000; padding: 14px 18px; border-radius: 8px; margin: 12px 0; }
+    .warn { background: #FFF7E0; border-right: 5px solid #D4AF37; padding: 14px 18px; border-radius: 8px; margin: 12px 0; }
+    .notes { background: #FFF9E6; border: 2px dashed #D4AF37; padding: 20px; margin-top: 40px; border-radius: 8px; }
+    .notes h2 { color: #8B6914; margin-top: 0; }
+  </style>
+</head>
+<body>
+  <h1>تقرير Phase 7 — التلميع والنشر (Polish &amp; Deploy)</h1>
+  <p><strong>التاريخ:</strong> 2026-08-09 | <strong>المشروع:</strong> Trader Event Evaluation Platform | <strong>الحالة:</strong> آخر مرحلة من 7 — لا push بعد</p>
+
+  <div class="status">
+    <strong>خلاصة صادقة بجملة واحدة:</strong> الكود كامل ومكتوب لكل المراحل السبع، مراجَع بعمق (سطراً بسطر في نقاط الأمان الحرجة)، وتم اكتشاف وإصلاح تسريب فعلي لكلمة مرور admin في ملفَي مراجعة + في هذا السجل نفسه. لكن <strong>لا شيء اختُبِر حياً بعد</strong> — <code>trader-schema.sql</code> لم يُنفَّذ أبداً على Supabase الحقيقية، فلا يوجد جدول <code>trader_users</code> ولا <code>trader_criteria</code> على القاعدة الحية حتى الآن. كل بند في هذا التقرير يميّز بوضوح بين "الكود صحيح بالمراجعة" و"عمل فعلياً أمام إبراهيم".
+  </div>
+
+  <h2>١. الاكتشاف الحرج في هذه المرحلة — وكيف عُولج</h2>
+
+  <div class="critical">
+    <strong>🔴 تسريب فعلي لكلمة مرور admin — 3 مواضع، اثنان مُلتزَمان بالفعل محلياً بـ git</strong>
+    <p>عند فحص شامل (Grep على كامل شجرة المشروع) اكتُشف أن كلمة مرور admin الافتراضية كانت موجودة بالنص الصريح في:</p>
+    <ol>
+      <li><code>review-2026-08-05-phase-1.html</code> — في نصّي نتيجتين "🔴 حرج" (المفارقة: المراجعة التي حذّرت من التسريب كانت هي نفسها التسريب).</li>
+      <li><code>review-2026-08-05-phase-3.html</code> — في بند "💡 تحسين" يقتبس نص Section K.1 المرجعي.</li>
+      <li><code>pm-log.md</code> — السطر [20]، وهو بالمفارقة نفس السطر الذي يوثّق "التأكد أن كلمة المرور حُجبت من الملفات الأخرى".</li>
+    </ol>
+    <p>الثلاثة ملفات <strong>git-tracked</strong> وغير محمية بـ <code>.gitignore</code> (الذي يستثني فقط <code>trader-schema.sql</code> و<code>*.sql</code>). <code>pm-log.md</code> على الأرجح مُلتزَم فعلاً بمحتواه القديم ضمن الكومتات المحلية الخمس السابقة (لا أداة Bash لدي للتأكد بـ<code>git log -p</code> — يحتاج فحصاً يدوياً، انظر §٦).</p>
+  </div>
+
+  <div class="fixed">
+    <strong>✅ المعالجة</strong>
+    <p>استُبدلت القيمة الحرفية بـ <code>[محجوبة]</code> في الملفات الثلاثة، مع إضافة ملاحظة تحرير صريحة في كل ملف توضّح أن المعنى/القرار التاريخي لم يتغيّر — فقط حُذفت القيمة السرية. <strong>هذا لا يكفي وحده</strong>: إن كانت النسخة القديمة (بالقيمة المكشوفة) موجودة في تاريخ الكومتات المحلية الحالية، تعديل الملف الآن لا يمحوها من التاريخ. التوصية الموثَّقة في §٦ أدناه: فحص <code>git log -p pm-log.md</code> قبل أي push، والتفكير في تنظيف التاريخ (rebase/amend) طالما لم يحدث push بعد — هذه آخر فرصة سهلة.</p>
+  </div>
+
+  <div class="warn">
+    <strong>⚠️ اكتشاف إضافي (C2 من مراجعة reviewer الشاملة): كلمة مرور trader admin الافتراضية أصلاً ليست سرّاً</strong>
+    <p>القيمة المُستخدَمة كـ seed password لحساب <code>admin</code> في <code>trader-schema.sql</code> هي نفسها كلمة مرور <code>dashboard.html</code> القديمة، الموثَّقة والمنشورة أصلاً في <code>README.md</code> — وbare-academy موقع static بلا build step، فـ<code>README.md</code> يُخدَّم علناً عبر HTTP تماماً مثل أي صفحة HTML أخرى فور النشر. أي شخص يعرف رابط <code>bare-academy.vercel.app/README.md</code> يعرف كلمة مرور admin الافتراضية لمنصة trader، بغض النظر عن أي حجب لاحق في ملفات المراجعة.</p>
+    <p><strong>لم أعدّل README.md</strong> — خارج نطاق تكليف Phase 7 صراحةً (يخص مشروعاً/قراراً مختلفاً: تدوير كلمة مرور dashboard نفسها)، وهو قرار أوسع يحتاج موافقتك المباشرة. التوصية المسجَّلة في TRADER_NOTES.md §٢ ("يُنصَح بتغيير كلمة المرور فور أول دخول") <strong>يجب اعتبارها إلزامية لا اختيارية</strong> — القيمة الافتراضية غير سرية فعلياً من اليوم الأول.</p>
+  </div>
+
+  <h2>٢. ما تحقّق فعلياً في Phase 7 (بلا تعديل جديد مطلوب)</h2>
+  <ul>
+    <li><strong>sw.js:</strong> تأكيد قراءة مباشرة أن استثناء <code>/trader</code> و<code>/view</code> من cache-first (السطر 42، regex <code>/(?:dashboard|portal|trader|view)/</code>) لا يزال صحيحاً وفعّالاً — نفس الإصلاح المُنجَز في Phase 1، لا حاجة لتكراره.</li>
+    <li><strong>vercel.json:</strong> يحتوي فقط <code>rewrites</code> لـ <code>/trader/:path*</code> و<code>/view/:path*</code>. لم يُلمَس، ولم يُنشأ ملف جديد. مراجعة reviewer الشاملة أكّدت أن Vercel يخدم أي ملف مطابق فعلياً (index/dashboard/portal/leaderboard/tournament) قبل تطبيق أي rewrite — لا تصادم مع الموقع الحالي.</li>
+    <li><strong>لا لمس لـ index.html / dashboard.html / portal.html:</strong> مؤكَّد — لم يُقرأ أي منها للتعديل في هذه المرحلة.</li>
+    <li><strong>لا vercel.json جديد:</strong> مؤكَّد — الملف الموجود من Phase 1 لم يُعدَّل.</li>
+  </ul>
+
+  <h2>٣. مراجعة reviewer الشاملة النهائية (holistic)</h2>
+  <p>استُدعي وكيل <code>reviewer</code> لمراجعة عابرة للمراحل 1-6 مجتمعة (لا مرحلة Phase 7 فقط)، بأربعة محاور إلزامية: تسريب الأسرار عبر كل الشجرة، عزل المقيّمين الفعلي، مخاطرة الانحدار على الموقع الأصلي، وRLS الفعلية. التقرير الكامل في <code>review-2026-08-05-phase-7.html</code>. ملخص النتائج:</p>
+  <ul>
+    <li>🔴 تسريب كلمة المرور (معالَج في §١ أعلاه).</li>
+    <li>🔴 إعادة استخدام كلمة مرور مكشوفة أصلاً في README.md (موثَّق في §١ أعلاه، يحتاج فعلك).</li>
+    <li>⚠️ <code>dashboard.html.backup</code> (ملف untracked من مشروع منفصل تماماً — Google Sheets القديم) يحتوي أسراراً حقيقية (API key، سكربت باسورد) — لا علاقة بـtrader، لكن تنبيه سياقي لتفادي التقاطه سهواً بـ<code>git add .</code> عند تنفيذ commit trader القادم.</li>
+    <li>✅ عزل المقيّمين: تحقّق سطراً بسطر في <code>stores-list.js</code>، <code>rate.js</code>، <code>admin.js</code>، <code>view/board.js</code> — لا تسريب هوية/تقييم فردي لمقيّم آخر أو للعامة في أي مكان.</li>
+    <li>✅ RLS: الجداول الأربعة كلها <code>ENABLE ROW LEVEL SECURITY</code> قبل السياسات، permissive بالكامل كما هو موثَّق ومقبول (القرار ج) — لا جدول منسي.</li>
+    <li>✅ لا تصادم مسارات بين vercel.json/sw.js الجديدين وأي ملف من الموقع الحالي.</li>
+  </ul>
+
+  <h2>٤. حالة معايير القبول (Section N) — بصدق كامل</h2>
+  <p>الرمز <span class="ok">✅</span> = تحقّق فعلياً (كوداً أو ملفاً). <span class="partial">⏳</span> = الكود/الملف موجود وصحيح بالمراجعة، لكن يحتاج اختبارك اليدوي الحي (لأن <code>trader-schema.sql</code> لم يُنفَّذ بعد على Supabase — لا قاعدة بيانات حية للاختبار عليها). <span class="pending">❌</span> = لم يحدث إطلاقاً.</p>
+
+  <h3>N.1 — الإعداد</h3>
+  <table>
+    <tr><th>البند</th><th>الحالة</th><th>ملاحظة</th></tr>
+    <tr><td>الجداول الأربعة منشأة في Supabase بالـ schema الصحيح</td><td class="pending">❌</td><td>trader-schema.sql موجود ومراجَع، لم يُنفَّذ على DB حية بعد.</td></tr>
+    <tr><td>RLS مفعّلة بسياسات permissive (موثَّقة كمقايضة)</td><td class="pending">❌</td><td>صحيحة في نص السكربت (مؤكَّد بالمراجعة الشاملة)، لكن غير مطبَّقة فعلياً على DB حية.</td></tr>
+    <tr><td>بيانات إقلاع مُدرَجة (admin واحد + 4 معايير)</td><td class="pending">❌</td><td>نفس السبب — السكربت لم يُنفَّذ بعد.</td></tr>
+    <tr><td>vercel.json rewrites تعمل محلياً مع vercel dev</td><td class="pending">❌</td><td>لا أداة تشغيل خادم متاحة لي في هذا الاستدعاء.</td></tr>
+    <tr><td>security-check استُدعيت على الـ schema — لا نتائج حرجة</td><td class="partial">⏳</td><td>استُدعيت فعلاً (Phase 1)، ورفعت ملاحظة (كلمة مرور في ملف سيُلتزَم) — عولجت وقتها بـ.gitignore، لكن اتضح لاحقاً (Phase 7) أن المعالجة كانت غير كاملة (تسريب في ملفات المراجعة نفسها). التصنيف الدقيق: الفحص الأول لم يكن كافياً، الفحص الشامل في Phase 7 اكتشف الفجوة الحقيقية.</td></tr>
+  </table>
+
+  <h3>N.2 — تسجيل الدخول</h3>
+  <p>كل البنود: منطق الكود صحيح بمراجعة سطراً بسطر (خصوصاً عدم تفريغ كلمة المرور عند الخطأ، وroute guard المطابق لـ Section H.2)، لكن <strong>لا اختبار حي</strong> ممكن بلا DB. كل بنود N.2 (6 بنود): <span class="partial">⏳ يحتاج اختبارك اليدوي بعد تشغيل SQL</span>.</p>
+
+  <h3>N.3 — إدارة المعايير / N.4 — إدارة المستخدمين / N.5 — إدارة المتاجر</h3>
+  <p>CRUD كامل مكتوب ومراجَع لكل التبويبات الثلاثة (بما فيها حراسة حذف آخر admin/الحساب الحالي المضافة في Phase 4). كل البنود تحت N.3/N.4/N.5 (٤+٤+٥ بنود): <span class="partial">⏳ يحتاج اختبارك اليدوي بعد تشغيل SQL</span>.</p>
+
+  <h3>N.6 — قائمة متاجر المقيّم / N.7 — صفحة التقييم</h3>
+  <p>تدفق كامل (شارات الحالة، dirty state، مودال 3 خيارات، حذف بتأكيد) مكتوب ومراجَع مرتين (Phase 5 + المراجعة الشاملة في Phase 7 أعادت تأكيد عزل المقيّمين تحديداً). كل البنود تحت N.6/N.7 (٤+٩ بنود): <span class="partial">⏳ يحتاج اختبارك اليدوي بعد تشغيل SQL</span>.</p>
+
+  <h3>N.8 — لوحة الصدارة العامة</h3>
+  <p>تجميع/ترتيب/ميداليات/auto-refresh/مودال فائز — كلها مكتوبة، ومراجَعة سطراً بسطر لعدم تسريب هوية المقيّمين (Phase 6 + إعادة تأكيد Phase 7). كل البنود العشرة تحت N.8: <span class="partial">⏳ يحتاج اختبارك اليدوي بعد تشغيل SQL (بما فيها الاستجابة البصرية حتى 320px، التي تحتاج متصفحاً حقيقياً لا مراجعة كود)</span>.</p>
+
+  <h3>N.9 — البصري وإمكانية الوصول</h3>
+  <table>
+    <tr><th>البند</th><th>الحالة</th><th>ملاحظة</th></tr>
+    <tr><td>كل النص العربي RTL</td><td class="ok">✅</td><td>dir="rtl" lang="ar" مؤكَّد في كل الملفات (trader/index.html، view/index.html).</td></tr>
+    <tr><td>كل الأرقام المعروضة عربية-هندية</td><td class="ok">✅</td><td>toArabic/num مطبَّقة شاملة، مع استثناء واحد موثَّق بوضوح (كلمة المرور المولَّدة genPassword، لسبب وظيفي: مقارنة نصية عند الدخول).</td></tr>
+    <tr><td>الألوان مطابقة لأكواد الهكس المحدَّدة</td><td class="ok">✅</td><td>متغيرات CSS في styles.css/board.css مطابقة لـ Section I.1 حرفياً.</td></tr>
+    <tr><td>الخطوط تُحمَّل (Cairo + Noto Kufi Arabic)</td><td class="ok">✅</td><td>روابط Google Fonts في head كل صفحة، مطابقة لـ Section I.2.</td></tr>
+    <tr><td>حد أدنى لمساحة اللمس 44×44px</td><td class="ok">✅</td><td>مؤكَّد بالكود (styles.css: min-height/min-width: 44px على أزرار الدرجات والأزرار الرئيسية) — التأكيد البصري الحي يبقى مستحسناً لاحقاً.</td></tr>
+    <tr><td>line-height بين 1.45-1.65</td><td class="ok">✅</td><td>مؤكَّد عبر arabic-context في كل مرحلة لمست CSS.</td></tr>
+    <tr><td>لا letter-spacing على نص عربي</td><td class="ok">✅</td><td>نفس التأكيد أعلاه.</td></tr>
+    <tr><td>arabic-context استُدعيت على كل ملف واجهة — لا نتائج</td><td class="ok">✅</td><td>استُدعيت في كل مرحلة لمست HTML/CSS (1، 3، 4، 5، 6)، والنتائج القليلة (توسيط toast) عولجت فوراً.</td></tr>
+  </table>
+
+  <h3>N.10 — النشر</h3>
+  <table>
+    <tr><th>البند</th><th>الحالة</th><th>ملاحظة</th></tr>
+    <tr><td>vercel dev يشغّل المسارين بنجاح</td><td class="pending">❌</td><td>لا أداة تشغيل خادم في هذا الاستدعاء.</td></tr>
+    <tr><td>Push لـ main ينشر بنجاح</td><td class="pending">❌</td><td>لم يحدث أي push — بانتظار موافقتك الصريحة (§٦).</td></tr>
+    <tr><td>كل الروابط الحية الخمسة تعمل</td><td class="pending">❌</td><td>لا نشر حتى الآن، فلا روابط حية بعد.</td></tr>
+  </table>
+
+  <h3>N.11 — العملية (Process)</h3>
+  <table>
+    <tr><th>البند</th><th>الحالة</th><th>ملاحظة</th></tr>
+    <tr><td>كل مرحلة لها plan-phase-N-*.html</td><td class="partial">⏳ جزئي</td><td>Phase 1-6 لها (Phase 2-6 دمجت خطة+تقرير في ملف واحد بهذا الاسم، بطلبك الصريح لتسريع الوتيرة — موثَّق في TRADER_NOTES §٥). <strong>Phase 7 ليس لها ملف plan-phase-7 منفصل</strong> — تكليف هذه المرحلة طلب report-phase-7-polish.html فقط (مرحلة تحقق/تلميع لا بناء ميزة جديدة)، وهذا انحراف صريح عن N.11 الحرفي يستحق ذكره بصدق بدل التجاهل.</td></tr>
+    <tr><td>كل مرحلة لها report-phase-N-*.html</td><td class="partial">⏳ جزئي</td><td>Phase 1 وPhase 7 فقط لهما ملف بهذا الاسم الحرفي. Phase 2-6 التقرير مدمج داخل ملف plan-phase-N (نفس الملاحظة أعلاه).</td></tr>
+    <tr><td>كل مرحلة لها review-YYYY-MM-DD-phase-N.html</td><td class="ok">✅</td><td>السبعة كاملة الآن (phase-1 حتى phase-7) — هذا البند الوحيد المكتمل 100% حرفياً من N.11.</td></tr>
+    <tr><td>pm-log.md موجود ويغطي كل خطوة</td><td class="ok">✅</td><td>يغطي 73 خطوة عبر 7 مراحل، بما فيها تصحيحان ذاتيان موثَّقان (فقدان محتوى Phase 4، تسريب كلمة مرور Phase 7).</td></tr>
+    <tr><td>ملاحظات الراعي مراجَعة ومعالَجة على كل HTML</td><td class="pending">❌</td><td>فحصتُ كل الملفات (12 ملفاً بها قسم ملاحظات الراعي) — كلها لا تزال بالنص الافتراضي غير المعبَّأ. لم يكتب إبراهيم أي ملاحظة صريحة في أي ملف حتى الآن (الموافقات وصلت عبر رسائل منقولة من الجلسة المنسِّقة، لا كسطور مكتوبة في الملفات نفسها).</td></tr>
+  </table>
+
+  <h2>٥. ملفات التوثيق المُنتَجة في هذه المرحلة</h2>
+  <table>
+    <tr><th>الملف</th><th>الحالة</th></tr>
+    <tr><td><code>report-phase-7-polish.html</code></td><td>✅ هذا الملف</td></tr>
+    <tr><td><code>review-2026-08-05-phase-7.html</code></td><td>✅ من محتوى reviewer النصي</td></tr>
+    <tr><td><code>review-2026-08-05-phase-1.html</code></td><td>✅ مُعدَّل (حجب كلمة مرور)</td></tr>
+    <tr><td><code>review-2026-08-05-phase-3.html</code></td><td>✅ مُعدَّل (حجب كلمة مرور)</td></tr>
+    <tr><td><code>pm-log.md</code></td><td>✅ مُحدَّث (73 خطوة، تصحيح السطر [20])</td></tr>
+    <tr><td><code>TRADER_NOTES.md</code></td><td>✅ تحقّق فقط — كان دقيقاً ومكتملاً مسبقاً حسب Section P، لا تعديل مطلوب</td></tr>
+  </table>
+
+  <h2>٦. ما تبقى — يدوياً بيدك أو بيد الجلسة المنسِّقة (بالترتيب)</h2>
+  <ol>
+    <li><strong>حرج/عاجل:</strong> افحص <code>git log -p pm-log.md</code> (أو أي أداة git) لمعرفة إن كانت النسخة القديمة المسرَّبة موجودة في تاريخ الكومتات المحلية الخمس الحالية. إن كانت كذلك، فكّر في تنظيف التاريخ (<code>git rebase -i</code> أو <code>commit --amend</code> للكوميت المعني) <strong>قبل</strong> أي push — بعد push يصبح التنظيف أصعب بكثير (يتطلب force-push وتنسيقاً مع أي متعاون آخر، وليس لديك أي حتى الآن حسب معلوماتي).</li>
+    <li>تشغيل <code>trader-schema.sql</code> يدوياً في Supabase Studio → SQL Editor (الملف محلي على جهازك، مستثنى من git عمداً).</li>
+    <li>تغيير كلمة مرور <code>admin</code> فور أول تسجيل دخول ناجح — <strong>أصبح إلزامياً</strong> بعد اكتشاف C2 (القيمة الافتراضية منشورة أصلاً في README.md لمشروع مختلف).</li>
+    <li>اختبار محلي أو Preview Deployment فعلي (<code>vercel dev</code> أو رابط معاينة) لتغطية كل بنود N.2-N.8 الموسومة ⏳ أعلاه — لا بديل عن اختبارك اليدوي لأن لا أداة تشغيل خادم/متصفح متاحة لهذه الجلسة.</li>
+    <li>موافقتك الصريحة على push لـ main — لم يحدث أي push حتى الآن، طوال المشروع بالكامل من Phase 1 إلى Phase 7.</li>
+    <li>اختياري: عند تنفيذ <code>git add</code> القادم، انتبه لعدم التقاط <code>dashboard.html.backup</code> سهواً (يحتوي أسراراً من مشروع Google Sheets القديم غير المتعلق بـtrader — لاحظه reviewer كتنبيه سياقي فقط).</li>
+  </ol>
+
+  <h2>٧. أوامر git المقترحة (لم تُنفَّذ — لا أداة Bash لدي)</h2>
+  <pre><code>git status
+git add trader/ view/ vercel.json sw.js .gitignore TRADER_NOTES.md pm-log.md ^
+  report-phase-7-polish.html review-2026-08-05-phase-7.html ^
+  review-2026-08-05-phase-1.html review-2026-08-05-phase-3.html
+git commit -m "chore(trader): polish and cross-browser fixes"</code></pre>
+  <p><em>لاحظ: هذا commit محلي فقط، لا يتضمن push. الأمر مكتوب لنظام PowerShell (استخدم ^ لفواصل الأسطر أو اكتبه سطراً واحداً). تأكد أن <code>git status</code> لا يضيف <code>trader-schema.sql</code> أو <code>dashboard.html.backup</code> أو <code>index.html.bak</code> أو <code>bareeq-tournaments-exploration.md</code> — غير متعلقة بهذه المرحلة.</em></p>
+
+  <div class="notes">
+    <h2>📝 ملاحظات الراعي</h2>
+    <p style="color: #8B6914; font-style: italic;">اكتب هنا ملاحظاتك وتعديلاتك مباشرة في هذا الملف — تحديداً: هل تريد فحص/تنظيف تاريخ git قبل أي commit جديد؟ وهل توافق على commit محلي الآن (بدون push) بالرسالة المقترحة أعلاه؟</p>
+    <!-- إبراهيم يكتب هنا -->
+  </div>
+</body>
+</html>
