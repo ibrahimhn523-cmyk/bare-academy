@@ -1,0 +1,7 @@
+plan-phase-*.html
+report-phase-*.html
+review-2026-*.html
+*.md
+*.sql
+*.backup
+*.bak

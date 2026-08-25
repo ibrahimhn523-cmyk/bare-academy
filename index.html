@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1e293b">
-    <title>أكاديمية بارع - البرنامج الصيفي 1448هـ</title>
+    <title>أكاديمية بارع - برنامج الفصل الدراسي الأول 1448هـ</title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
@@ -307,415 +307,549 @@
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.05ms !important; }
         }
+    
+        /* ===== إضافات الفصل الدراسي الأول ===== */
+        .period-grid { display:grid; grid-template-columns:1fr; gap:25px; margin-bottom:50px; }
+        @media (min-width:769px){ .period-grid { grid-template-columns:repeat(3,1fr); } }
+        .period-card {
+            background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+            padding:30px 25px; text-align:center; border-top:4px solid var(--secondary);
+            display:flex; flex-direction:column; transition:var(--transition); position:relative;
+        }
+        .period-card:hover { transform:translateY(-10px); box-shadow:0 15px 30px rgba(0,0,0,.1); }
+        .period-card.featured { border-top-color:var(--primary); }
+        .period-card .pc-tag {
+            position:absolute; top:-14px; right:50%; transform:translateX(50%);
+            background:var(--primary); color:var(--secondary); font-size:.8rem; font-weight:bold;
+            padding:4px 18px; border-radius:20px; border:2px solid var(--secondary); white-space:nowrap;
+        }
+        .period-card h3 { font-size:1.5rem; color:var(--primary); margin-bottom:6px; font-weight:bold; }
+        .period-card .pc-meta { color:var(--text-light); font-size:1rem; margin-bottom:18px; font-weight:500; }
+        .period-card .pc-lines { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+        .period-card .pc-lines .row { display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.05rem; color:var(--text-main); }
+        .period-card .pc-lines .row i { color:var(--secondary); width:20px; }
+        .period-card .pc-price { margin-top:auto; padding-top:16px; border-top:1px dashed #e2e8f0; }
+        .period-card .pc-price .amount { font-size:2rem; font-weight:bold; color:var(--primary); }
+        .period-card .pc-price .amount span { font-size:1rem; font-weight:normal; color:var(--text-light); }
+        .period-card .pc-early { margin-top:8px; font-size:1rem; color:var(--text-main); }
+        .period-card .pc-early b { color:var(--secondary); font-weight:bold; }
+        .period-card .pc-early small { display:block; color:var(--text-light); font-size:.82rem; margin-top:1px; }
+        .period-card .cta-inner {
+            background:linear-gradient(135deg,var(--secondary) 0%,#B8942A 100%);
+            color:var(--primary); border:none; padding:16px 34px; font-size:1.25rem; font-weight:bold;
+            font-family:inherit; border-radius:50px; cursor:pointer;
+            box-shadow:0 10px 20px rgba(212,175,55,.3);
+            transition:transform .12s ease, box-shadow .3s ease;
+            display:inline-flex; align-items:center; justify-content:center; gap:10px;
+            margin:22px auto 0;
+        }
+        .period-card .cta-inner:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 15px 25px rgba(212,175,55,.4); }
+        .period-card .cta-inner:active { transform:scale(.97); }
+
+        /* بطاقة اختيار الفترة داخل النافذة */
+        .choice-card .cc-dates { color:var(--text-light); font-size:.92rem; margin-bottom:2px; }
+        .choice-card .cc-meta  { color:var(--text-light); font-size:.88rem; margin-bottom:12px; }
+        .choice-card .cc-early { margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0; font-size:.95rem; color:var(--text-main); }
+        .choice-card .cc-early b { color:var(--secondary); }
+        .choice-card .cc-early small { display:block; color:var(--text-light); font-size:.78rem; }
+
+        /* كتلة الابن */
+        .kid-block { background:#f9fafb; border:1.5px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; }
+        .kid-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .kid-head .kid-title { display:flex; align-items:center; gap:9px; font-weight:bold; color:var(--primary); font-size:1.02rem; }
+        .kid-head .kid-num {
+            width:26px; height:26px; border-radius:8px; background:var(--primary); color:var(--secondary);
+            display:flex; align-items:center; justify-content:center; font-size:.85rem;
+        }
+        .kid-head .kid-remove { background:none; border:none; color:#ef4444; font-family:inherit; font-size:.88rem; cursor:pointer; padding:4px; }
+        .btn-add-kid {
+            width:100%; padding:14px; border:2px dashed var(--secondary); border-radius:12px;
+            background:transparent; color:var(--primary); font-family:inherit; font-size:1rem; font-weight:bold;
+            cursor:pointer; margin-bottom:20px; transition:background .2s;
+        }
+        .btn-add-kid:hover { background:#fffdf5; }
+
+        .pay-notice { background:#fffdf5; border-right:4px solid var(--secondary); border-radius:8px; padding:15px 17px; margin-bottom:18px; }
+        .pay-notice b { display:block; color:var(--primary); font-size:1rem; margin-bottom:3px; }
+        .pay-notice span { color:var(--text-light); font-size:.9rem; }
+
+        .agree-row .terms-link { color:var(--secondary); font-weight:bold; text-decoration:underline; cursor:pointer; }
+
+        /* نافذة الشروط */
+        .terms-modal { position:fixed; inset:0; z-index:2000; background:rgba(15,23,42,.65); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; }
+        .terms-modal.active { display:flex; }
+        .terms-sheet { background:var(--surface); width:100%; max-width:620px; max-height:86vh; overflow-y:auto; border-radius:24px 24px 0 0; padding:12px 22px calc(28px + var(--safe-bottom)); }
+        @media (min-width:769px){ .terms-sheet { border-radius:var(--radius); max-height:80vh; } }
+        .terms-sheet .grabber { width:44px; height:5px; background:#cbd5e1; border-radius:3px; margin:0 auto 18px; }
+        .terms-sheet h3 { color:var(--primary); font-size:1.3rem; margin-bottom:18px; font-weight:bold; }
+        .terms-sheet ol { list-style:none; counter-reset:tc; }
+        .terms-sheet li { counter-increment:tc; position:relative; padding-right:34px; margin-bottom:15px; font-size:.92rem; color:var(--text-main); line-height:1.75; }
+        .terms-sheet li::before {
+            content:counter(tc); position:absolute; right:0; top:3px; width:24px; height:24px;
+            border-radius:8px; background:var(--primary); color:var(--secondary);
+            font-size:.75rem; font-weight:bold; display:flex; align-items:center; justify-content:center;
+        }
+        .btn-close-terms { width:100%; margin-top:20px; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:transparent; color:var(--text-light); font-family:inherit; font-size:1rem; cursor:pointer; }
+        .btn-close-terms:hover { border-color:var(--primary); color:var(--primary); }
+
+        /* ملخص الشكر */
+        .ty-summary { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:4px 16px; text-align:right; margin-bottom:20px; }
+        .ty-summary .r { padding:12px 0; border-bottom:1px solid #f1f5f9; }
+        .ty-summary .r:last-child { border-bottom:none; }
+        .ty-summary .r b { display:block; color:var(--primary); font-size:1rem; }
+        .ty-summary .r span { color:var(--text-light); font-size:.86rem; }
+        .btn-wa {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            background:#25D366; color:#fff; text-decoration:none; padding:16px; border-radius:12px;
+            font-weight:bold; font-size:1.1rem; margin-bottom:12px; box-shadow:0 8px 20px rgba(37,211,102,.3);
+        }
+        .btn-wa i { font-size:1.3rem; }
+        .btn-back-home { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:transparent; color:var(--text-light); font-family:inherit; font-size:1rem; cursor:pointer; }
+
     </style>
 </head>
 <body>
 
-    <!-- ========== Hero ========== -->
-    <header class="hero">
-        <div class="hero-content">
-            <img src="image/bare-logo.png" alt="شعار أكاديمية بارع" class="fade-in"
-                 style="width:140px;height:auto;margin:0 auto 18px;display:block;animation-delay:.05s;">
-            <h1 class="fade-in" style="animation-delay:.1s;">البرنامج الصيفي ١٤٤٨هـ</h1>
-            <p  class="subtitle fade-in" style="animation-delay:.3s;">شخصية، مهارة، قِيم، في بيئة آمنة</p>
-            <div class="activities-bar fade-in" style="animation-delay:.45s;">
-                <span class="activity-chip"><i class="fas fa-trophy"></i> بطولات رياضية</span>
-                <span class="activity-chip"><i class="fas fa-brain"></i> مسابقات ثقافية</span>
-                <span class="activity-chip"><i class="fas fa-mosque"></i> دوحات إيمانية وقيم</span>
-                <span class="activity-chip"><i class="fas fa-star"></i> مهرجانات</span>
-                <span class="activity-chip"><i class="fas fa-person-swimming"></i> مسبح</span>
-            </div>
+<!-- ========== Hero ========== -->
+<section class="hero">
+    <div class="hero-content">
+        <img src="image/bare-logo.png" alt="شعار أكاديمية بارع" class="fade-in"
+             style="width:110px;height:auto;margin:0 auto 18px;display:block;">
+        <h1 class="fade-in">برنامج بارع</h1>
+        <p class="subtitle fade-in" style="animation-delay:.15s">الفصل الدراسي الأول 1448 هـ · شخصية، مهارة، قِيم، في بيئة آمنة</p>
+        <div class="activities-bar fade-in" style="animation-delay:.3s">
+            <span class="activity-chip"><i class="fas fa-futbol"></i> بطولات رياضية</span>
+            <span class="activity-chip"><i class="fas fa-lightbulb"></i> مسابقات ثقافية</span>
+            <span class="activity-chip"><i class="fas fa-book-open"></i> قيم إيمانية</span>
+            <span class="activity-chip"><i class="fas fa-water"></i> ألعاب مائية</span>
+            <span class="activity-chip"><i class="fas fa-campground"></i> مخيم بارع للمتميزين</span>
         </div>
-    </header>
+    </div>
+</section>
 
-    <main class="container">
+<div class="container">
 
-        <!-- بطاقات معلومات عامة -->
-        <div class="info-grid fade-in" style="animation-delay:.6s;">
-            <div class="info-card"><i class="far fa-calendar-alt info-icon"></i><h3>البدايــة</h3><p>الأحد ١٣ محرم ١٤٤٨هـ</p></div>
-            <div class="info-card"><i class="far fa-clock info-icon"></i><h3>الأيام</h3><p>الأحد إلى الأربعاء</p></div>
-            <div class="info-card"><i class="fas fa-location-dot info-icon"></i><h3>الموقع</h3><p>حي الربوة الشرقية</p></div>
+    <!-- بطاقات المعلومات -->
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-calendar-days"></i></div>
+            <h3>مدة البرنامج</h3>
+            <p>16 أسبوعاً · 64 يوماً</p>
         </div>
-
-        <!-- بطاقتا الفئتين -->
-        <div class="tracks-grid fade-in" style="animation-delay:.7s;">
-            <div class="track-card">
-                <i class="fas fa-child track-icon"></i>
-                <h3>فئة الابتدائي</h3>
-                <p class="track-ages">من أولى ابتدائي إلى سادس ابتدائي</p>
-                <div class="track-meta">
-                    <div class="row"><i class="fas fa-calendar-week"></i> المدة: ٧ أسابيع</div>
-                    <div class="row"><i class="far fa-clock"></i> ٥:٣٠ م — ٨:٣٠ م</div>
-                </div>
-                <div class="track-price"><span class="amount">٦٥٠ <span>ريال</span></span></div>
-            </div>
-            <div class="track-card">
-                <i class="fas fa-user-graduate track-icon"></i>
-                <h3>فئة المتوسط</h3>
-                <p class="track-ages">من أول متوسط إلى أول ثانوي</p>
-                <div class="track-meta">
-                    <div class="row"><i class="fas fa-calendar-week"></i> المدة: ٥ أسابيع</div>
-                    <div class="row"><i class="far fa-clock"></i> ٩:٠٠ م — ١٢:٠٠ منتصف الليل</div>
-                </div>
-                <div class="track-price"><span class="amount">٤٥٠ <span>ريال</span></span></div>
-            </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-clock"></i></div>
+            <h3>الوقت</h3>
+            <p>4:45 – 7:45 م</p>
         </div>
-
-        <!-- زر التسجيل -->
-        <div class="cta-wrapper fade-in" style="animation-delay:.85s;">
-            <button class="cta-button" onclick="openSheet()">
-                <i class="fas fa-pen-to-square"></i>
-                <span>سجّــل الآن</span>
-            </button>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-calendar-week"></i></div>
+            <h3>أيام البرنامج</h3>
+            <p>الأحد – الأربعاء</p>
         </div>
-
-        <!-- الخريطة والتواصل -->
-        <section class="contact-grid fade-in" style="animation-delay:1s;">
-            <div class="map-container">
-                <iframe src="https://maps.google.com/maps?q=أكاديمية%20بارع,%20بريدة&t=&z=15&ie=UTF8&iwloc=&output=embed"
-                        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            </div>
-            <div class="social-container">
-                <h3>نحن هـــنا</h3>
-                <p class="phone">0509076627</p>
-                <div class="social-icons">
-                    <a href="https://wa.me/966509076627"  target="_blank" class="social-icon" title="واتساب"><i class="fab fa-whatsapp"></i></a>
-                    <a href="https://snapchat.com/t/wUnvkgzt" target="_blank" class="social-icon" title="سناب شات"><i class="fab fa-snapchat-ghost"></i></a>
-                    <a href="https://www.tiktok.com/@bare.ac?is_from_webapp=1&sender_device=pc" target="_blank" class="social-icon" title="تيك توك"><i class="fab fa-tiktok"></i></a>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- ========== Bottom Sheet التسجيل ========== -->
-    <div id="sheetOverlay" class="sheet-overlay" onclick="closeSheet()"></div>
-    <div id="sheet" class="sheet" role="dialog" aria-modal="true" aria-label="نموذج التسجيل">
-        <div class="sheet-grabber" id="grabber"></div>
-        <div class="sheet-header">
-            <button class="sheet-back" id="sheetBack" onclick="goToChoose()" aria-label="رجوع"><i class="fas fa-arrow-right"></i></button>
-            <div class="sheet-title" id="sheetTitle">اختر مسار التسجيل</div>
-            <button class="sheet-close" onclick="closeSheet()" aria-label="إغلاق"><i class="fas fa-times"></i></button>
-        </div>
-
-        <div class="sheet-viewport">
-            <div class="sheet-track" id="sheetTrack">
-
-                <!-- شاشة ١: اختيار المسار -->
-                <div class="sheet-screen" id="screenChoose">
-                    <p class="choose-intro">اختر الفئة المناسبة لإكمال التسجيل</p>
-
-                    <div class="choice-card" data-track="ابتدائي" onclick="chooseTrack(this,'ابتدائي')">
-                        <i class="fas fa-child choice-icon"></i>
-                        <h3>فئة الابتدائي</h3>
-                        <p class="ages">أولى ابتدائي → سادس ابتدائي</p>
-                        <div class="meta-line">
-                            <span><i class="fas fa-calendar-week"></i> ٧ أسابيع</span>
-                            <span><i class="far fa-clock"></i> ٥:٣٠–٨:٣٠ م</span>
-                        </div>
-                        <div class="choice-price">٦٥٠ <span>ريال</span></div>
-                    </div>
-
-                    <div class="choice-card" data-track="متوسط" onclick="chooseTrack(this,'متوسط')">
-                        <i class="fas fa-user-graduate choice-icon"></i>
-                        <h3>فئة المتوسط</h3>
-                        <p class="ages">أول متوسط → أول ثانوي</p>
-                        <div class="meta-line">
-                            <span><i class="fas fa-calendar-week"></i> ٥ أسابيع</span>
-                            <span><i class="far fa-clock"></i> ٩:٠٠–١٢:٠٠</span>
-                        </div>
-                        <div class="choice-price">٤٥٠ <span>ريال</span></div>
-                    </div>
-                </div>
-
-                <!-- شاشة ٢: النموذج -->
-                <div class="sheet-screen" id="screenForm">
-                    <div class="track-badge">
-                        <div>
-                            <div class="tb-name" id="tbName">—</div>
-                            <div class="tb-meta" id="tbMeta">—</div>
-                        </div>
-                        <div class="tb-price" id="tbPrice">—</div>
-                    </div>
-
-                    <form id="registrationForm" novalidate>
-                        <div class="form-group">
-                            <label for="fullName">الاسم الثلاثي <span style="color:red;">*</span></label>
-                            <input type="text" id="fullName" name="fullName" autocomplete="name">
-                            <div class="error-msg" id="fullNameError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="phone">رقم جوال ولي الأمر <span style="color:red;">*</span></label>
-                            <input type="tel" id="phone" name="phone" placeholder="05xxxxxxxxx" autocomplete="tel" inputmode="numeric">
-                            <div class="error-msg" id="phoneError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="category">المرحلة الدراسية <span style="color:red;">*</span></label>
-                            <select id="category" name="category">
-                                <option value="">-- اختر المرحلة --</option>
-                            </select>
-                            <div class="error-msg" id="categoryError"></div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>نوع المشترك <span style="color:red;">*</span></label>
-                            <div class="seg-group">
-                                <button type="button" class="seg-btn" data-sub="جديد" onclick="chooseSub(this,'جديد')">مشترك جديد</button>
-                                <button type="button" class="seg-btn" data-sub="سابق" onclick="chooseSub(this,'سابق')">مشترك سابق</button>
-                            </div>
-                            <div class="error-msg" id="subError"></div>
-                        </div>
-
-                        <div class="terms-section">
-                            <h3>⚠️ تنبيهات وشروط مهمة</h3>
-                            <ul class="terms-list">
-                                <li>تحتفظ الأكاديمية بحق تصوير المشترك وتوثيق الأنشطة من خلال الصور والفيديوهات، واستخدامها في النشر والترويج عبر وسائل التواصل الاجتماعي والمواد التسويقية، دون مسؤولية قانونية.</li>
-                                <li>نبذل قصارى جهدنا لضمان سلامة طلابنا، لكننا نتمنى تفهمكم أن الأكاديمية غير مسؤولة عن أي إصابات قد تحدث.</li>
-                                <li>يجب على ولي الأمر الإفصاح الكامل عن أي مشاكل صحية أو حالات طبية لدى الطالب لضمان سلامته أثناء البرنامج.</li>
-                                <li>نرجو الالتزام بأوقات البرنامج المحددة. الأكاديمية غير مسؤولة عن الطالب خارج هذه الأوقات.</li>
-                                <li>تحتفظ الأكاديمية بحق استبعاد أي طالب في حالات المخالفة المتكررة.</li>
-                            </ul>
-                            <div class="agree-row">
-                                <input type="checkbox" id="agreeAll" name="agreeAll">
-                                <label for="agreeAll">أوافق على جميع الشروط والتنبيهات المذكورة أعلاه</label>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- زر الإرسال المثبّت (يظهر في شاشة النموذج فقط) -->
-        <div class="sheet-footer" id="sheetFooter" style="display:none;">
-            <button type="button" class="btn-submit" id="submitBtn" onclick="submitForm()">
-                <span class="spinner"></span>
-                <span class="btn-label">أتمم التسجيل</span>
-            </button>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-location-dot"></i></div>
+            <h3>المقر</h3>
+            <p>حي الربوة الشرقية</p>
         </div>
     </div>
 
-    <!-- ========== رسالة الشكر ========== -->
-    <div id="thankYouMessage">
-        <div class="thankyou-card">
-            <img src="image/bare-logo-blue.png" alt="أكاديمية بارع" class="thankyou-logo">
-            <h2>شكراً لاشتراكك في أكاديمية بارع 🎉</h2>
-            <p>تم استلام بيانات التسجيل.</p>
-            <div class="thankyou-progress">
-                <div class="thankyou-progress-bar" id="progressBar"></div>
+    <!-- الفترات -->
+    <h2 class="section-title">مدد الاشتراك</h2>
+    <div class="period-grid" id="periodGrid"></div>
+
+    <p style="text-align:center;color:var(--text-light);margin:-20px 0 50px;font-size:1.05rem;">
+        من أولى ابتدائي إلى ثالث متوسط · الأحد إلى الأربعاء
+    </p>
+
+    <!-- التواصل -->
+    <h2 class="section-title">موقعنا وتواصلنا</h2>
+    <div class="contact-grid">
+        <div class="map-container">
+            <iframe src="https://maps.google.com/maps?q=أكاديمية%20بارع,%20بريدة&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    loading="lazy" title="موقع الأكاديمية"></iframe>
+        </div>
+        <div class="social-container">
+            <h3>أكاديمية بارع</h3>
+            <div class="phone">0509076627</div>
+            <div class="phone">حي الربوة الشرقية — بريدة</div>
+            <div class="social-icons">
+                <a href="https://wa.me/966509076627" target="_blank" rel="noopener" class="social-icon" title="واتساب"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://snapchat.com/t/wUnvkgzt" target="_blank" rel="noopener" class="social-icon" title="سناب شات"><i class="fab fa-snapchat-ghost"></i></a>
+                <a href="https://www.tiktok.com/@bare.ac" target="_blank" rel="noopener" class="social-icon" title="تيك توك"><i class="fab fa-tiktok"></i></a>
             </div>
         </div>
     </div>
 
-    <footer><p></p></footer>
+</div>
 
-    <!-- ========== JavaScript ========== -->
-    <script>
-        const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+<footer>جميع الحقوق محفوظة — أكاديمية بارع 1448 هـ</footer>
 
-        // ===== بيانات المسارات =====
-        const TRACKS = {
-            'ابتدائي': {
-                name: 'فئة الابتدائي',
-                meta: '٧ أسابيع · ٥:٣٠–٨:٣٠ م',
-                price: '٦٥٠ ريال',
-                grades: ['أولى ابتدائي','ثانية ابتدائي','ثالثة ابتدائي','رابع ابتدائي','خامس ابتدائي','سادس ابتدائي']
-            },
-            'متوسط': {
-                name: 'فئة المتوسط',
-                meta: '٥ أسابيع · ٩:٠٠–١٢:٠٠',
-                price: '٤٥٠ ريال',
-                grades: ['أول متوسط','ثاني متوسط','ثالث متوسط','أول ثانوي']
-            }
-        };
+<!-- ========== نافذة التسجيل ========== -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
 
-        let selectedTrack = null;
-        let selectedSub   = null;
+<div class="sheet" id="sheet">
+    <div class="sheet-grabber"></div>
 
-        // ===== فتح / إغلاق الورقة =====
-        function openSheet() {
-            haptic(8);
-            resetSheet();
-            document.getElementById('sheetOverlay').classList.add('active');
-            document.getElementById('sheet').classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-        function closeSheet() {
-            document.getElementById('sheetOverlay').classList.remove('active');
-            document.getElementById('sheet').classList.remove('active');
-            document.body.style.overflow = '';
-        }
-        function resetSheet() {
-            selectedTrack = null; selectedSub = null;
-            goToChoose();
-            document.getElementById('registrationForm').reset();
-            document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
-            document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-            clearErrors();
-        }
+    <div class="sheet-header">
+        <button class="sheet-back" id="sheetBack" onclick="goChoose()" aria-label="رجوع"><i class="fas fa-arrow-right"></i></button>
+        <div class="sheet-title" id="sheetTitle">اختر مدة الاشتراك</div>
+        <button class="sheet-close" onclick="closeSheet()" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+    </div>
 
-        // ===== التنقّل بين الشاشتين =====
-        function goToForm() {
-            document.getElementById('sheetTrack').classList.add('show-form');
-            document.getElementById('sheetBack').classList.add('show');
-            document.getElementById('sheetTitle').textContent = 'بيانات التسجيل';
-            document.getElementById('sheetFooter').style.display = 'block';
-        }
-        function goToChoose() {
-            document.getElementById('sheetTrack').classList.remove('show-form');
-            document.getElementById('sheetBack').classList.remove('show');
-            document.getElementById('sheetTitle').textContent = 'اختر مسار التسجيل';
-            document.getElementById('sheetFooter').style.display = 'none';
-        }
+    <div class="sheet-viewport">
+        <div class="sheet-track" id="sheetTrack">
 
-        // ===== اختيار المسار =====
-        function chooseTrack(card, track) {
-            haptic(12);
-            spawnRipple(card, event);
-            document.querySelectorAll('.choice-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            selectedTrack = track;
+            <!-- شاشة الاختيار -->
+            <div class="sheet-screen" id="screenChoose">
+                <p class="choose-intro">اختر مدة الاشتراك — يمكنك تعديلها لكل ابن في الخطوة التالية.</p>
+                <div id="choiceCards"></div>
+            </div>
 
-            const t = TRACKS[track];
-            document.getElementById('tbName').textContent  = t.name;
-            document.getElementById('tbMeta').textContent  = t.meta;
-            document.getElementById('tbPrice').textContent = t.price;
+            <!-- شاشة النموذج -->
+            <div class="sheet-screen" id="screenForm">
+                <div class="track-badge">
+                    <div>
+                        <div class="tb-name" id="tbName">—</div>
+                        <div class="tb-meta" id="tbMeta">—</div>
+                    </div>
+                    <div class="tb-price" id="tbPrice">—</div>
+                </div>
 
-            const sel = document.getElementById('category');
-            sel.innerHTML = '<option value="">-- اختر المرحلة --</option>';
-            t.grades.forEach(g => {
-                const o = document.createElement('option');
-                o.value = g; o.textContent = g; sel.appendChild(o);
-            });
+                <form id="regForm" novalidate>
 
-            setTimeout(goToForm, 180);
-        }
+                    <div class="form-group">
+                        <label for="fatherName">اسم الأب</label>
+                        <input type="text" id="fatherName" autocomplete="off">
+                        <div class="error-msg">مطلوب</div>
+                    </div>
 
-        // ===== اختيار نوع المشترك =====
-        function chooseSub(btn, sub) {
-            haptic(8);
-            document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            selectedSub = sub;
-            document.getElementById('subError').classList.remove('show');
-        }
+                    <div class="form-group">
+                        <label for="familyName">العائلة</label>
+                        <input type="text" id="familyName" autocomplete="family-name">
+                        <div class="error-msg">مطلوب</div>
+                    </div>
 
-        // ===== موجة ذهبية =====
-        function spawnRipple(el, ev) {
-            try {
-                const rect = el.getBoundingClientRect();
-                const r = document.createElement('span');
-                r.className = 'ripple';
-                const size = Math.max(rect.width, rect.height);
-                r.style.width = r.style.height = size + 'px';
-                const x = (ev && ev.clientX ? ev.clientX : rect.left + rect.width/2) - rect.left - size/2;
-                const y = (ev && ev.clientY ? ev.clientY : rect.top + rect.height/2) - rect.top - size/2;
-                r.style.left = x + 'px'; r.style.top = y + 'px';
-                el.appendChild(r);
-                setTimeout(() => r.remove(), 600);
-            } catch(e) {}
-        }
+                    <div class="form-group">
+                        <label for="guardianPhone">جوال ولي الأمر</label>
+                        <input type="tel" id="guardianPhone" inputmode="numeric" placeholder="05XXXXXXXX" maxlength="10">
+                        <div class="error-msg">يبدأ بـ 05 ويتكوّن من 10 أرقام</div>
+                    </div>
 
-        // ===== اهتزازة =====
-        function haptic(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e){} }
+                    <div class="form-group">
+                        <label for="altPhone">جوال إضافي <span style="color:var(--text-light);font-weight:normal;font-size:.9em">— اختياري</span></label>
+                        <input type="tel" id="altPhone" inputmode="numeric" placeholder="05XXXXXXXX" maxlength="10">
+                        <div class="error-msg">يبدأ بـ 05 ويتكوّن من 10 أرقام</div>
+                    </div>
 
-        // ===== التحقق =====
-        function validateForm() {
-            let valid = true; clearErrors();
-            const fullName = document.getElementById('fullName').value.trim();
-            if (fullName.length < 5) { showError('fullNameError','الرجاء إدخال اسم ثلاثي صحيح (5 أحرف على الأقل)'); valid = false; }
-            const phone = document.getElementById('phone').value.trim();
-            if (!/^05\d{8}$/.test(phone)) { showError('phoneError','الرجاء إدخال رقم جوال صحيح (05xxxxxxxxx)'); valid = false; }
-            if (!document.getElementById('category').value) { showError('categoryError','الرجاء اختيار المرحلة الدراسية'); valid = false; }
-            if (!selectedSub) { showError('subError','الرجاء تحديد نوع المشترك'); valid = false; }
-            if (!document.getElementById('agreeAll').checked) { alert('يجب الموافقة على الشروط والتنبيهات للمتابعة'); valid = false; }
-            return valid;
-        }
-        function showError(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.classList.add('show'); }
-        function clearErrors(){ document.querySelectorAll('.error-msg').forEach(el=>{el.classList.remove('show');el.textContent='';}); }
+                    <div id="kidsWrap"></div>
+                    <button type="button" class="btn-add-kid" onclick="addKid()">+ إضافة ابن آخر</button>
 
-        // ===== الإرسال =====
-        async function submitForm() {
-            if (!validateForm()) return;
-            const btn = document.getElementById('submitBtn');
-            btn.disabled = true; btn.classList.add('loading');
+                    <div class="pay-notice">
+                        <b>التسجيل يكتمل بعد السداد.</b>
+                        <span>سيتواصل معك مشرف البرنامج لاستكمال الإجراءات.</span>
+                    </div>
 
-            const category = document.getElementById('category').value;
-            const notesValue = `المسار: ${selectedTrack} | المشترك: ${selectedSub} | البرنامج: الصيفي 1448`;
+                    <div class="agree-row">
+                        <input type="checkbox" id="agreeCheck">
+                        <label for="agreeCheck">أقررتُ بالاطلاع على <span class="terms-link" onclick="openTerms(event)">التنبيهات والاشتراطات</span></label>
+                    </div>
+                    <div class="error-msg" id="agreeError" style="margin-top:8px">يلزم الإقرار بالاطلاع قبل الإرسال</div>
 
-            try {
-                const response = await fetch(`${SB_URL}/students`, {
-                    method:'POST',
-                    headers:{ 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}`, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
-                    body: JSON.stringify({
-                        fullName: document.getElementById('fullName').value.trim(),
-                        phone: document.getElementById('phone').value.trim(),
-                        category: category,
-                        source: 'موقع إلكتروني',
-                        firstContactDate: new Date().toISOString().split('T')[0],
-                        notes: notesValue,
-                        isArchived: false
-                    })
-                });
-                if (!response.ok) { const err = await response.json().catch(()=>({})); throw new Error(err.message || `HTTP ${response.status}`); }
+                </form>
+            </div>
 
-                closeSheet();
-                setTimeout(showThankYou, 350);
-            } catch (error) {
-                console.error('خطأ في الإرسال:', error);
-                alert('حدث خطأ في الإرسال: ' + error.message + '\nيرجى المحاولة لاحقاً.');
-            } finally {
-                btn.disabled = false; btn.classList.remove('loading');
-            }
-        }
+        </div>
+    </div>
 
-        // ===== رسالة الشكر =====
-        function showThankYou() {
-            const overlay = document.getElementById('thankYouMessage');
-            document.querySelector('.thankyou-progress').innerHTML = '<div class="thankyou-progress-bar"></div>';
-            overlay.style.display = 'flex';
-            requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('show')));
-            setTimeout(() => {
-                overlay.classList.remove('show');
-                setTimeout(() => { overlay.style.display='none'; document.body.style.overflow=''; }, 500);
-            }, 5000);
-        }
+    <div class="sheet-footer" id="sheetFooter" style="display:none">
+        <button class="btn-submit" id="submitBtn" onclick="submitForm()">
+            <span class="spinner"></span>
+            <span class="btn-label"><i class="fas fa-paper-plane"></i> إرسال الطلب</span>
+        </button>
+    </div>
+</div>
 
-        // ===== سحب الورقة للأسفل للإغلاق (لمس) =====
-        (function() {
-            const sheet = document.getElementById('sheet');
-            const grabber = document.getElementById('grabber');
-            let startY = 0, currentY = 0, dragging = false;
-            function onStart(e){ dragging=true; startY=e.touches?e.touches[0].clientY:e.clientY; sheet.style.transition='none'; }
-            function onMove(e){
-                if(!dragging) return;
-                currentY = (e.touches?e.touches[0].clientY:e.clientY) - startY;
-                if(currentY>0) sheet.style.transform=`translateY(${currentY}px)`;
-            }
-            function onEnd(){
-                if(!dragging) return; dragging=false;
-                sheet.style.transition='';
-                if(currentY>120){ closeSheet(); }
-                sheet.style.transform='';
-                currentY=0;
-            }
-            [grabber, document.querySelector('.sheet-header')].forEach(el=>{
-                el.addEventListener('touchstart', onStart, {passive:true});
-            });
-            document.addEventListener('touchmove', onMove, {passive:true});
-            document.addEventListener('touchend', onEnd);
-        })();
+<!-- ========== نافذة الشروط ========== -->
+<div class="terms-modal" id="termsModal" onclick="if(event.target===this)closeTerms()">
+    <div class="terms-sheet">
+        <div class="grabber"></div>
+        <h3>التنبيهات والاشتراطات</h3>
+        <ol id="termsList"></ol>
+        <button class="btn-close-terms" onclick="closeTerms()">إغلاق</button>
+    </div>
+</div>
 
-        // ===== Fade-in + Service Worker =====
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.fade-in').forEach(el => el.style.opacity = '1');
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js').catch(()=>{});
-            }
+<!-- ========== رسالة الشكر ========== -->
+<div id="thankYouMessage">
+    <div class="thankyou-card">
+        <img src="image/bare-logo-blue.png" alt="أكاديمية بارع" class="thankyou-logo">
+        <h2>استلمنا طلبك</h2>
+        <p>سيتواصل معك مشرف البرنامج لاستكمال إجراءات التسجيل والسداد.</p>
+        <div class="ty-summary" id="tySummary"></div>
+        <a class="btn-wa" id="waLink" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> تواصل معنا الآن</a>
+        <button class="btn-back-home" onclick="location.reload()">العودة للصفحة الرئيسة</button>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+const WA_NUMBER = '966509076627';
+
+/* ===== بيانات البرنامج — موضع التحديث الوحيد ===== */
+const PROGRAM = {
+    name: 'الفصل الدراسي الأول 1448',
+    periods: {
+        both:   { name:'البرنامج كاملاً', dates:'17 / 3 — 14 / 7 / 1448 هـ', meta:'16 أسبوعاً · 64 يوماً', price:'1,520', early:'1,280', featured:true },
+        first:  { name:'الفترة الأولى',   dates:'17 / 3 — 10 / 5 / 1448 هـ', meta:'8 أسابيع · 32 يوماً',  price:'760',   early:'685'  },
+        second: { name:'الفترة الثانية',  dates:'14 / 5 — 14 / 7 / 1448 هـ', meta:'8 أسابيع · 32 يوماً',  price:'760',   early:'685'  }
+    },
+    grades: ['أولى ابتدائي','ثانية ابتدائي','ثالثة ابتدائي','رابع ابتدائي','خامس ابتدائي','سادس ابتدائي','أول متوسط','ثاني متوسط','ثالث متوسط'],
+    terms: [
+        'للأكاديمية الحق في تصوير المشتركين وتوثيق الأنشطة، واستخدام الصور والمقاطع في النشر والترويج.',
+        'تبذل الأكاديمية وسعها في حفظ سلامة الطلاب، ولا تتحمل مسؤولية الإصابات، ولا مسؤولية الطالب قبل أوقات البرنامج أو بعدها.',
+        'يلتزم ولي الأمر بالإفصاح الكامل عن أي حالة صحية لدى الطالب.',
+        'في حال طارئ صحي، للأكاديمية اتخاذ الإجراءات الإسعافية الأولية ونقل الطالب إلى أقرب مركز طبي، مع إشعار ولي الأمر فوراً.',
+        'الرسوم غير مستردة بعد السداد.',
+        'الغياب لأي سبب لا يُنقص من قيمة الاشتراك، ولا تُعوَّض الأيام الفائتة.',
+        'في حال إلغاء الأكاديمية ليوم أو نشاط لظرف طارئ، لها تحديد موعد بديل دون التزام مالي.',
+        'الأكاديمية غير مسؤولة عن فقدان أو تلف الممتلكات الشخصية التي يجلبها المشترك.',
+        'يتحمل ولي الأمر تكاليف أي تلف متعمد يتسبب فيه الطالب في مرافق الأكاديمية أو أدواتها.',
+        'للأكاديمية حق استبعاد أي طالب عند المخالفة المتكررة للأنظمة.'
+    ]
+};
+
+const ORDER = ['both','first','second'];
+let picked = null, kidSeq = 0;
+
+/* ===== بطاقات الصفحة ===== */
+(function buildPage(){
+    document.getElementById('periodGrid').innerHTML = ORDER.map(k=>{
+        const p = PROGRAM.periods[k];
+        return `<div class="period-card${p.featured?' featured':''}">
+            ${p.featured?'<span class="pc-tag">الأوفر</span>':''}
+            <h3>${p.name}</h3>
+            <div class="pc-meta">${p.meta}</div>
+            <div class="pc-lines">
+                <div class="row"><i class="fas fa-calendar-days"></i> ${p.dates}</div>
+                <div class="row"><i class="fas fa-clock"></i> 4:45 – 7:45 م</div>
+            </div>
+            <div class="pc-price">
+                <div class="amount">${p.price} <span>ريال</span></div>
+                <div class="pc-early">الدفع المبكر <b>${p.early} ريال</b><small>خلال أول أسبوعين من الفترة</small></div>
+            </div>
+            <button class="cta-inner" onclick="openSheet('${k}')"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+        </div>`;
+    }).join('');
+
+    document.getElementById('choiceCards').innerHTML = ORDER.map(k=>{
+        const p = PROGRAM.periods[k];
+        return `<div class="choice-card" data-key="${k}" onclick="choose('${k}',event)">
+            <div class="choice-icon"><i class="fas fa-${k==='both'?'calendar-check':'calendar-days'}"></i></div>
+            <h3>${p.name}</h3>
+            <div class="cc-dates">${p.dates}</div>
+            <div class="cc-meta">${p.meta}</div>
+            <div class="choice-price">${p.price} <span>ريال</span></div>
+            <div class="cc-early">الدفع المبكر <b>${p.early} ريال</b><small>خلال أول أسبوعين من الفترة</small></div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('termsList').innerHTML = PROGRAM.terms.map(t=>`<li>${t}</li>`).join('');
+})();
+
+/* ===== النافذة ===== */
+function openSheet(key){
+    document.getElementById('sheetOverlay').classList.add('active');
+    document.getElementById('sheet').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if(!document.querySelector('.kid-block')) addKid();
+    if(key) choose(key);
+    else goChoose();
+}
+function closeSheet(){
+    document.getElementById('sheetOverlay').classList.remove('active');
+    document.getElementById('sheet').classList.remove('active');
+    document.body.style.overflow = '';
+}
+function goChoose(){
+    document.getElementById('sheetTrack').classList.remove('show-form');
+    document.getElementById('sheetTitle').textContent = 'اختر مدة الاشتراك';
+    document.getElementById('sheetBack').style.display = 'none';
+    document.getElementById('sheetFooter').style.display = 'none';
+}
+function choose(key, ev){
+    if(ev){
+        const c = ev.currentTarget, r = document.createElement('span');
+        r.className = 'ripple';
+        const rect = c.getBoundingClientRect(), s = Math.max(rect.width, rect.height);
+        r.style.width = r.style.height = s + 'px';
+        r.style.left = (ev.clientX - rect.left - s/2) + 'px';
+        r.style.top  = (ev.clientY - rect.top  - s/2) + 'px';
+        c.appendChild(r); setTimeout(()=>r.remove(), 560);
+    }
+    picked = key;
+    const p = PROGRAM.periods[key];
+    document.querySelectorAll('.choice-card').forEach(c=>c.classList.toggle('selected', c.dataset.key===key));
+    document.getElementById('tbName').textContent  = p.name;
+    document.getElementById('tbMeta').textContent  = p.dates + ' · ' + p.meta;
+    document.getElementById('tbPrice').textContent = p.price + ' ريال';
+    document.querySelectorAll('.kidPeriod').forEach(s=>s.value = key);
+    setTimeout(()=>{
+        document.getElementById('sheetTrack').classList.add('show-form');
+        document.getElementById('sheetTitle').textContent = 'بيانات المشترك';
+        document.getElementById('sheetBack').style.display = 'flex';
+        document.getElementById('sheetFooter').style.display = 'block';
+        document.getElementById('screenForm').scrollTop = 0;
+    }, 200);
+}
+
+/* ===== الأبناء ===== */
+function addKid(){
+    kidSeq++;
+    const n = kidSeq;
+    const el = document.createElement('div');
+    el.className = 'kid-block';
+    el.dataset.kid = n;
+    el.innerHTML = `
+        <div class="kid-head">
+            <div class="kid-title"><span class="kid-num">${n}</span> بيانات الابن</div>
+            ${n>1?`<button type="button" class="kid-remove" onclick="removeKid(${n})">حذف</button>`:''}
+        </div>
+        <div class="form-group">
+            <label for="k${n}Name">الاسم الأول</label>
+            <input type="text" id="k${n}Name" class="kidName" autocomplete="off">
+            <div class="error-msg">مطلوب</div>
+        </div>
+        <div class="form-group">
+            <label for="k${n}Grade">المرحلة الدراسية</label>
+            <select id="k${n}Grade" class="kidGrade">
+                <option value="">اختر المرحلة</option>
+                ${PROGRAM.grades.map(g=>`<option>${g}</option>`).join('')}
+            </select>
+            <div class="error-msg">مطلوب</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label for="k${n}Period">مدة الاشتراك</label>
+            <select id="k${n}Period" class="kidPeriod">
+                ${ORDER.map(k=>`<option value="${k}">${PROGRAM.periods[k].name}</option>`).join('')}
+            </select>
+        </div>`;
+    document.getElementById('kidsWrap').appendChild(el);
+    if(picked) el.querySelector('.kidPeriod').value = picked;
+}
+function removeKid(n){
+    const el = document.querySelector(`.kid-block[data-kid="${n}"]`);
+    if(el) el.remove();
+    document.querySelectorAll('.kid-block').forEach((k,i)=>{ k.querySelector('.kid-num').textContent = i+1; });
+}
+
+/* ===== الشروط ===== */
+function openTerms(e){ e.preventDefault(); e.stopPropagation(); document.getElementById('termsModal').classList.add('active'); }
+function closeTerms(){ document.getElementById('termsModal').classList.remove('active'); }
+
+/* ===== التحقق ===== */
+const isPhone = v => /^05\d{8}$/.test(String(v).trim());
+function mark(el, ok){
+    el.style.borderColor = ok ? '' : '#ef4444';
+    const e = el.parentElement.querySelector('.error-msg');
+    if(e) e.classList.toggle('show', !ok);
+    return ok;
+}
+['guardianPhone','altPhone'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', e=>{
+        e.target.value = e.target.value.replace(/\D/g,'').slice(0,10);
+    });
+});
+
+/* ===== الإرسال ===== */
+async function submitForm(){
+    let ok = true;
+    const father = document.getElementById('fatherName');
+    const family = document.getElementById('familyName');
+    const phone  = document.getElementById('guardianPhone');
+    const alt    = document.getElementById('altPhone');
+
+    ok = mark(father, father.value.trim().length > 0) && ok;
+    ok = mark(family, family.value.trim().length > 0) && ok;
+    ok = mark(phone,  isPhone(phone.value)) && ok;
+    if(alt.value.trim()) ok = mark(alt, isPhone(alt.value)) && ok; else mark(alt, true);
+
+    const kids = [];
+    document.querySelectorAll('.kid-block').forEach(k=>{
+        const nm = k.querySelector('.kidName'), gr = k.querySelector('.kidGrade'), pr = k.querySelector('.kidPeriod');
+        const a = mark(nm, nm.value.trim().length > 0);
+        const b = mark(gr, gr.value !== '');
+        ok = a && b && ok;
+        if(a && b) kids.push({ first_name:nm.value.trim(), grade:gr.value, period:pr.value });
+    });
+
+    const agreeOk = document.getElementById('agreeCheck').checked;
+    document.getElementById('agreeError').classList.toggle('show', !agreeOk);
+    ok = agreeOk && ok;
+
+    if(!ok){
+        const bad = document.querySelector('.error-msg.show');
+        if(bad) bad.scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const rows = kids.map(k=>({
+        guardian_name: father.value.trim(),
+        family_name: family.value.trim(),
+        guardian_phone: phone.value.trim(),
+        guardian_phone_alt: alt.value.trim() || null,
+        first_name: k.first_name,
+        grade: k.grade,
+        period: k.period,
+        program: PROGRAM.name
+    }));
+
+    try{
+        const res = await fetch(SB_URL + '/interests', {
+            method:'POST',
+            headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+            body: JSON.stringify(rows)
         });
-    </script>
+        if(!res.ok) throw new Error(await res.text());
+        showThanks(rows);
+    }catch(err){
+        console.error(err);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        alert('تعذّر إرسال الطلب. تأكد من اتصالك وأعد المحاولة، أو تواصل معنا على الواتساب.');
+    }
+}
+
+function showThanks(rows){
+    const fat = rows[0].guardian_name, fam = rows[0].family_name;
+    document.getElementById('tySummary').innerHTML = rows.map(r=>
+        `<div class="r"><b>${r.first_name} ${fat} ${fam}</b><span>${r.grade} · ${PROGRAM.periods[r.period].name}</span></div>`
+    ).join('');
+
+    const lines = rows.map(r=>`• ${r.first_name} ${fat} ${fam} — ${r.grade} — ${PROGRAM.periods[r.period].name}`).join('\n');
+    const msg = `السلام عليكم، سجّلت في برنامج بارع — ${PROGRAM.name}\n\n${lines}\n\nأرغب في استكمال إجراءات التسجيل.`;
+    document.getElementById('waLink').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+
+    closeSheet();
+    document.getElementById('thankYouMessage').classList.add('show');
+}
+
+document.addEventListener('keydown', e=>{
+    if(e.key !== 'Escape') return;
+    if(document.getElementById('termsModal').classList.contains('active')) closeTerms();
+    else if(document.getElementById('sheet').classList.contains('active')) closeSheet();
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+</script>
 </body>
 </html>

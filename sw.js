@@ -1,4 +1,4 @@
-const CACHE = 'bare-summer-1448-v3';
+const CACHE = 'bare-1448-v4';
 const SHELL = [
   './',
   './index.html',
@@ -43,17 +43,15 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // cache-first لملفات الواجهة
+  // network-first: الشبكة أولاً، والكاش شبكة أمان عند الانقطاع.
+  // يمنع تكرار ADR-013: cache-first كان يخدم نسخة قديمة أبداً.
   e.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (res && res.status === 200 && url.origin === location.origin) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => cached);
-    })
+    fetch(req).then((res) => {
+      if (res && res.status === 200 && url.origin === location.origin) {
+        const copy = res.clone();
+        caches.open(CACHE).then((c) => c.put(req, copy));
+      }
+      return res;
+    }).catch(() => caches.match(req))
   );
 });
