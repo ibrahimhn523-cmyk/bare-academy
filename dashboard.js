@@ -13,7 +13,8 @@ const TB = {
   ATTENDANCE_LOG : 'attendance_log',
   SETTINGS       : 'settings',
   LOGS           : 'logs',
-  COMM_LOG       : 'comm_log'
+  COMM_LOG       : 'comm_log',
+  INTERESTS      : 'interests'
 };
 
 /* ── Supabase Helpers ── */
@@ -111,6 +112,9 @@ function renderSidebar() {
         <div class="nav-item ${_activeSection === 'students' ? 'active' : ''}" onclick="switchSection('students')">
           <span class="nav-icon">👥</span><span>سجل الطلاب</span>
         </div>
+        <div class="nav-item ${_activeSection === 'interests' ? 'active' : ''}" onclick="switchSection('interests')">
+          <span class="nav-icon">📨</span><span>طلبات الاهتمام</span>${_intPending > 0 ? `<span class="nav-badge">${_intPending}</span>` : ''}
+        </div>
         <div class="nav-item ${_activeSection === 'programs' ? 'active' : ''}" onclick="switchSection('programs')">
           <span class="nav-icon">📋</span><span>البرامج</span>
         </div>
@@ -161,6 +165,7 @@ function switchSection(name) {
   if (sec) sec.classList.add('active');
   renderSidebar();
   if (name === 'students')    renderStudents();
+  if (name === 'interests')   loadInterests();
   if (name === 'programs')    renderProgs();
   if (name === 'subscribers') renderSubscribers();
   if (name === 'groups')      renderGroups();
@@ -451,6 +456,256 @@ function openStudentCard(id) {
     <h4 style="color:var(--primary);margin-bottom:10px;font-size:.9rem">الاشتراكات (${subs.length})</h4>
     ${subsHtml}`;
   openM('m-sc');
+}
+
+/* ══════════════════════════════════════════
+   INTERESTS — طلبات الاهتمام (مستوى الأكاديمية)
+   يقرأ من جدول interests الذي تكتب فيه صفحة التسجيل العامة.
+══════════════════════════════════════════ */
+
+const INT_PERIOD_AR  = { both: 'البرنامج كاملاً', first: 'الفترة الأولى', second: 'الفترة الثانية' };
+const INT_STATUS_AR  = { pending: 'معلّق', contacted: 'تم التواصل', enrolled: 'مسجَّل', cancelled: 'ملغى' };
+const INT_STATUS_CLS = { pending: 'b-unpaid', contacted: 'b-partial', enrolled: 'b-paid', cancelled: 'b-archived' };
+const INT_FAMILY_COLORS = 6;   // عدد ألوان تمييز الأسر
+
+let _interests  = [];
+let _intPending = 0;   // عدّاد الشارة في القائمة
+
+/** تطبيع الجوال للمطابقة: أرقام فقط، وتوحيد صيغ 966 و 00966 و 05 */
+function normPhone(v) {
+  let d = String(v || '').replace(/\D/g, '');
+  if (d.startsWith('00966'))    d = d.slice(5);
+  else if (d.startsWith('966')) d = d.slice(3);
+  if (d.length === 9 && d.startsWith('5')) d = '0' + d;
+  return d;
+}
+
+async function loadInterests() {
+  const tbody = document.getElementById('int-tbody');
+  if (tbody) tbody.innerHTML = `<tr class="loading-row"><td colspan="7">جاري التحميل… <span class="spinner"></span></td></tr>`;
+  try {
+    const rows = await sbRead(TB.INTERESTS);
+    _interests = rows.map(r => ({
+      id:            r.id,
+      createdAt:     r.created_at || '',
+      guardianName:  r.guardian_name || '',
+      familyName:    r.family_name || '',
+      guardianPhone: r.guardian_phone || '',
+      phoneAlt:      r.guardian_phone_alt || '',
+      firstName:     r.first_name || '',
+      grade:         r.grade || '',
+      period:        r.period || '',
+      program:       r.program || '',
+      status:        r.status || 'pending',
+      exportedAt:    r.exported_at || ''
+    }));
+  } catch(e) {
+    console.error('[INTERESTS]', e);
+    _interests = [];
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="ei">⚠️</div><p>تعذّر تحميل الطلبات — ${esc(e.message)}</p></div></td></tr>`;
+    document.getElementById('int-stats').innerHTML = '';
+    document.getElementById('int-count').textContent = '—';
+    return;
+  }
+  _intPending = _interests.filter(i => i.status === 'pending').length;
+  renderSidebar();
+  renderInterestStats();
+  renderInterests();
+}
+
+function renderInterestStats() {
+  const total     = _interests.length;
+  const pending   = _interests.filter(i => i.status === 'pending').length;
+  const contacted = _interests.filter(i => i.status === 'contacted').length;
+  const guardians = new Set(_interests.map(i => normPhone(i.guardianPhone)).filter(Boolean)).size;
+  document.getElementById('int-stats').innerHTML = `
+    <div class="stat-card"><div class="stat-lbl">إجمالي الطلبات</div><div class="stat-val">${total}</div></div>
+    <div class="stat-card"><div class="stat-lbl">معلّقة</div><div class="stat-val">${pending}</div></div>
+    <div class="stat-card"><div class="stat-lbl">تم التواصل</div><div class="stat-val">${contacted}</div></div>
+    <div class="stat-card"><div class="stat-lbl">أولياء الأمور</div><div class="stat-val">${guardians}</div></div>`;
+}
+
+/** خرائط التمييز البصري: الأسر · التكرار · المشترك السابق */
+function buildIntFlags(list) {
+  const byPhone = {};
+  list.forEach(i => {
+    const p = normPhone(i.guardianPhone);
+    if (!p) return;
+    (byPhone[p] = byPhone[p] || []).push(i);
+  });
+
+  // أرقام الطلاب المسجَّلين أصلاً (phone + phone2) — محمَّلة في الإقلاع
+  const known = new Set();
+  _students.forEach(s => {
+    [s.phone, s.phone2].forEach(p => { const n = normPhone(p); if (n) known.add(n); });
+  });
+
+  const family = {}, dup = {}, prev = {};
+  let colorIdx = 0;
+  Object.entries(byPhone).forEach(([p, items]) => {
+    const distinct = new Set(items.map(x => (x.firstName || '').trim()).filter(Boolean));
+    // أسرة: أكثر من طلب بنفس الجوال وبأسماء مختلفة
+    if (items.length > 1 && distinct.size > 1) {
+      const c = (colorIdx++ % INT_FAMILY_COLORS) + 1;
+      items.forEach(x => family[x.id] = c);
+    }
+    // مكرر: نفس الجوال ونفس الاسم الأول
+    const seen = {};
+    items.forEach(x => {
+      const key = (x.firstName || '').trim();
+      if (seen[key]) dup[x.id] = true; else seen[key] = true;
+    });
+    // مشترك سابق: الجوال يطابق طالباً قائماً
+    if (known.has(p)) items.forEach(x => prev[x.id] = true);
+  });
+  return { family, dup, prev };
+}
+
+function getIntFiltered() {
+  const q  = (document.getElementById('int-search')?.value || '').trim().toLowerCase();
+  const pf = document.getElementById('int-period-filter')?.value || '';
+  const sf = document.getElementById('int-status-filter')?.value || '';
+  let d = [..._interests];
+  if (pf) d = d.filter(i => i.period === pf);
+  if (sf) d = d.filter(i => i.status === sf);
+  if (q) {
+    const qp = normPhone(q);
+    d = d.filter(i => {
+      const full = `${i.firstName} ${i.guardianName} ${i.familyName}`.toLowerCase();
+      const phoneHit = qp.length >= 3 && (normPhone(i.guardianPhone).includes(qp) || normPhone(i.phoneAlt).includes(qp));
+      return full.includes(q) || phoneHit;
+    });
+  }
+  d.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));   // الأحدث أولاً
+  return d;
+}
+
+function renderInterests() {
+  const tbody = document.getElementById('int-tbody');
+  if (!tbody) return;
+  const d = getIntFiltered();
+  document.getElementById('int-count').textContent = `${d.length} طلب`;
+
+  if (!d.length) {
+    const empty = _interests.length === 0;
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty">
+      <div class="ei">${empty ? '📭' : '🔍'}</div>
+      <p><strong>${empty ? 'لا توجد طلبات بعد' : 'لا نتائج مطابقة'}</strong></p>
+      <p style="font-size:.85rem;margin-top:6px;line-height:1.9">${empty
+        ? 'الطلبات تصل تلقائياً حين يسجّل ولي أمر من صفحة التسجيل العامة.<br>اضغط 🔄 تحديث للتحقق من الجديد.'
+        : 'جرّب تغيير البحث أو الفلاتر.'}</p>
+    </div></td></tr>`;
+    return;
+  }
+
+  const { family, dup, prev } = buildIntFlags(_interests);
+
+  tbody.innerHTML = d.map(i => {
+    const fam  = family[i.id];
+    const tags = (dup[i.id]  ? `<span class="badge b-archived int-tag">مكرر</span>` : '')
+               + (prev[i.id] ? `<span class="badge b-visitor int-tag">مشترك سابق</span>` : '');
+    const opts = Object.entries(INT_STATUS_AR)
+      .map(([k, v]) => `<option value="${k}"${i.status === k ? ' selected' : ''}>${v}</option>`).join('');
+    return `<tr class="${fam ? 'int-fam int-fam-' + fam : ''}">
+      <td style="white-space:nowrap">${fmtHijriShort(String(i.createdAt).slice(0, 10)) || '—'}</td>
+      <td><strong>${esc(i.firstName)} ${esc(i.guardianName)} ${esc(i.familyName)}</strong>${tags}</td>
+      <td>${esc(i.grade) || '—'}</td>
+      <td>${INT_PERIOD_AR[i.period] || esc(i.period) || '—'}</td>
+      <td dir="ltr">${esc(i.guardianPhone)}</td>
+      <td><select class="int-status-sel ${INT_STATUS_CLS[i.status] || ''}" onchange="setInterestStatus(${i.id}, this.value, this)">${opts}</select></td>
+      <td class="td-actions">
+        <div class="actions">
+          <button class="abt abt-wa" title="مراسلة واتساب" onclick="waInterest(${i.id})">📱</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── واتساب ── */
+function buildInterestWaMsg(i) {
+  return `السلام عليكم ورحمة الله، معك أكاديمية بارع\n`
+       + `وصلنا طلبكم لتسجيل ${i.firstName} ${i.guardianName} ${i.familyName} في برنامج بارع للفصل الدراسي الأول.\n`
+       + `نود استكمال إجراءات التسجيل.`;
+}
+
+function buildInterestWaUrl(i) {
+  const phone = normPhone(i.guardianPhone).replace(/^0/, '');
+  return `https://wa.me/966${phone}?text=${encodeURIComponent(buildInterestWaMsg(i).normalize('NFC'))}`;
+}
+
+function waInterest(id) {
+  const i = _interests.find(x => x.id === id);
+  if (!i) return;
+  if (!normPhone(i.guardianPhone)) { toast('لا يوجد رقم جوال صالح', 'error'); return; }
+  window.open(buildInterestWaUrl(i), '_blank');
+}
+
+/* ── تغيير الحالة: optimistic ثم كتابة ثم rollback عند الفشل (نمط attRecSet) ── */
+async function setInterestStatus(id, newStatus, sel) {
+  const i = _interests.find(x => x.id === id);
+  if (!i || i.status === newStatus) return;
+  const oldStatus = i.status;
+
+  i.status = newStatus;                                     // تحديث فوري
+  sel.className = 'int-status-sel ' + (INT_STATUS_CLS[newStatus] || '');
+  _intPending = _interests.filter(x => x.status === 'pending').length;
+  renderInterestStats(); renderSidebar();
+
+  try {
+    await sbUpdate(TB.INTERESTS, id, { status: newStatus });
+    addLog('interest_status', `غيّر حالة طلب ${i.firstName} ${i.familyName}: ${INT_STATUS_AR[oldStatus]} ← ${INT_STATUS_AR[newStatus]}`);
+    toast('تم تحديث الحالة ✅');
+  } catch(e) {
+    i.status = oldStatus;                                   // تراجع
+    sel.value = oldStatus;
+    sel.className = 'int-status-sel ' + (INT_STATUS_CLS[oldStatus] || '');
+    _intPending = _interests.filter(x => x.status === 'pending').length;
+    renderInterestStats(); renderSidebar();
+    toast('فشل الحفظ — ' + e.message, 'error');
+  }
+}
+
+/* ── تصدير Excel (نفس نمط exportStudentsExcel) ── */
+async function exportInterestsExcel() {
+  if (typeof XLSX === 'undefined') { toast('مكتبة Excel غير محملة بعد، انتظر ثانية', 'warning'); return; }
+  const d = getIntFiltered();                               // المعروض بعد الفلترة لا كل الجدول
+  if (!d.length) { toast('لا توجد طلبات للتصدير', 'warning'); return; }
+
+  const rows = d.map(i => ({
+    'التاريخ':       fmtHijriShort(String(i.createdAt).slice(0, 10)) || '',
+    'الاسم الأول':   i.firstName,
+    'اسم ولي الأمر': i.guardianName,
+    'العائلة':       i.familyName,
+    'الجوال':        i.guardianPhone || '',                 // نص — يحافظ على الصفر البادئ
+    'جوال إضافي':    i.phoneAlt || '',
+    'المرحلة':       i.grade || '',
+    'الفترة':        INT_PERIOD_AR[i.period] || i.period || '',
+    'الحالة':        INT_STATUS_AR[i.status] || i.status || '',
+    'البرنامج':      i.program || ''
+  }));
+
+  const headers = ['التاريخ','الاسم الأول','اسم ولي الأمر','العائلة','الجوال','جوال إضافي','المرحلة','الفترة','الحالة','البرنامج'];
+  const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+  ws['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 26 }];
+
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };                  // ورقة من اليمين لليسار
+  XLSX.utils.book_append_sheet(wb, ws, 'طلبات الاهتمام');
+  XLSX.writeFile(wb, `طلبات الاهتمام - ${todayDate()}.xlsx`);
+
+  addLog('export_interests', `تصدير طلبات الاهتمام (${rows.length} طلب) إلى Excel`);
+
+  // ختم exported_at على المصدَّر فقط
+  const stamp = new Date().toISOString();
+  let fail = 0;
+  await Promise.all(d.map(i =>
+    sbUpdate(TB.INTERESTS, i.id, { exported_at: stamp })
+      .then(() => { i.exportedAt = stamp; })
+      .catch(() => { fail++; })
+  ));
+  if (fail) toast(`تم تصدير ${rows.length} طلب — تعذّر ختم ${fail}`, 'warning');
+  else      toast(`تم تصدير ${rows.length} طلب ✅`, 'success');
 }
 
 /* ══════════════════════════════════════════
@@ -2754,7 +3009,9 @@ function toggleSidebar() {
 }
 
 function handleLogout() {
-  if (confirm('تسجيل الخروج؟')) window.location.reload();
+  if (!confirm('تسجيل الخروج؟')) return;
+  sessionStorage.removeItem(GATE_KEY);
+  window.location.reload();
 }
 
 // Close modal on overlay click
@@ -3068,5 +3325,56 @@ async function saveBulkSub() {
   renderSubscriberStats();
 }
 
+/* ══════════════════════════════════════════
+   GATE — بوابة الدخول
+   حارس يسبق init() فيمنع أي نداء لقاعدة البيانات قبل التحقق.
+   البصمة SHA-256 فقط — كلمة المرور نفسها ليست في أي ملف.
+   ⚠️ هذا يمنع الاكتشاف العابر، لا من يقرأ الكود ويكسر البصمة.
+══════════════════════════════════════════ */
+const GATE_HASH = 'e52762e493d709e01f7dc2284ed85314b4b7c9670f7273e408aeb2303348b13b';
+const GATE_KEY  = 'dash_auth';
+
+async function _sha256Hex(txt) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function gateUnlock() {
+  document.getElementById('dash-gate').classList.add('unlocked');
+  init();
+}
+
+function gateError(msg) {
+  const el = document.getElementById('dash-gate-err');
+  el.textContent = msg; el.classList.add('show');
+}
+
+async function gateSubmit() {
+  const inp = document.getElementById('dash-gate-pass');
+  const btn = document.getElementById('dash-gate-btn');
+  document.getElementById('dash-gate-err').classList.remove('show');
+  if (!inp.value) { gateError('أدخل كلمة المرور'); return; }
+  if (!window.crypto?.subtle) { gateError('المتصفح لا يدعم التحقق — افتح الصفحة عبر HTTPS'); return; }
+
+  btn.disabled = true;
+  try {
+    const hash = await _sha256Hex(inp.value);
+    if (hash !== GATE_HASH) { gateError('كلمة المرور غير صحيحة'); inp.select(); return; }
+    sessionStorage.setItem(GATE_KEY, '1');   // ينتهي بإغلاق المتصفح
+    gateUnlock();
+  } catch(e) {
+    gateError('تعذّر التحقق — أعد المحاولة');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 /* ── Start ── */
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('dash-gate-btn').addEventListener('click', gateSubmit);
+  document.getElementById('dash-gate-pass').addEventListener('keydown', e => {
+    if (e.key === 'Enter') gateSubmit();
+  });
+  if (sessionStorage.getItem(GATE_KEY) === '1') { gateUnlock(); return; }
+  document.getElementById('dash-gate-pass').focus();
+});

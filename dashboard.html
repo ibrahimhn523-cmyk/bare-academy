@@ -3,11 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>لوحة تحكم بارع</title>
-<link rel="stylesheet" href="./dashboard.css">
+<link rel="stylesheet" href="./dashboard.css?v=2">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+
+<!-- ══ GATE (بوابة الدخول) — ظاهرة افتراضياً، تُخفى بعد التحقق ══ -->
+<div class="dash-gate" id="dash-gate">
+  <div class="dash-gate-card">
+    <img src="./image/bare-logo.png" alt="بارع" class="dash-gate-logo">
+    <div class="dash-gate-title">لوحة تحكم بارع</div>
+    <div class="dash-gate-sub">أدخل كلمة المرور للمتابعة</div>
+    <input type="password" id="dash-gate-pass" class="dash-gate-input"
+           placeholder="كلمة المرور" autocomplete="current-password" dir="ltr">
+    <div class="dash-gate-err" id="dash-gate-err"></div>
+    <button class="dash-gate-btn" id="dash-gate-btn">دخول</button>
+  </div>
+</div>
 
 <!-- ══ TOPBAR ══ -->
 <header class="topbar">
@@ -72,6 +86,50 @@
         </table>
       </div>
       <div class="tbl-footer"><span id="st-count">—</span></div>
+    </div>
+  </section>
+
+  <!-- ══════ LEVEL 1: INTERESTS (طلبات الاهتمام) ══════ -->
+  <section class="section" id="section-interests">
+    <div class="page-hdr">
+      <div class="page-title">📨 طلبات الاهتمام <span class="page-sub">الواردة من صفحة التسجيل</span></div>
+      <div class="hdr-actions">
+        <button class="btn btn-refresh" onclick="loadInterests()">🔄 تحديث</button>
+        <button class="btn btn-outline" onclick="exportInterestsExcel()">📤 تصدير Excel</button>
+      </div>
+    </div>
+    <div class="stats" id="int-stats"></div>
+    <div class="filter-bar">
+      <input type="text" id="int-search" placeholder="🔍 بحث بالاسم أو الجوال..." oninput="renderInterests()">
+      <select id="int-period-filter" onchange="renderInterests()">
+        <option value="">كل الفترات</option>
+        <option value="both">البرنامج كاملاً</option>
+        <option value="first">الفترة الأولى</option>
+        <option value="second">الفترة الثانية</option>
+      </select>
+      <select id="int-status-filter" onchange="renderInterests()">
+        <option value="">كل الحالات</option>
+        <option value="pending">معلّق</option>
+        <option value="contacted">تم التواصل</option>
+        <option value="enrolled">مسجَّل</option>
+        <option value="cancelled">ملغى</option>
+      </select>
+    </div>
+    <div class="table-card">
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th><th>اسم الطالب</th><th>المرحلة</th><th>الفترة</th>
+              <th>جوال ولي الأمر</th><th>الحالة</th><th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="int-tbody">
+            <tr class="loading-row"><td colspan="7">جاري التحميل… <span class="spinner"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tbl-footer"><span id="int-count">—</span></div>
     </div>
   </section>
 
@@ -756,6 +814,6 @@
   </div>
 </div>
 
-<script src="./dashboard.js"></script>
+<script src="./dashboard.js?v=2"></script>
 </body>
 </html>

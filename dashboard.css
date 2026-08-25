@@ -460,3 +460,67 @@ tbody tr.prog-row:active td { background: #e0e7ff; }
   .att-scard { padding: 10px; }
   .att-tab-pill { padding: 6px 12px; font-size: .76rem; }
 }
+
+/* ══════════════════════════════════════════
+   GATE — بوابة الدخول
+   ظاهرة افتراضياً (بلا JS) وتُخفى بعد التحقق.
+   z-index أعلى من منتقي التاريخ الهجري (9999).
+══════════════════════════════════════════ */
+.dash-gate {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: linear-gradient(135deg, var(--primary) 0%, #0f172a 100%);
+}
+.dash-gate.unlocked { display: none; }
+.dash-gate-card {
+  background: var(--white); border-radius: 16px; padding: 38px 30px 30px;
+  width: 100%; max-width: 380px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.dash-gate-logo  { width: 74px; margin: 0 auto 18px; display: block; }
+.dash-gate-title { font-size: 1.3rem; font-weight: 700; color: var(--primary); margin-bottom: 5px; }
+.dash-gate-sub   { font-size: .84rem; color: var(--muted); margin-bottom: 24px; }
+.dash-gate-input {
+  width: 100%; padding: 11px 14px; font-family: inherit; font-size: .95rem;
+  border: 1.5px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--text); text-align: center;
+}
+.dash-gate-input:focus { outline: none; border-color: var(--primary); }
+.dash-gate-err {
+  display: none; margin-top: 12px; padding: 9px 12px; border-radius: 7px;
+  background: #fee2e2; color: #b91c1c; font-size: .83rem; font-weight: 600;
+}
+.dash-gate-err.show { display: block; }
+.dash-gate-btn {
+  width: 100%; margin-top: 18px; padding: 12px; border: none; border-radius: 8px;
+  background: var(--primary); color: #fff; font-family: inherit; font-size: .98rem;
+  font-weight: 700; cursor: pointer; transition: opacity .18s;
+}
+.dash-gate-btn:hover     { opacity: .9; }
+.dash-gate-btn:disabled  { opacity: .55; cursor: default; }
+
+/* ══════════════════════════════════════════
+   INTERESTS — طلبات الاهتمام
+══════════════════════════════════════════ */
+/* شارة العدّاد في القائمة الجانبية */
+.nav-badge {
+  margin-right: auto; background: var(--gold); color: var(--primary);
+  font-size: .7rem; font-weight: 700; min-width: 20px; padding: 1px 7px;
+  border-radius: 20px; text-align: center;
+}
+/* وسوم داخل خلية الاسم */
+.int-tag { margin-right: 6px; font-size: .7rem; padding: 2px 7px; vertical-align: middle; }
+/* تمييز الأسرة: شريط جانبي ملوّن موحّد + خلفية خفيفة */
+.int-fam td:first-child { border-right: 4px solid transparent; }
+.int-fam-1 td { background: #eff6ff; } .int-fam-1 td:first-child { border-right-color: #3b82f6; }
+.int-fam-2 td { background: #f0fdf4; } .int-fam-2 td:first-child { border-right-color: #22c55e; }
+.int-fam-3 td { background: #fef3f2; } .int-fam-3 td:first-child { border-right-color: #f97316; }
+.int-fam-4 td { background: #faf5ff; } .int-fam-4 td:first-child { border-right-color: #a855f7; }
+.int-fam-5 td { background: #fefce8; } .int-fam-5 td:first-child { border-right-color: #eab308; }
+.int-fam-6 td { background: #f0fdfa; } .int-fam-6 td:first-child { border-right-color: #14b8a6; }
+/* منسدلة الحالة داخل الجدول */
+.int-status-sel {
+  border: none; border-radius: 20px; padding: 4px 10px; font-family: inherit;
+  font-size: .76rem; font-weight: 600; cursor: pointer; max-width: 120px;
+}
+.int-status-sel:focus { outline: 2px solid var(--primary); outline-offset: 1px; }

@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /dashboard.html
+Disallow: /portal.html
+Disallow: /leaderboard.html
+Disallow: /tournament.html
