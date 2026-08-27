@@ -311,9 +311,9 @@
         }
     
         /* ===== إضافات الفصل الدراسي الأول ===== */
-.pay-terms-line { text-align:center; margin:-24px 0 14px; }
-        .pay-terms-line b { display:block; color:var(--primary); font-size:1.08rem; font-weight:bold; }
-        .pay-terms-line span { display:block; color:var(--text-light); font-size:.92rem; margin-top:2px; }
+.pay-terms-line { text-align:center; margin:0 0 26px; }
+        .pay-terms-line b { display:block; color:var(--primary); font-size:1rem; font-weight:600; }
+        .pay-terms-line span { display:block; color:var(--text-light); font-size:.88rem; margin-top:3px; }
         .period-grid { display:grid; grid-template-columns:1fr; gap:25px; margin-bottom:50px; }
         @media (min-width:769px){ .period-grid { grid-template-columns:repeat(3,1fr); } }
         .period-card {
@@ -469,13 +469,15 @@
 
     <!-- الفترات -->
     <h2 class="section-title">مدد الاشتراك</h2>
-    <div class="period-grid" id="periodGrid"></div>
 
     <div class="pay-terms-line">
         <b>الاشتراك لفترة كاملة - ويُقبل السداد على دفعتين</b>
         <span>(خصم الدفع المبكر عند السداد الكامل)</span>
     </div>
-    <p style="text-align:center;color:var(--text-light);margin:0 0 50px;font-size:1.05rem;">
+
+    <div class="period-grid" id="periodGrid"></div>
+
+    <p style="text-align:center;color:var(--text-light);margin:96px 0 50px;font-size:1.05rem;">
         من أولى ابتدائي إلى ثالث متوسط · الأحد إلى الأربعاء
     </p>
 
