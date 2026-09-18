@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <title>لوحة تحكم بارع</title>
-<link rel="stylesheet" href="./dashboard.css?v=2">
+<link rel="stylesheet" href="./dashboard.css?v=3">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -271,23 +271,6 @@
       </div>
     </div>
     <div id="comm-body"></div>
-  </section>
-
-  <!-- ══════ LEVEL 2: ATTENDANCE ══════ -->
-  <section class="section" id="section-attendance">
-    <div class="page-hdr">
-      <div class="page-title">📅 التحضير <span class="page-sub" id="att-prog-name"></span></div>
-    </div>
-    <div class="att-summary-grid" id="att-summary"></div>
-    <div class="att-alerts" id="att-alerts" style="display:none"></div>
-    <div class="att-inner-tabs">
-      <button class="att-tab-pill active" data-tab="overview" onclick="attSwitchInner('overview')">ملخص إجمالي</button>
-      <button class="att-tab-pill"        data-tab="day"      onclick="attSwitchInner('day')">تفاصيل يوم</button>
-      <button class="att-tab-pill"        data-tab="record"   onclick="attSwitchInner('record')">تسجيل الحضور</button>
-    </div>
-    <div id="att-inner-overview"></div>
-    <div id="att-inner-day"      style="display:none"></div>
-    <div id="att-inner-record"   style="display:none"></div>
   </section>
 
   <!-- ══════ LEVEL 2: PROGRAM STATS ══════ -->
@@ -814,6 +797,6 @@
   </div>
 </div>
 
-<script src="./dashboard.js?v=2"></script>
+<script src="./dashboard.js?v=3"></script>
 </body>
 </html>
