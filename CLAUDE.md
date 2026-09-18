@@ -12,30 +12,31 @@
 
 ```
 bare-academy/
-├── index.html            (568 سطر) — الصفحة العامة + نموذج التسجيل
-├── dashboard.html        (744 سطر) — لوحة الإدارة
-├── dashboard.css         (365 سطر) — تنسيقات لوحة الإدارة
-├── dashboard.js          (2454 سطر) — منطق لوحة الإدارة
-├── portal.html           (920 سطر) — بوابة الموظفين متعددة الصلاحيات
-├── portal.css            (1025 سطر) — تنسيقات البوابة
-├── portal.js             (3092 سطر) — منطق البوابة
-├── leaderboard.html      (408 سطر) — لوحة صدارة عامة (HTML + JS مدمج)
-├── tournament-view.html  (567 سطر) — عرض البطولة العام (HTML + JS مدمج)
-├── README.md             (170 سطر) — توثيق عام (⚠️ متقادم: يذكر Google Sheets)
+├── index.html            (892 سطر) — الواجهة العامة + نموذج التسجيل
+├── dashboard.html        (802 سطر) — لوحة الإدارة (إدارة التسجيل)
+├── dashboard.css         (409 سطر) — تنسيقات لوحة الإدارة
+├── dashboard.js          (3008 سطر) — منطق لوحة الإدارة
+├── sw.js                 (57 سطر) — Service Worker (network-first؛ dashboard و trader/view من الشبكة مباشرة)
+├── manifest.json         — PWA لصفحة التسجيل
+├── robots.txt            — يمنع فهرسة dashboard.html
+├── vercel.json           — rewrites لـ /trader و /view
+├── trader/ , view/       — منصة تقييم فعالية التاجر (مشروع مستقل — انظر TRADER_NOTES.md)
+├── README.md             (167 سطر) — توثيق عام (⚠️ متقادم: يذكر Google Sheets)
 ├── image/                — الشعارات (bare-logo.png, bare-logo-blue.png)
 ├── fonts/                — خط TheYearofHandicrafts (5 أوزان)
 └── .claude/
     └── settings.local.json — صلاحيات Claude Code المحلية
 ```
 
-### التطبيقات الأربعة
+> **ADR-014 (2026-09-18):** المنصة = **واجهة عامة + إدارة التسجيل فقط**. حُذفت بوابة الموظفين (`portal.*`) ولوحة الصدارة (`leaderboard.html`) وتطبيق البطولات (`tournament.html` + `tournament/`) وتبويب التحضير في لوحة التحكم.
+
+### التطبيقات
 
 | التطبيق | الجمهور | الوصف |
 |---|---|---|
-| `index.html` | العامة | صفحة هبوط + نموذج تسجيل طالب → يكتب في جدول `students` |
-| `dashboard.html` | المدير العام (كلمة سر واحدة) | إدارة الطلاب، البرامج، الاشتراكات، الرسوم، التواصل، الإحصائيات، السجل |
-| `portal.html` | موظفون متعددون (users + permissions) | تحضير، نقاط، مسابقات ثقافية، بطولات رياضية، صدارة، إدارة المستخدمين |
-| `leaderboard.html` + `tournament-view.html` | العامة (قراءة فقط) | عرض صدارة برنامج معيّن وعرض بطولة (يُمرَّر `?prog=` أو `?id=`) |
+| `index.html` | العامة | الواجهة العامة + نموذج تسجيل → يكتب في جدول `interests` |
+| `dashboard.html` | المدير (كلمة مرور واحدة) | إدارة التسجيل: الطلاب، طلبات الاهتمام، البرامج، المشتركون، المجموعات، الرسوم، التواصل، الإحصائيات، السجل |
+| `trader/` + `view/` | فعالية التاجر الصغير | مشروع مستقل في نفس المستودع (TRADER_NOTES.md) — خارج نطاق المنصة |
 
 ### ملاحظة عن الملفات المفقودة المذكورة في README
 - `registration.html` — **غير موجود**؛ نموذج التسجيل مدمج في `index.html`.
@@ -58,7 +59,7 @@ bare-academy/
   - URL: `https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1`
   - مفتاح: `anon` JWT — مكشوف في الكود client-side في كل الملفات.
 - **النداء مباشر** من المتصفح إلى Supabase REST عبر `fetch()` — لا يوجد خادم تطبيق وسيط.
-- **localStorage** للـ session (`portal_user`) ولقوالب WhatsApp (`wa_templates`).
+- **localStorage** لقوالب WhatsApp (`wa_templates`)، و **sessionStorage** (`dash_auth`) لبوابة دخول لوحة التحكم.
 
 ### الجداول في Supabase
 | الجدول | الاستخدام |
@@ -67,17 +68,19 @@ bare-academy/
 | `programs` | البرامج التعليمية |
 | `subscriptions` | اشتراكات الطلاب في البرامج |
 | `payments` | الدفعات |
-| `settings` | إعدادات عامة |
+| `interests` | طلبات الاهتمام من نموذج التسجيل |
 | `logs` | سجل العمليات (آخر 150) |
-| `users` | مستخدمو البوابة (مع `password`, `role`, `permissions`) |
-| `attendance`, `attendance_log` | التحضير |
-| `points`, `point_reasons` | نظام النقاط |
-| `cultural_competitions`, `cultural_participants` | المسابقات الثقافية |
-| `sports_tournaments`, `sports_teams`, `sports_matches`, `sports_stats` | البطولات الرياضية |
+| `comm_log` | سجل رسائل التواصل (ADR-004) |
+
+- **جداول `trader_*`:** تخص منصة التاجر (TRADER_NOTES.md).
+- **جداول محذوفة:**
+  - `sports_*`: حُذفت في ADR-010.
+  - `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`: تُحذف ضمن ADR-014 بعد نسخها إلى المخطط الخاص `archive_2026_09`.
+- **`settings`:** لم يعد مستخدماً في الكود.
 
 ### الاستضافة
-- **غير محددة في الكود** — لا `vercel.json`، لا `netlify.toml`، لا Dockerfile.
-- يعمل كـ **static site** على أي خادم HTTP بسيط (Python, Node http-server حسب README).
+- **Vercel:** `vercel.json` فيه rewrites لـ `/trader` و `/view` فقط، و `.vercelignore` يستبعد ملفات التوثيق والنسخ الاحتياطية.
+- **static site** بلا build step. محلياً يكفي أي خادم HTTP بسيط (مثل `python -m http.server`).
 
 ### Google Sheets
 - **مذكور في README فقط — غير مستخدم في الكود.**
@@ -85,40 +88,43 @@ bare-academy/
 
 ### المصادقة
 - **لا يوجد Supabase Auth.**
-- المصادقة يدوية: جدول `users` مع `password` plaintext، فحص بمقارنة نصية، حفظ في `localStorage`.
-- `dashboard.html` يستخدم كلمة مرور واحدة ثابتة (موثّقة سابقاً في README).
+- **لوحة التحكم:** بوابة بكلمة مرور واحدة. يُقارن SHA-256 لكلمة المرور مع `GATE_HASH` في المتصفح، والجلسة في `sessionStorage` وتنتهي بإغلاق المتصفح.
+  - هذه حماية للواجهة فقط؛ البيانات نفسها لا يحميها إلا RLS (انظر C3).
+- **بوابة الموظفين وجدول `users`** (كلمات مرور plaintext + جلسة في `localStorage`): حُذفا في ADR-014.
 
 ---
 
 ## ٣. المشاكل الحرجة المعروفة
 
-### 🔴 C1 — كلمات المرور مخزّنة plaintext
+> **بعد ADR-014:** C1 و C2 و C4 و C5 مُغلقة بالحذف، لأنها كلها كانت في بوابة الموظفين (`portal.js`) وجدول `users`. يبقى C3 مفتوحاً. روابط `portal.js` أدناه تاريخية.
+
+### ✅ C1 — كلمات المرور مخزّنة plaintext — مُغلقة (ADR-014)
 - **المكان:** [portal.js:144](portal.js:144)
 - **الوصف:** `if (u.password !== password)` — مقارنة نصية، يعني الـ DB تحتوي passwords بدون hashing/salting.
 - **الأثر:** أي تسرّب لـ DB = كشف كل كلمات المرور دفعة واحدة. كثير من المستخدمين يكررون كلمات المرور في حسابات أخرى.
 
-### 🔴 C2 — مصادقة client-side عبر localStorage فقط
+### ✅ C2 — مصادقة client-side عبر localStorage فقط — مُغلقة (ADR-014)
 - **المكان:** [portal.js:146-162](portal.js:146)
 - **الوصف:** بعد `login()` يُحفظ كائن المستخدم (مع `role` و `permissions`) في `localStorage`. عند إعادة التحميل يُقرأ منه مباشرة بدون أي تحقق من السيرفر.
 - **الأثر:** أي مستخدم يفتح Console ويعدّل `localStorage.portal_user` ليصير `role:'super_admin'`، ثم يحدّث الصفحة → صلاحية كاملة بدون استدعاء سيرفر.
 
 ### 🔴 C3 — Anon key مكشوف للعمليات الحساسة
-- **المكان:** [dashboard.js:5](dashboard.js:5), [portal.js:6](portal.js:6), [index.html:519](index.html:519), [leaderboard.html:219](leaderboard.html:219), [tournament-view.html:206](tournament-view.html:206)
+- **المكان:** [dashboard.js:5](dashboard.js:5), [index.html:617](index.html:617)
 - **الوصف:** نفس الـ anon JWT يُستخدم لـ INSERT/UPDATE/DELETE على كل الجداول من المتصفح.
 - **الأثر:** كل الأمان يعتمد على Supabase **RLS policies** (غير مرئية في الكود). لو RLS غير محكمة → أي زائر يقدر يعمل `DELETE /students` أو `UPDATE /payments` مباشرة.
 
-### 🔴 C4 — لا rate limiting على login
+### ✅ C4 — لا rate limiting على login — مُغلقة (ADR-014)
 - **المكان:** [portal.js:133-151](portal.js:133)
 - **الوصف:** `login()` يقبل عدداً لا نهائياً من المحاولات.
 - **الأثر:** brute force سهل، خصوصاً مع كلمات مرور بسيطة.
 
-### 🔴 C5 — صلاحيات client-side غير ملزمة على السيرفر
+### ✅ C5 — صلاحيات client-side غير ملزمة على السيرفر — مُغلقة (ADR-014)
 - **المكان:** [portal.js:165-168](portal.js:165), [portal.js:301](portal.js:301)
 - **الوصف:** `hasPermission()` يفحص كائن `_user.permissions` المحلي فقط. كل العمليات الفعلية تذهب لـ Supabase REST بنفس anon key.
 - **الأثر:** الواجهة تخفي الأزرار للمستخدم العادي، لكنه يقدر يستدعي API مباشرة. الصلاحيات "زينة بصرية" بدون enforcement حقيقي.
 
 ### مشاكل حرجة إضافية (موثّقة في تقرير المراجعة الكامل)
-- جدول `users` قابل للقراءة من العميل (يعرّض كل passwords).
+- ~~جدول `users` قابل للقراءة من العميل (يعرّض كل passwords).~~ يُحذف في ADR-014، ونسخته في الأرشيف بلا عمود `password`.
 - لا CSRF protection على عمليات الكتابة.
 - كلمة المرور الإدارية كانت مكشوفة في README سابقاً.
 
@@ -126,30 +132,32 @@ bare-academy/
 
 ## ٤. Tech Debt مرتب بالأولوية
 
+> **بعد ADR-014:** TD-1 و TD-2 و TD-5 و TD-6 و TD-7 و TD-15 ساقطة لأن ملفاتها حُذفت. TD-8 و TD-11 و TD-17 تقتصر على `dashboard.js`.
+
 ### 🔴 Critical (يمنع الانتقال للإنتاج)
 | # | البند | الموقع |
 |---|---|---|
-| TD-1 | Hashing لكلمات المرور (أو الانتقال لـ Supabase Auth) | [portal.js:144](portal.js:144) |
-| TD-2 | استبدال localStorage auth بـ JWT موقّع من السيرفر | [portal.js:146-162](portal.js:146) |
+| ~~TD-1~~ | ~~Hashing لكلمات المرور (أو الانتقال لـ Supabase Auth)~~ | ساقط (ADR-014) |
+| ~~TD-2~~ | ~~استبدال localStorage auth بـ JWT موقّع من السيرفر~~ | ساقط (ADR-014) |
 | TD-3 | إنشاء طبقة API (Vercel/Cloudflare Functions) للعمليات الحساسة | جميع `fetch` المباشرة لـ Supabase |
 | TD-4 | فحص وقفل RLS policies على كل الجداول | في Supabase (خارج الـ repo) |
-| TD-5 | rate limiting على login | [portal.js:133](portal.js:133) |
-| TD-6 | فرض صلاحيات على السيرفر بناءً على `auth.uid()` | RLS + portal.js permissions |
+| ~~TD-5~~ | ~~rate limiting على login~~ | ساقط (ADR-014) |
+| ~~TD-6~~ | ~~فرض صلاحيات على السيرفر بناءً على `auth.uid()`~~ | ساقط (ADR-014) |
 
 ### 🟡 Major (يحسّن جودة وصيانة الكود)
 | # | البند | الملاحظة |
 |---|---|---|
-| TD-7 | استخراج الـ Supabase helpers المشتركة بين dashboard.js و portal.js | ازدواجية ~10 دوال بالحرف |
-| TD-8 | تقسيم الملفات الضخمة (portal.js: 3092 سطر، dashboard.js: 2454 سطر) | حسب الـ domain |
+| ~~TD-7~~ | ~~استخراج الـ Supabase helpers المشتركة بين dashboard.js و portal.js~~ | ساقط (ADR-014)، فلم يبقَ إلا ملف واحد |
+| TD-8 | تقسيم الملف الضخم `dashboard.js` (3008 سطر) | حسب الـ domain |
 | TD-9 | استبدال inline `onclick=` (226 موقع) بـ event listeners | يكسر مع CSP صارمة |
 | TD-10 | نقل قوالب WhatsApp من localStorage إلى DB | [dashboard.js:1408](dashboard.js:1408) |
-| TD-11 | إصلاح 8 catch blocks فارغة (silent error swallowing) | [portal.js:161, 202-203](portal.js:161) وغيرها |
+| TD-11 | إصلاح catch blocks الفارغة (silent error swallowing) | كان أغلبها في portal.js المحذوف؛ يُعاد حصرها في dashboard.js |
 | TD-12 | تحسين `addLog`: استخدام Postgres trigger بدل INSERT+SELECT+DELETE في كل عملية | [dashboard.js:60-74](dashboard.js:60) |
 | TD-13 | إضافة Subresource Integrity (SRI) لـ CDN scripts | [dashboard.html:8](dashboard.html:8), [index.html:8](index.html:8) |
 | TD-14 | تحويل validation للسيرفر (CHECK constraints + RLS validation) | [index.html:444-481](index.html:444) |
-| TD-15 | حقل كلمة المرور في modal إنشاء المستخدم نوعه `text` | [portal.html:709](portal.html:709) |
+| ~~TD-15~~ | ~~حقل كلمة المرور في modal إنشاء المستخدم نوعه `text`~~ | ساقط (ADR-014) |
 | TD-16 | revalidate state بعد بعض mutations لتجنب stale UI | متفرق |
-| TD-17 | تقليل State العام (~25 متغير `let _xxx`) | بداية portal.js و dashboard.js |
+| TD-17 | تقليل State العام (متغيرات `let _xxx`) | بداية dashboard.js |
 
 ### 🟢 Minor (تحسينات تدريجية)
 | # | البند |
@@ -411,6 +419,61 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
   - (د) توسيع الاستثناء ليشمل `tournament` — مؤجَّل (خارج نطاق الإصلاح الحالي)؛ يُضاف لو ظهرت نفس المشكلة هناك.
 - **النتيجة:** تحديثات لوحة التحكم والبوابة تصل **فوراً** بعد كل نشر. التسجيل الصيفي يبقى PWA. المستخدمون العالقون على النسخة القديمة يحصلون على الجديدة بعد إعادة تحميل (activate يحذف v2 + `skipWaiting`/`clients.claim`). قاعدة ثابتة: **صفحات الإدارة لا تُخزَّن cache-first.**
 
+### ADR-014 — المنصة = واجهة عامة + إدارة التسجيل: حذف البوابة والتحضير والنقاط والثقافي والبطولات
+- **التاريخ:** 2026-09-18
+- **السياق:**
+  - طلب إبراهيم حذف التحضير والبطولات والقسم الثقافي والنقاط، وحدّد هدف المنصة بعبارته: «واجهة عامة وإدارة عمليات التسجيل فقط».
+  - هذه الأقسام أدوات تشغيل ميداني خارج هذا الهدف.
+  - بعد إزالتها لا يبقى في بوابة الموظفين (`portal.*`) إلا ثلاثة أشياء:
+    - رئيسية بعدّادين تحسبهما لوحة التحكم أصلاً.
+    - إدارة مستخدمين لم يعد لهم عمل.
+    - سجل عمليات مكرر من لوحة التحكم.
+- **القرار:**
+  1. **حذف بوابة الموظفين كاملة** (`portal.html/js/css`)، بما فيها:
+     - التحضير.
+     - النقاط وبنودها وإعداد `points_step`.
+     - المسابقات الثقافية.
+     - الصدارة الداخلية ورابط البطولات.
+     - إدارة المستخدمين وتسجيل الدخول اليدوي.
+  2. **حذف `leaderboard.html`:** صدارة عامة تقرأ جدول `points` فقط، ولا يربطها إلا البوابة.
+  3. **حذف تطبيق البطولات:** `tournament.html` + `tournament/` (ADR-011).
+  4. **حذف تبويب التحضير من لوحة التحكم (ADR-009)** مع ما لم يعد له مستخدم بعده:
+     - الدالة `sbUpsert`.
+     - الثوابت `ATTENDANCE` و `ATTENDANCE_LOG` و `SETTINGS`.
+  5. **تحديث `sw.js`:**
+     - رفع الكاش `v4 → v5` لمسح النسخ المخزّنة من الصفحات المحذوفة.
+     - إزالة `portal` من استثناء الشبكة.
+  6. **قاعدة البيانات** (يدوياً في Supabase Studio، بعد النشر)، داخل transaction واحدة:
+     - نسخ الجداول إلى المخطط الخاص `archive_2026_09`. هذا المخطط غير مكشوف للـ API، وجدول `users` يُنسخ بلا عمود `password`.
+     - تحقق آلي من تطابق عدد الصفوف بين الأصل والنسخة.
+     - `DROP TABLE` بلا CASCADE للجداول: `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`.
+     - جدول `settings` يُحذف معها إن لم يكن فيه إلا `points_step`، وإلا يُحذف صف `points_step` وحده.
+     - حذف المخطط `archive_2026_09` نفسه يتم لاحقاً بقرار منفصل.
+- **البدائل المرفوضة:**
+  - (أ) **إبقاء البوابة هيكلاً فارغاً** (رئيسية + مستخدمون) لأقسام قادمة:
+    - يُبقي ثغرات C1 و C2 و C4 و C5 وصفحة بلا وظيفة.
+    - أي أداة تشغيل مستقبلية تُبنى على Supabase Auth (S4) لا على هذا الأساس.
+  - (ب) **حذف التحضير من البوابة فقط** وإبقاء تبويب لوحة التحكم: رفضه إبراهيم، فقراره الحذف من المكانين.
+  - (ج) **إبقاء الجداول بلا حذف** (نمط ADR-006): رفضه إبراهيم، واختار نسخة احتياطية ثم حذفاً (نمط ADR-010). وإبقاؤها له عيبان أيضاً:
+    - يُبقي قيود FK محتملة من هذه الجداول إلى `programs`، قد تُفشل حذف البرامج.
+    - يُبقي جدول `users`، بكلمات مروره النصية، مقروءاً بالمفتاح العام.
+- **النتيجة:**
+  - المنصة = `index.html` + `dashboard.html`، إضافة إلى منصة التاجر المستقلة (`trader/` و `view/`).
+  - **المحذوف نحو 12,700 سطر:**
+    - البوابة: 3,781.
+    - البطولات: 7,983.
+    - الصدارة: 402.
+    - تبويب التحضير: 509.
+  - C1 و C2 و C4 و C5 مُغلقة، و S2 و S3 ساقطان، و S4 يقتصر على لوحة التحكم.
+  - روابط `tournament.html#/view/<id>` المرسلة سابقاً تعطي 404. الكود محفوظ في تاريخ git قبل `fc6498f`.
+  - **يحلّ محل:** ADR-003 (جدول users)، و ADR-007 و ADR-008 و ADR-009 (التحضير)، و ADR-011 (البطولات).
+  - **5 commits:**
+    1. `c1593aa`: لوحة التحكم.
+    2. `796457f`: البوابة والصدارة.
+    3. `fc6498f`: البطولات.
+    4. `50ba761`: sw.js.
+    5. التوثيق.
+
 <!-- إضافة قرارات جديدة هنا بصيغة:
 ### ADR-XXX — العنوان
 - **التاريخ:** YYYY-MM-DD
@@ -438,6 +501,8 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 > هذا القسم للفهم السياقي فقط — لا يؤثر على الكود مباشرة لكنه ضروري لفهم القرارات.
 
 ### من يستخدم البوابة؟
+> **منذ ADR-014 (2026-09-18):** المنصة = واجهة عامة + لوحة تحكم لإدارة التسجيل. بوابة الموظفين وأقسامها (التحضير، النقاط، الثقافي، البطولات) حُذفت، فلم يعد للمشرفين عمل في المنصة.
+
 - **إبراهيم الحسين (أبو خليل):** راعي المشروع + مدير المشروع + القيادة التقنية. يشرف على الاستراتيجية والتطوير.
 - **عبدالكريم المحيميد:** مدير البرنامج (شريك). يستخدم البوابة يومياً للتحضير، الرسوم، متابعة الطلاب. وقد يتغير مدير البرنامج.
 - **المشرفون (3-4 أشخاص):** كل مشرف له صلاحيات محددة (ثقافة، رياضة، إعلام، نظام).
@@ -504,14 +569,15 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F20 | **تصدير Excel للطلاب والمشتركين:** زرّا "📤 تصدير Excel" في dashboard — (أ) **سجل الطلاب:** كل الطلاب يشمل المؤرشفين (#، الاسم، الجوال، جوال 2، المرحلة، المصدر، البرامج، أول تواصل، الحالة)؛ (ب) **مشتركو البرنامج:** كل المشتركين (#، الاسم، الجوال، المجموعة، نوع الاشتراك، البداية، النهاية، الحالة، الحصص، المستحق، المدفوع، المتبقي، حالة الدفع). جوالات كنص، تواريخ هجرية، المبالغ أرقام، ورقة RTL، يتجاهل فلاتر الشاشة | ✅ | 2026-07-08 | PR #2 (`63c4802`, `33880d0`) |
 | F21 | **إصلاح الترقيم التلقائي لأعمدة `id`** (ADR-012): استعادة sequence لـ `programs` و `registrations` + سكربت فحص شامل لكل جداول `public` | ✅ | 2026-07-08 | DDL يدوي (Supabase Studio) |
 | F22 | **إصلاح Service Worker** (ADR-013): استثناء صفحات الإدارة (`dashboard`/`portal`) من cache-first → شبكة مباشرة، + رفع نسخة الكاش `v3`. يحل مشكلة عدم ظهور تحديثات لوحة التحكم (نسخة قديمة مخزّنة) | ✅ | 2026-07-08 | `sw.js` |
+| F23 | **حذف البوابة والتحضير والنقاط والثقافي والبطولات** (ADR-014): المنصة = واجهة عامة + إدارة التسجيل. حُذفت `portal.*` و `leaderboard.html` و `tournament.html` + `tournament/` وتبويب التحضير في dashboard، ورُفع كاش sw.js إلى v5. جداول الأقسام: نسخ احتياطي إلى `archive_2026_09` ثم DROP | ✅ الكود · ⏳ DB (بعد النشر) | 2026-09-18 | `c1593aa, 796457f, fc6498f, 50ba761` |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
 |---|---|---|
 | S1 | فحص RLS policies في Supabase | ⏳ |
-| S2 | إصلاح حقل كلمة المرور في modal إنشاء المستخدم (type="text" → type="password") | ⏳ |
-| S3 | إضافة rate limiting بسيط على login | ⏳ |
-| S4 | الانتقال لـ Supabase Auth (يحل TD-1, TD-2, TD-3, TD-5, TD-6 دفعة واحدة) | 🔜 (يحتاج تخطيط) |
+| ~~S2~~ | ~~إصلاح حقل كلمة المرور في modal إنشاء المستخدم (type="text" → type="password")~~ | ساقط (ADR-014: حُذفت البوابة) |
+| ~~S3~~ | ~~إضافة rate limiting بسيط على login~~ | ساقط (ADR-014: حُذفت البوابة) |
+| S4 | الانتقال لـ Supabase Auth في لوحة التحكم، بدل بوابة كلمة المرور الواحدة والكتابة بالمفتاح العام (يحل C3 و TD-3 و TD-4) | 🔜 (يحتاج تخطيط) |
 
 ### المتطلبات الجديدة
 > فارغة — ستُحدَّد في جلسة Discovery القادمة مع إبراهيم.
