@@ -22,16 +22,15 @@
         title:     'عرض اليوم الوطني 96',
         slogan:    'عزّنا بطبعنا',
         condition: 'السداد كاملاً مرة واحدة · قبل الثلاثاء 29 سبتمبر',
-        start:  'الأحد 27 سبتمبر 2026',
-        startH: '16 ربيع الآخر 1448 هـ',
+        tagline:   'شخصية، مهارة، قِيم، في بيئة آمنة',   // عبارة الواجهة أثناء العرض
         order:  ['m1','m2','m3'],
         packages: {
             // was = السعر المعتمد قبل العرض (يظهر مشطوباً). باقة الشهر بلا تاريخ انتهاء معروض.
             m1: { name:'شهر',        price:'296', was:'380',  unit:'ريالاً' },
             m2: { name:'شهران',      price:'596', was:'760',  unit:'ريالاً', ends:'الأربعاء 18 نوفمبر', endsH:'8 جمادى الآخرة 1448 هـ',
-                  dates:'الأحد 27 سبتمبر — الأربعاء 18 نوفمبر', meta:'16 ربيع الآخر — 8 جمادى الآخرة 1448 هـ' },
+                  dates:'تنتهي الأربعاء 18 نوفمبر', meta:'8 جمادى الآخرة 1448 هـ' },
             m3: { name:'ثلاثة أشهر', price:'896', was:'1140', unit:'ريالاً', ends:'الأربعاء 23 ديسمبر', endsH:'14 رجب 1448 هـ',
-                  dates:'الأحد 27 سبتمبر — الأربعاء 23 ديسمبر', meta:'16 ربيع الآخر — 14 رجب 1448 هـ', note:'حتى ختام البرنامج' }
+                  dates:'تنتهي الأربعاء 23 ديسمبر', meta:'14 رجب 1448 هـ', note:'حتى ختام البرنامج' }
         }
     };
     function nd96Live(){ return ND96.enabled === true && Date.now() < Date.parse(ND96.endsAt); }
@@ -542,10 +541,6 @@
         .nd96-box b { color:#fff; font-size:2.2rem; font-weight:700; font-variant-numeric:tabular-nums; }
         .nd96-box span { color:var(--nd-mist); font-size:.85rem; margin-top:2px; }
 
-        .nd96-start { color:var(--nd-mist); font-size:1rem; }
-        .nd96-start i { color:var(--nd-lime); margin-inline-end:4px; }
-        .nd96-start b { color:#fff; }
-        .nd96-start small { display:block; font-size:.82rem; opacity:.85; }
 
         .nd96-pkgs { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:920px; margin:22px auto 22px; padding:0 24px; }
         .nd96-pkg {
@@ -581,7 +576,7 @@
             color:#fff; font-weight:700; font-size:1.02rem; padding:11px 18px; text-align:start;
         }
         .nd96-cond i { color:var(--nd-lime); }
-        .nd96-nw, .nd96-start b { white-space:nowrap; }
+        .nd96-nw { white-space:nowrap; }
         .nd96-cta { margin:22px 0 6px; padding:0 24px; }
 
         /* سياسة الاستفادة — رابطها في الكتلة الداكنة، ومحتواها في لوحة فاتحة */
@@ -668,7 +663,6 @@
             .nd96-count-boxes { gap:10px; }
             .nd96-box { min-width:76px; }
             .nd96-box b { font-size:1.8rem; }
-            .nd96-start { font-size:.95rem; }
             .nd96-pkgs { grid-template-columns:1fr; gap:10px; padding:0 16px; margin-top:18px; }
             .nd96-pkg-in {
                 display:grid; grid-template-columns:1fr auto; align-items:center;
@@ -1006,8 +1000,6 @@ function nd96Render(){
                         <div class="nd96-box"><b id="nd96M">—</b><span>دقيقة</span></div>
                     </div>
                 </div>
-
-                <div class="nd96-start"><i class="fas fa-calendar-check"></i> بداية جميع باقات العرض: <b>${ND96.start}</b><small>${ND96.startH}</small></div>
             </div>
             <!-- لوحة «الكرم» الرسمية من هوية اليوم الوطني (الدلّة والفناجيل) -->
             <div class="nd96-art" role="img" aria-label="لوحة «الكرم» من هوية اليوم الوطني السعودي"></div>
@@ -1091,6 +1083,7 @@ function nd96Tick(){
 
 if(offerMode){
     nd96Render();
+    document.querySelector('.hero .subtitle').textContent = ND96.tagline;   // عبارة واحدة بلا «الفصل الدراسي الأول»
     document.getElementById('screenChoose').insertAdjacentHTML('afterbegin', `<div class="nd96-sheet-chip">${ND96.title}</div>`);
     document.querySelector('.pay-notice').insertAdjacentHTML('beforeend', `<span class="nd96-pay-cond"><i class="fas fa-circle-check"></i> ${nd96NoBreak(ND96.condition)}</span>`);
 
