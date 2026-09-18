@@ -26,11 +26,11 @@
         order:  ['m1','m2','m3'],
         packages: {
             // was = السعر المعتمد قبل العرض (يظهر مشطوباً). باقة الشهر بلا تاريخ انتهاء معروض.
-            m1: { name:'شهر',        price:'296', was:'380',  unit:'ريالاً' },
-            m2: { name:'شهران',      price:'596', was:'760',  unit:'ريالاً', ends:'الأربعاء 18 نوفمبر', endsH:'8 جمادى الآخرة 1448 هـ',
-                  dates:'تنتهي الأربعاء 18 نوفمبر', meta:'8 جمادى الآخرة 1448 هـ' },
-            m3: { name:'ثلاثة أشهر', price:'896', was:'1140', unit:'ريالاً', ends:'الأربعاء 23 ديسمبر', endsH:'14 رجب 1448 هـ',
-                  dates:'تنتهي الأربعاء 23 ديسمبر', meta:'14 رجب 1448 هـ', note:'حتى ختام البرنامج' }
+            // from/to = بداية الباقة ونهايتها (هجري، أم القرى). 16 ربيع الآخر = الأحد 27 سبتمبر 2026
+            m1: { name:'شهر',        price:'296', was:'380',  unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 10 جمادى الأولى 1448 هـ' },
+            m2: { name:'شهران',      price:'596', was:'760',  unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 8 جمادى الآخرة 1448 هـ' },
+            m3: { name:'ثلاثة أشهر', price:'896', was:'1140', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 14 رجب 1448 هـ',
+                  note:'حتى ختام البرنامج' }
         }
     };
     function nd96Live(){ return ND96.enabled === true && Date.now() < Date.parse(ND96.endsAt); }
@@ -554,8 +554,9 @@
         .nd96-pkg:focus-visible { outline:3px solid var(--nd-lime); outline-offset:2px; }
         .nd96-pkg-in { display:flex; flex-direction:column; align-items:center; gap:4px; padding:20px 14px 18px; }
         .nd96-pkg-name { color:#fff; font-size:1.4rem; font-weight:700; }
-        .nd96-pkg-ends { color:var(--nd-mist); font-size:.92rem; line-height:1.5; }
-        .nd96-pkg-ends small { display:block; font-size:.8rem; opacity:.85; }
+        .nd96-pkg-dates { display:flex; flex-direction:column; color:var(--nd-mist); font-size:.86rem; line-height:1.6; }
+        .nd96-pkg-dates em { font-style:normal; font-weight:700; color:#fff; margin-inline-end:4px; }
+        html.nd96 .choice-card .cc-dates b, html.nd96 .choice-card .cc-meta b { color:var(--primary); margin-inline-end:4px; }
         .nd96-pkg-prices { display:flex; align-items:baseline; justify-content:center; gap:10px; margin-top:6px; }
         .nd96-pkg-price { color:#fff; font-size:2.1rem; font-weight:700; line-height:1.3; }
         .nd96-pkg-price small { font-family:'Plex Arabic', Tahoma, sans-serif; font-size:.95rem; font-weight:400; color:var(--nd-mist); }
@@ -671,10 +672,10 @@
             .nd96-pkgs { grid-template-columns:1fr; gap:10px; padding:0 16px; margin-top:18px; }
             .nd96-pkg-in {
                 display:grid; grid-template-columns:1fr auto; align-items:center;
-                text-align:start; gap:0 12px; padding:13px 16px;
+                text-align:start; gap:0 8px; padding:13px 14px;
             }
             .nd96-pkg-name  { grid-column:1; grid-row:1; font-size:1.25rem; }
-            .nd96-pkg-ends  { grid-column:1; grid-row:2; font-size:.86rem; }
+            .nd96-pkg-dates { grid-column:1; grid-row:2; font-size:.76rem; }
             .nd96-pkg-prices { grid-column:2; grid-row:1 / span 2; flex-direction:column; align-items:flex-end; gap:0; margin-top:0; }
             .nd96-pkg-price { font-size:1.6rem; }
             .nd96-pkg-was { font-size:.95rem; line-height:1.2; }
@@ -1015,7 +1016,7 @@ function nd96Render(){
             <button type="button" class="nd96-pkg${p.note?' feat':''}" onclick="openSheet('${k}')">
                 <span class="nd96-pkg-in">
                     <span class="nd96-pkg-name">${p.name}</span>
-                    ${p.ends?`<span class="nd96-pkg-ends">تنتهي ${p.ends}<small>${p.endsH}</small></span>`:''}
+                    <span class="nd96-pkg-dates"><span><em>البداية</em> ${p.from}</span><span><em>النهاية</em> ${p.to}</span></span>
                     <span class="nd96-pkg-prices">
                         <span class="nd96-pkg-price">${p.price} <small>${p.unit}</small></span>
                         <s class="nd96-pkg-was" title="السعر قبل العرض">${p.was}</s>
@@ -1050,8 +1051,8 @@ function nd96ChoiceCards(){
         return `<div class="choice-card${p.note?' nd96-feat':''}" data-key="${k}" onclick="choose('${k}',event)">
             <div class="choice-icon"><i class="fas fa-calendar-days"></i></div>
             <h3>${p.name}</h3>
-            ${p.dates?`<div class="cc-dates">${p.dates}</div>`:''}
-            ${p.meta?`<div class="cc-meta">${p.meta}</div>`:''}
+            <div class="cc-dates"><b>البداية</b> ${p.from}</div>
+            <div class="cc-meta"><b>النهاية</b> ${p.to}</div>
             <div class="choice-price">${p.price} <span>${p.unit}</span> <s class="nd96-cc-was" title="السعر قبل العرض">${p.was}</s></div>
             ${p.note?`<div class="nd96-note">${p.note}</div>`:''}
         </div>`;
@@ -1211,7 +1212,7 @@ function choose(key, ev){
     const p = cat()[key];
     document.querySelectorAll('.choice-card').forEach(c=>c.classList.toggle('selected', c.dataset.key===key));
     document.getElementById('tbName').textContent  = p.name;
-    document.getElementById('tbMeta').textContent  = offerMode ? (p.dates || '') : p.dates + ' · ' + p.meta;
+    document.getElementById('tbMeta').textContent  = offerMode ? p.from + ' — ' + p.to : p.dates + ' · ' + p.meta;
     document.getElementById('tbPrice').textContent = p.price + ' ' + (p.unit || 'ريال');
     document.querySelectorAll('.kidPeriod').forEach(s=>s.value = key);
     setTimeout(()=>{
