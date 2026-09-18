@@ -75,8 +75,7 @@ bare-academy/
 - **جداول `trader_*`:** تخص منصة التاجر (TRADER_NOTES.md).
 - **جداول محذوفة:**
   - `sports_*`: حُذفت في ADR-010.
-  - `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`: تُحذف ضمن ADR-014 بعد نسخها إلى المخطط الخاص `archive_2026_09`.
-- **`settings`:** لم يعد مستخدماً في الكود.
+  - `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`, `settings`: حُذفت في ADR-014 (2026-09-19)، ونسختها محفوظة في المخطط الخاص `archive_2026_09`.
 
 ### الاستضافة
 - **Vercel:** `vercel.json` فيه rewrites لـ `/trader` و `/view` فقط، و `.vercelignore` يستبعد ملفات التوثيق والنسخ الاحتياطية.
@@ -124,7 +123,7 @@ bare-academy/
 - **الأثر:** الواجهة تخفي الأزرار للمستخدم العادي، لكنه يقدر يستدعي API مباشرة. الصلاحيات "زينة بصرية" بدون enforcement حقيقي.
 
 ### مشاكل حرجة إضافية (موثّقة في تقرير المراجعة الكامل)
-- ~~جدول `users` قابل للقراءة من العميل (يعرّض كل passwords).~~ يُحذف في ADR-014، ونسخته في الأرشيف بلا عمود `password`.
+- ~~جدول `users` قابل للقراءة من العميل (يعرّض كل passwords).~~ حُذف في ADR-014، ونسخته في الأرشيف بلا عمود `password`.
 - لا CSRF protection على عمليات الكتابة.
 - كلمة المرور الإدارية كانت مكشوفة في README سابقاً.
 
@@ -443,11 +442,11 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
   5. **تحديث `sw.js`:**
      - رفع الكاش `v4 → v5` لمسح النسخ المخزّنة من الصفحات المحذوفة.
      - إزالة `portal` من استثناء الشبكة.
-  6. **قاعدة البيانات** (يدوياً في Supabase Studio، بعد النشر)، داخل transaction واحدة:
-     - نسخ الجداول إلى المخطط الخاص `archive_2026_09`. هذا المخطط غير مكشوف للـ API، وجدول `users` يُنسخ بلا عمود `password`.
+  6. **قاعدة البيانات** (يدوياً في Supabase Studio، بعد النشر)، في أمر `DO` واحد، فأي فشل فيه يُلغي كل شيء:
+     - نسخ الجداول إلى المخطط الخاص `archive_2026_09`. هذا المخطط غير مكشوف للـ API، والأرشيف بلا كلمات مرور (عمود `password` من `users`، وقيم كلمات المرور في `settings`).
      - تحقق آلي من تطابق عدد الصفوف بين الأصل والنسخة.
-     - `DROP TABLE` بلا CASCADE للجداول: `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`.
-     - جدول `settings` يُحذف معها إن لم يكن فيه إلا `points_step`، وإلا يُحذف صف `points_step` وحده.
+     - `DROP TABLE` بلا CASCADE للجداول: `attendance`, `attendance_log`, `points`, `point_reasons`, `cultural_competitions`, `cultural_participants`, `tournaments`, `tournament_teams`, `tournament_matches`, `tournament_events`, `tournament_ratings`, `users`, `settings`.
+     - **`settings`:** كانت الخطة تتوقع فيه `points_step`، فظهر أن فيه صفاً واحداً فقط: كلمة مرور التحضير القديمة (`attendance_password`). هي لميزة محذوفة ومكشوفة للمفتاح العام، فحُذف الجدول مع البقية.
      - حذف المخطط `archive_2026_09` نفسه يتم لاحقاً بقرار منفصل.
 - **البدائل المرفوضة:**
   - (أ) **إبقاء البوابة هيكلاً فارغاً** (رئيسية + مستخدمون) لأقسام قادمة:
@@ -472,7 +471,12 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
     2. `796457f`: البوابة والصدارة.
     3. `fc6498f`: البطولات.
     4. `50ba761`: sw.js.
-    5. التوثيق.
+    5. `4978b3e`: التوثيق.
+  - **الدمج والنشر:** PR #3 بـ merge commit `309fc50`، ونُشر على الإنتاج في 2026-09-19. تحققنا بعد النشر أن الصفحات المحذوفة تعطي 404 وأن لوحة التحكم سليمة.
+  - **قاعدة البيانات (نُفّذت 2026-09-19):**
+    - 13 جدولاً (1,210 صفوف) نُسخت إلى `archive_2026_09` وتطابقت الأعداد، ثم حُذفت من `public`.
+    - زالت معها علاقات FK بلا cascade من `points` و `cultural_competitions` إلى `programs` و `students`، وكانت تُفشل حذف أي برنامج أو طالب له نقاط.
+    - لم يكن هناك views ولا دوال تعتمد على هذه الجداول.
 
 <!-- إضافة قرارات جديدة هنا بصيغة:
 ### ADR-XXX — العنوان
@@ -569,7 +573,7 @@ CREATE INDEX idx_comm_log_sent_at ON comm_log("sentAt" DESC);
 | F20 | **تصدير Excel للطلاب والمشتركين:** زرّا "📤 تصدير Excel" في dashboard — (أ) **سجل الطلاب:** كل الطلاب يشمل المؤرشفين (#، الاسم، الجوال، جوال 2، المرحلة، المصدر، البرامج، أول تواصل، الحالة)؛ (ب) **مشتركو البرنامج:** كل المشتركين (#، الاسم، الجوال، المجموعة، نوع الاشتراك، البداية، النهاية، الحالة، الحصص، المستحق، المدفوع، المتبقي، حالة الدفع). جوالات كنص، تواريخ هجرية، المبالغ أرقام، ورقة RTL، يتجاهل فلاتر الشاشة | ✅ | 2026-07-08 | PR #2 (`63c4802`, `33880d0`) |
 | F21 | **إصلاح الترقيم التلقائي لأعمدة `id`** (ADR-012): استعادة sequence لـ `programs` و `registrations` + سكربت فحص شامل لكل جداول `public` | ✅ | 2026-07-08 | DDL يدوي (Supabase Studio) |
 | F22 | **إصلاح Service Worker** (ADR-013): استثناء صفحات الإدارة (`dashboard`/`portal`) من cache-first → شبكة مباشرة، + رفع نسخة الكاش `v3`. يحل مشكلة عدم ظهور تحديثات لوحة التحكم (نسخة قديمة مخزّنة) | ✅ | 2026-07-08 | `sw.js` |
-| F23 | **حذف البوابة والتحضير والنقاط والثقافي والبطولات** (ADR-014): المنصة = واجهة عامة + إدارة التسجيل. حُذفت `portal.*` و `leaderboard.html` و `tournament.html` + `tournament/` وتبويب التحضير في dashboard، ورُفع كاش sw.js إلى v5. جداول الأقسام: نسخ احتياطي إلى `archive_2026_09` ثم DROP | ✅ الكود · ⏳ DB (بعد النشر) | 2026-09-18 | `c1593aa, 796457f, fc6498f, 50ba761` |
+| F23 | **حذف البوابة والتحضير والنقاط والثقافي والبطولات** (ADR-014): المنصة = واجهة عامة + إدارة التسجيل. حُذفت `portal.*` و `leaderboard.html` و `tournament.html` + `tournament/` وتبويب التحضير في dashboard، ورُفع كاش sw.js إلى v5. جداول الأقسام (13 جدولاً): نسخ احتياطي إلى `archive_2026_09` ثم DROP. حذف الأرشيف نفسه لاحقاً بقرار منفصل | ✅ | 2026-09-19 | `c1593aa, 796457f, fc6498f, 50ba761, 4978b3e` · PR #3 (`309fc50`) · DDL يدوي (Supabase Studio) |
 
 ### الإصلاحات العاجلة المتبقية (أمنية — بالترتيب)
 | # | الإجراء | الحالة |
