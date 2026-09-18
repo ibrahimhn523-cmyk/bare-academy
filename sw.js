@@ -1,4 +1,4 @@
-const CACHE = 'bare-1448-v4';
+const CACHE = 'bare-1448-v5';
 const SHELL = [
   './',
   './index.html',
@@ -33,13 +33,13 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // صفحات الإدارة (لوحة التحكم + البوابة) ومنصة تقييم فعالية التاجر
+  // صفحة الإدارة (لوحة التحكم) ومنصة تقييم فعالية التاجر
   // (/trader و /view) دائماً من الشبكة — لا cache-first. الإدارة تتغيّر
   // باستمرار، وفعالية التاجر تعتمد على بيانات حية (لوحة صدارة تُحدَّث كل
   // 10 ثوانٍ) وتمر بمراحل تطوير نشطة — التخزين كان يخدم نسخة قديمة بعد كل
   // نشر (ADR-013، ومُطبَّق نفس القرار على /trader و/view في Phase 1 من
   // مشروع Trader Event Evaluation، 2026-08-05).
-  if (/(?:dashboard|portal|trader|view)/.test(url.pathname)) {
+  if (/(?:dashboard|trader|view)/.test(url.pathname)) {
     return;
   }
 
