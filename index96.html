@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#1e293b">
+    <title>أكاديمية بارع - برنامج الفصل الدراسي الأول 1448هـ</title>
+
+    <!-- ===== عرض اليوم الوطني 96 — نسخة معاينة: لا تُفهرس ===== -->
+    <meta name="robots" content="noindex">
+    <script>
+    /* =====================================================================
+       عرض اليوم الوطني 96 — المفتاح الوحيد وموضع التحديث الوحيد
+       • الإطفاء اليدوي: enabled:false ثم حفظ → يختفي العرض والكسوة فوراً، بلا حذف كود.
+       • الانتهاء الذاتي: عند endsAt (توقيت الرياض بإزاحة +03:00 صريحة) تعود الصفحة كالإنتاج.
+       • حالة فشل معلومة: الحساب بساعة جهاز الزائر؛ ساعة خاطئة تُظهر العرض قبل أوانه أو بعده.
+       • تاريخ غير صالح = عرض مطفأ (Date.parse → NaN).
+       ===================================================================== */
+    const ND96 = {
+        enabled: true,
+        endsAt:  '2026-09-29T23:59:59+03:00',
+        title:     'عرض اليوم الوطني 96',
+        slogan:    'عزّنا بطبعنا',
+        condition: 'السداد كاملاً مرة واحدة · قبل الثلاثاء 29 سبتمبر',
+        start:  'الأحد 27 سبتمبر 2026',
+        startH: '16 ربيع الآخر 1448 هـ',
+        order:  ['m1','m2','m3'],
+        packages: {
+            m1: { name:'شهر',        price:'296', unit:'ريالاً', ends:'الأربعاء 21 أكتوبر', endsH:'10 جمادى الأولى 1448 هـ',
+                  dates:'الأحد 27 سبتمبر — الأربعاء 21 أكتوبر', meta:'16 ربيع الآخر — 10 جمادى الأولى 1448 هـ' },
+            m2: { name:'شهران',      price:'596', unit:'ريالاً', ends:'الأربعاء 18 نوفمبر', endsH:'8 جمادى الآخرة 1448 هـ',
+                  dates:'الأحد 27 سبتمبر — الأربعاء 18 نوفمبر', meta:'16 ربيع الآخر — 8 جمادى الآخرة 1448 هـ' },
+            m3: { name:'ثلاثة أشهر', price:'896', unit:'ريالاً', ends:'الأربعاء 23 ديسمبر', endsH:'14 رجب 1448 هـ',
+                  dates:'الأحد 27 سبتمبر — الأربعاء 23 ديسمبر', meta:'16 ربيع الآخر — 14 رجب 1448 هـ', note:'حتى ختام البرنامج' }
+        }
+    };
+    function nd96Live(){ return ND96.enabled === true && Date.now() < Date.parse(ND96.endsAt); }
+    const ND96_ON = nd96Live();
+    if (ND96_ON) {
+        document.documentElement.classList.add('nd96');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#006C35');
+    }
+    </script>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="بارع">
+    <link rel="apple-touch-icon" href="image/bare-logo.png">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ========== الخطوط ========== */
+        @font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Regular.otf') format('opentype'); font-weight:normal; }
+        @font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Medium.otf')  format('opentype'); font-weight:500; }
+        @font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-SemiBold.otf') format('opentype'); font-weight:600; }
+        @font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Bold.otf')    format('opentype'); font-weight:bold; }
+        @font-face { font-family:'Handicrafts'; src:url('fonts/TheYearofHandicrafts-Black.otf')   format('opentype'); font-weight:900; }
+
+        /* ========== متغيرات اللون ========== */
+        :root {
+            --primary:    #1e293b;
+            --secondary:  #d4af37;
+            --bg-color:   #f8fafc;
+            --surface:    #ffffff;
+            --text-main:  #334155;
+            --text-light: #64748b;
+            --radius:     16px;
+            --shadow:     0 10px 25px rgba(30,41,59,.05);
+            --transition: all 0.3s cubic-bezier(.4,0,.2,1);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-top:    env(safe-area-inset-top, 0px);
+        }
+
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+        body {
+            font-family:'Handicrafts', Tahoma, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ========== Animations ========== */
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+        .fade-in { animation:fadeInUp .8s ease forwards; opacity:0; }
+
+        /* ========== Hero ========== */
+        .hero {
+            background: linear-gradient(135deg,var(--primary) 0%,#0f172a 100%);
+            color: white;
+            padding: calc(130px + var(--safe-top)) 20px 80px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 5px solid var(--secondary);
+        }
+        .hero::before {
+            content:''; position:absolute; inset:0;
+            background-image: radial-gradient(var(--secondary) 1px,transparent 1px);
+            background-size: 30px 30px; opacity:.05;
+        }
+        .hero-content { position:relative; z-index:2; max-width:800px; margin:0 auto; }
+        .hero h1 { font-size:3.2rem; font-weight:bold; color:#fff; margin-bottom:14px; text-shadow:0 4px 15px rgba(0,0,0,.3); }
+        .hero .subtitle { font-size:1.15rem; color:#cbd5e1; margin-bottom:30px; font-weight:500; }
+
+        /* شريط الأنشطة داخل الـ Hero */
+        .activities-bar { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-top:10px; }
+        .activity-chip {
+            display:inline-flex; align-items:center; gap:7px;
+            background:rgba(212,175,55,.12); border:1px solid rgba(212,175,55,.35);
+            color:#f1f5f9; padding:7px 16px; border-radius:30px; font-size:.95rem; font-weight:500;
+        }
+        .activity-chip i { color:var(--secondary); font-size:.9rem; }
+        .activity-chip.camp { background:rgba(212,175,55,.22); border-color:var(--secondary); color:#fff; font-weight:600; }
+
+        /* ========== Container ========== */
+        .container { max-width:1200px; margin:-40px auto 40px; padding:0 20px; position:relative; z-index:10; }
+
+        .section-title { text-align:center; font-size:2.2rem; color:var(--primary); margin-bottom:40px; font-weight:bold; position:relative; }
+        .section-title::after { content:''; display:block; width:80px; height:4px; background:var(--secondary); margin:15px auto 0; border-radius:2px; }
+
+        /* ========== Info Cards ========== */
+        .info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:25px; margin-bottom:40px; }
+        .info-card { background:var(--surface); padding:30px 20px; border-radius:var(--radius); box-shadow:var(--shadow); text-align:center; transition:var(--transition); border-top:4px solid transparent; }
+        .info-card:hover { transform:translateY(-10px); border-top-color:var(--secondary); box-shadow:0 15px 30px rgba(0,0,0,.1); }
+        .info-icon { font-size:2.5rem; color:var(--secondary); margin-bottom:15px; }
+        .info-card h3 { font-size:1.2rem; color:var(--text-light); margin-bottom:10px; font-weight:500; }
+        .info-card p  { font-size:1.3rem; font-weight:bold; color:var(--primary); }
+
+        /* بطاقتا الفئتين */
+        .tracks-grid { display:grid; grid-template-columns:1fr 1fr; gap:25px; margin-bottom:50px; }
+        .track-card {
+            background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+            padding:30px 25px; text-align:center; border-top:4px solid var(--secondary);
+            display:flex; flex-direction:column;
+        }
+        .track-card .track-icon { font-size:2.6rem; color:var(--secondary); margin-bottom:12px; }
+        .track-card h3 { font-size:1.5rem; color:var(--primary); margin-bottom:6px; font-weight:bold; }
+        .track-card .track-ages { color:var(--text-light); font-size:1rem; margin-bottom:18px; font-weight:500; }
+        .track-meta { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+        .track-meta .row { display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.05rem; color:var(--text-main); }
+        .track-meta .row i { color:var(--secondary); width:20px; }
+        .track-price { margin-top:auto; padding-top:16px; border-top:1px dashed #e2e8f0; }
+        .track-price .amount { font-size:2rem; font-weight:bold; color:var(--primary); }
+        .track-price .amount span { font-size:1rem; font-weight:normal; color:var(--text-light); }
+
+        /* ========== CTA ========== */
+        .cta-wrapper { text-align:center; margin:10px 0 50px; }
+        .cta-button { background:linear-gradient(135deg,var(--secondary) 0%,#B8942A 100%); color:var(--primary); border:none; padding:18px 50px; font-size:1.6rem; font-weight:bold; font-family:inherit; border-radius:50px; cursor:pointer; box-shadow:0 10px 20px rgba(212,175,55,.3); transition:transform .12s ease, box-shadow .3s ease; display:inline-flex; align-items:center; gap:10px; }
+        .cta-button:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 15px 25px rgba(212,175,55,.4); }
+        .cta-button:active { transform:scale(.97); }
+
+        /* ========== Contact ========== */
+        .contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:30px; margin-bottom:60px; }
+        .map-container { border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow); height:350px; }
+        .map-container iframe { width:100%; height:100%; border:none; }
+        .social-container { background:var(--primary); color:white; padding:40px; border-radius:var(--radius); display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; box-shadow:var(--shadow); }
+        .social-container h3 { color:var(--secondary); font-size:1.8rem; margin-bottom:8px; }
+        .social-container .phone { color:#cbd5e1; font-size:1.2rem; margin-bottom:6px; direction:ltr; }
+        .social-icons { display:flex; gap:20px; margin-top:20px; }
+        .social-icon { width:60px; height:60px; background:rgba(255,255,255,.1); color:white; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.5rem; text-decoration:none; transition:var(--transition); }
+        .social-icon:hover { background:var(--secondary); color:var(--primary); transform:translateY(-5px) scale(1.1); }
+        .social-icon:active { transform:scale(.92); }
+
+        /* ========== Footer ========== */
+        footer { background:var(--primary); color:white; text-align:center; padding:calc(20px + var(--safe-bottom)) 20px 20px; font-size:1.1rem; border-top:3px solid var(--secondary); }
+
+        /* ===================================================== */
+        /* ============== Bottom Sheet (نافذة التسجيل) ========== */
+        /* ===================================================== */
+        .sheet-overlay {
+            position:fixed; inset:0; z-index:1000;
+            background:rgba(15,23,42,.65); backdrop-filter:blur(4px);
+            opacity:0; visibility:hidden; transition:opacity .3s ease, visibility .3s ease;
+        }
+        .sheet-overlay.active { opacity:1; visibility:visible; }
+
+        .sheet {
+            position:fixed; left:0; right:0; bottom:0; z-index:1001;
+            background:var(--surface);
+            border-radius:24px 24px 0 0;
+            max-height:92vh; height:92vh;
+            display:flex; flex-direction:column;
+            transform:translateY(100%);
+            transition:transform .38s cubic-bezier(.32,.72,0,1);
+            box-shadow:0 -10px 40px rgba(0,0,0,.2);
+            padding-bottom:var(--safe-bottom);
+        }
+        .sheet.active { transform:translateY(0); }
+        /* على الشاشات الكبيرة: تتحوّل لنافذة مركزية */
+        @media (min-width:769px) {
+            .sheet {
+                left:50%; right:auto; bottom:auto; top:50%;
+                width:90%; max-width:620px;
+                transform:translate(-50%,-50%) scale(.96);
+                border-radius:var(--radius); max-height:90vh; height:90vh;
+                opacity:0; transition:transform .3s ease, opacity .3s ease;
+            }
+            .sheet.active { transform:translate(-50%,-50%) scale(1); opacity:1; }
+            .sheet-grabber { display:none !important; }
+        }
+
+        .sheet-grabber { width:44px; height:5px; background:#cbd5e1; border-radius:3px; margin:12px auto 4px; flex-shrink:0; }
+
+        .sheet-header {
+            display:flex; align-items:center; gap:12px;
+            padding:8px 22px 14px; border-bottom:2px solid #f1f5f9; flex-shrink:0;
+            position:relative;
+        }
+        .sheet-back {
+            width:38px; height:38px; border-radius:50%; border:none; background:#f1f5f9;
+            color:var(--primary); font-size:1.1rem; cursor:pointer; flex-shrink:0;
+            display:none; align-items:center; justify-content:center; transition:transform .12s ease, background .2s;
+            font-family:inherit;
+        }
+        .sheet-back.show { display:flex; }
+        .sheet-back:active { transform:scale(.9); background:#e2e8f0; }
+        .sheet-title { flex:1; text-align:center; color:var(--primary); font-size:1.35rem; font-weight:bold; }
+        .sheet-close {
+            width:38px; height:38px; border-radius:50%; border:none; background:#f1f5f9;
+            color:var(--text-light); font-size:1.1rem; cursor:pointer; flex-shrink:0;
+            display:flex; align-items:center; justify-content:center; transition:transform .2s ease, background .2s;
+        }
+        .sheet-close:hover { background:#fee2e2; color:#ef4444; transform:rotate(90deg); }
+        .sheet-close:active { transform:scale(.9); }
+
+        /* مساحة الشاشات المنزلقة */
+        .sheet-viewport { flex:1; min-height:0; overflow:hidden; position:relative; }
+        .sheet-track { display:flex; width:200%; height:100%; transition:transform .35s cubic-bezier(.32,.72,0,1); }
+        .sheet-screen { width:50%; height:100%; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:22px; }
+        .sheet-track.show-form { transform:translateX(50%); } /* RTL: ينزلق لليسار */
+
+        /* ===== شاشة اختيار المسار ===== */
+        .choose-intro { text-align:center; color:var(--text-light); font-size:1rem; margin-bottom:20px; }
+        .choice-card {
+            border:2px solid #e2e8f0; border-radius:var(--radius); padding:22px 20px; margin-bottom:16px;
+            cursor:pointer; text-align:center; position:relative; overflow:hidden;
+            transition:transform .14s ease, border-color .2s ease, background .2s ease;
+            background:var(--surface);
+        }
+        .choice-card:active { transform:scale(.97); }
+        .choice-card.dim { opacity:.6; }
+        .choice-card.selected { border-color:var(--secondary); background:#fffdf5; }
+        .choice-card .choice-icon { font-size:2.4rem; color:var(--secondary); margin-bottom:10px; }
+        .choice-card h3 { font-size:1.4rem; color:var(--primary); margin-bottom:4px; font-weight:bold; }
+        .choice-card .ages { color:var(--text-light); font-size:.95rem; margin-bottom:14px; }
+        .choice-card .meta-line { display:flex; justify-content:center; gap:18px; flex-wrap:wrap; font-size:.95rem; color:var(--text-main); }
+        .choice-card .meta-line span { display:inline-flex; align-items:center; gap:6px; }
+        .choice-card .meta-line i { color:var(--secondary); }
+        .choice-card .choice-price { margin-top:14px; padding-top:12px; border-top:1px dashed #e2e8f0; font-size:1.3rem; font-weight:bold; color:var(--primary); }
+        .choice-card .choice-price span { font-size:.9rem; font-weight:normal; color:var(--text-light); }
+        /* موجة ذهبية عند اللمس */
+        .ripple { position:absolute; border-radius:50%; background:rgba(212,175,55,.35); transform:scale(0); animation:rippleAnim .55s ease-out; pointer-events:none; }
+        @keyframes rippleAnim { to { transform:scale(3.2); opacity:0; } }
+
+        /* ===== شاشة النموذج ===== */
+        .track-badge {
+            display:flex; align-items:center; justify-content:space-between; gap:10px;
+            background:#fffdf5; border:1.5px solid var(--secondary); border-radius:12px;
+            padding:12px 16px; margin-bottom:20px;
+        }
+        .track-badge .tb-name { font-weight:bold; color:var(--primary); font-size:1.1rem; }
+        .track-badge .tb-meta { color:var(--text-light); font-size:.9rem; }
+        .track-badge .tb-price { color:var(--secondary); font-weight:bold; font-size:1.1rem; }
+
+        .form-group { margin-bottom:18px; }
+        .form-group label { display:block; margin-bottom:7px; color:var(--primary); font-weight:bold; font-size:1em; }
+        .form-group input[type="text"],
+        .form-group input[type="tel"],
+        .form-group select { width:100%; padding:13px 14px; border:1.5px solid #ddd; border-radius:10px; font-family:'Handicrafts',Arial,sans-serif; font-size:1.05em; transition:border-color .3s; background:#fff; }
+        .form-group input:focus,
+        .form-group select:focus { outline:none; border-color:var(--secondary); box-shadow:0 0 0 3px rgba(212,175,55,.15); }
+        .error-msg { color:#d32f2f; font-size:.85em; margin-top:4px; display:none; }
+        .error-msg.show { display:block; }
+
+        /* مجموعة أزرار نوع المشترك */
+        .seg-group { display:flex; gap:10px; }
+        .seg-btn {
+            flex:1; padding:13px; border:1.5px solid #ddd; border-radius:10px; background:#fff;
+            color:var(--text-main); font-family:inherit; font-size:1.05em; cursor:pointer;
+            transition:transform .12s ease, border-color .2s, background .2s, color .2s;
+        }
+        .seg-btn:active { transform:scale(.96); }
+        .seg-btn.active { border-color:var(--secondary); background:var(--primary); color:#fff; }
+
+        .terms-section { background:#f9f9f9; border-right:4px solid var(--secondary); padding:18px; margin:22px 0; border-radius:8px; }
+        .terms-section h3 { color:var(--primary); margin-bottom:12px; font-size:1.05em; }
+        .terms-list { list-style:none; padding:0; margin-bottom:14px; }
+        .terms-list li { display:flex; align-items:flex-start; gap:8px; margin-bottom:10px; font-size:.88em; color:#333; line-height:1.6; }
+        .terms-list li::before { content:'●'; color:var(--secondary); flex-shrink:0; margin-top:2px; }
+        .agree-row { display:flex; align-items:center; gap:10px; margin-top:14px; padding:12px 14px; background:#fff; border-radius:8px; border:2px solid var(--secondary); }
+        .agree-row input[type="checkbox"] { width:22px; height:22px; cursor:pointer; flex-shrink:0; accent-color:var(--primary); }
+        .agree-row label { display:inline; margin:0; font-weight:bold; font-size:.95em; cursor:pointer; color:var(--primary); }
+
+        /* زر الإرسال المثبّت */
+        .sheet-footer { flex-shrink:0; padding:14px 22px calc(14px + var(--safe-bottom)); border-top:1px solid #f1f5f9; background:var(--surface); }
+        .btn-submit {
+            width:100%; padding:15px; border:none; border-radius:12px; font-size:1.15em; cursor:pointer;
+            font-family:'Handicrafts',Arial,sans-serif; background:var(--primary); color:#fff; font-weight:bold;
+            transition:transform .12s ease, background .2s; display:flex; align-items:center; justify-content:center; gap:10px;
+        }
+        .btn-submit:active { transform:scale(.98); }
+        .btn-submit:disabled { background:#94a3b8; cursor:not-allowed; }
+        .spinner { width:20px; height:20px; border:3px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; display:none; }
+        .btn-submit.loading .spinner { display:inline-block; }
+        .btn-submit.loading .btn-label { display:none; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+
+        /* ========== رسالة الشكر ========== */
+        #thankYouMessage {
+            display:none; position:fixed; inset:0; z-index:9999;
+            background:rgba(15,23,42,.75); backdrop-filter:blur(8px);
+            align-items:center; justify-content:center; opacity:0; transition:opacity .5s ease;
+        }
+        #thankYouMessage.show { display:flex; opacity:1; }
+        .thankyou-card { background:#f8fafc; border-radius:24px; padding:50px 50px 40px; text-align:center; max-width:520px; width:90%; box-shadow:0 10px 40px rgba(30,41,59,.12); animation:cardPop .5s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes cardPop { from{transform:scale(.7);opacity:0} to{transform:scale(1);opacity:1} }
+        .thankyou-logo { width:90px; height:auto; margin:0 auto 20px; display:block; animation:iconBounce .8s ease .2s both; }
+        @keyframes iconBounce { 0%{transform:scale(0);opacity:0} 70%{transform:scale(1.1)} 100%{transform:scale(1);opacity:1} }
+        .thankyou-card h2 { font-family:'Handicrafts',Arial,sans-serif; color:#1e293b; font-size:1.9rem; font-weight:bold; margin-bottom:10px; line-height:1.4; }
+        .thankyou-card p { font-family:'Handicrafts',Arial,sans-serif; color:#64748b; font-size:1rem; line-height:1.6; margin-bottom:28px; }
+        .thankyou-progress { width:100%; height:4px; background:#e2e8f0; border-radius:2px; overflow:hidden; margin-top:6px; }
+        .thankyou-progress-bar { height:100%; background:linear-gradient(90deg,#d4af37,#e6c84e); border-radius:2px; width:100%; animation:shrink 5s linear forwards; }
+        @keyframes shrink { from{width:100%} to{width:0%} }
+
+        /* ========== Mobile ========== */
+        @media (max-width:768px) {
+            .hero { padding:calc(85px + var(--safe-top)) 20px 50px; }
+            .hero h1 { font-size:2.1rem; }
+            .hero .subtitle { font-size:1rem; }
+            .activity-chip { font-size:.85rem; padding:6px 13px; }
+            .section-title { font-size:1.6rem; margin-bottom:25px; }
+            .tracks-grid { grid-template-columns:1fr; gap:18px; }
+            .contact-grid { grid-template-columns:1fr; }
+            .cta-button { width:100%; justify-content:center; font-size:1.3rem; padding:16px 20px; }
+            .thankyou-card { padding:40px 24px; }
+            .thankyou-card h2 { font-size:1.5rem; }
+        }
+
+        /* احترام تقليل الحركة */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration:.001ms !important; transition-duration:.05ms !important; }
+        }
+    
+        /* ===== إضافات الفصل الدراسي الأول ===== */
+.pay-terms-line { text-align:center; margin:0 0 26px; }
+        .pay-terms-line b { display:block; color:var(--primary); font-size:1rem; font-weight:600; }
+        .pay-terms-line span { display:block; color:var(--text-light); font-size:.88rem; margin-top:3px; }
+        .period-grid { display:grid; grid-template-columns:1fr; gap:25px; margin-bottom:50px; }
+        @media (min-width:769px){ .period-grid { grid-template-columns:repeat(3,1fr); } }
+        .period-card {
+            background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+            padding:30px 25px; text-align:center; border-top:4px solid var(--secondary);
+            display:flex; flex-direction:column; transition:var(--transition); position:relative;
+        }
+        .period-card:hover { transform:translateY(-10px); box-shadow:0 15px 30px rgba(0,0,0,.1); }
+        .period-card.featured { border-top-color:var(--primary); }
+        .period-card h3 { font-size:1.5rem; color:var(--primary); margin-bottom:6px; font-weight:bold; }
+        .period-card .pc-meta { color:var(--text-light); font-size:1rem; margin-bottom:18px; font-weight:500; }
+        .period-card .pc-lines { display:flex; flex-direction:column; gap:10px; margin-bottom:20px; }
+        .period-card .pc-lines .row { display:flex; align-items:center; justify-content:center; gap:8px; font-size:1.05rem; color:var(--text-main); }
+        .period-card .pc-lines .row i { color:var(--secondary); width:20px; }
+        .period-card .pc-price { margin-top:auto; padding-top:16px; border-top:1px dashed #e2e8f0; }
+        .period-card .pc-price .amount { font-size:2rem; font-weight:bold; color:var(--primary); }
+        .period-card .pc-price .amount span { font-size:1rem; font-weight:normal; color:var(--text-light); }
+        .period-card .pc-early { margin-top:8px; font-size:1rem; color:var(--text-main); }
+        .period-card .pc-early b { color:var(--secondary); font-weight:bold; }
+        .period-card .pc-early small { display:block; color:var(--text-light); font-size:.82rem; margin-top:1px; }
+        .period-card .cta-inner {
+            background:linear-gradient(135deg,var(--secondary) 0%,#B8942A 100%);
+            color:var(--primary); border:none; padding:16px 34px; font-size:1.25rem; font-weight:bold;
+            font-family:inherit; border-radius:50px; cursor:pointer;
+            box-shadow:0 10px 20px rgba(212,175,55,.3);
+            transition:transform .12s ease, box-shadow .3s ease;
+            display:inline-flex; align-items:center; justify-content:center; gap:10px;
+            margin:22px auto 0;
+        }
+        .period-card .cta-inner:hover { transform:translateY(-3px) scale(1.02); box-shadow:0 15px 25px rgba(212,175,55,.4); }
+        .period-card .cta-inner:active { transform:scale(.97); }
+        .period-card .cta-inner.closed {
+            background:#e2e8f0; color:#94a3b8; box-shadow:none; cursor:pointer;
+        }
+        .period-card .cta-inner.closed:hover { transform:none; box-shadow:none; }
+        .period-card.dim { opacity:.72; }
+        .period-card.dim:hover { transform:none; box-shadow:var(--shadow); }
+        .closed-toast {
+            position:fixed; left:50%; bottom:34px; transform:translateX(-50%) translateY(20px);
+            background:var(--primary); color:#fff; padding:14px 26px; border-radius:50px;
+            font-family:'Handicrafts',Arial,sans-serif; font-size:1rem; font-weight:500;
+            box-shadow:0 10px 30px rgba(30,41,59,.28); z-index:3000;
+            opacity:0; pointer-events:none; transition:opacity .3s ease, transform .3s ease;
+        }
+        .closed-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+        /* بطاقة اختيار الفترة داخل النافذة */
+        .choice-card .cc-dates { color:var(--text-light); font-size:.92rem; margin-bottom:2px; }
+        .choice-card .cc-meta  { color:var(--text-light); font-size:.88rem; margin-bottom:12px; }
+        .choice-card .cc-early { margin-top:10px; padding-top:10px; border-top:1px dashed #e2e8f0; font-size:.95rem; color:var(--text-main); }
+        .choice-card .cc-early b { color:var(--secondary); }
+        .choice-card .cc-early small { display:block; color:var(--text-light); font-size:.78rem; }
+
+        /* كتلة الابن */
+        .kid-block { background:#f9fafb; border:1.5px solid #e2e8f0; border-radius:12px; padding:18px; margin-bottom:14px; }
+        .kid-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .kid-head .kid-title { display:flex; align-items:center; gap:9px; font-weight:bold; color:var(--primary); font-size:1.02rem; }
+        .kid-head .kid-num {
+            width:26px; height:26px; border-radius:8px; background:var(--primary); color:var(--secondary);
+            display:flex; align-items:center; justify-content:center; font-size:.85rem;
+        }
+        .kid-head .kid-remove { background:none; border:none; color:#ef4444; font-family:inherit; font-size:.88rem; cursor:pointer; padding:4px; }
+        .btn-add-kid {
+            width:100%; padding:14px; border:2px dashed var(--secondary); border-radius:12px;
+            background:transparent; color:var(--primary); font-family:inherit; font-size:1rem; font-weight:bold;
+            cursor:pointer; margin-bottom:20px; transition:background .2s;
+        }
+        .btn-add-kid:hover { background:#fffdf5; }
+
+        .pay-notice { background:#fffdf5; border-right:4px solid var(--secondary); border-radius:8px; padding:15px 17px; margin-bottom:18px; }
+        .pay-notice b { display:block; color:var(--primary); font-size:1rem; margin-bottom:3px; }
+        .pay-notice span { color:var(--text-light); font-size:.9rem; }
+
+        .agree-row .terms-link { color:var(--secondary); font-weight:bold; text-decoration:underline; cursor:pointer; }
+
+        /* نافذة الشروط */
+        .terms-modal { position:fixed; inset:0; z-index:2000; background:rgba(15,23,42,.65); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; }
+        .terms-modal.active { display:flex; }
+        .terms-sheet { background:var(--surface); width:100%; max-width:620px; max-height:86vh; overflow-y:auto; border-radius:24px 24px 0 0; padding:12px 22px calc(28px + var(--safe-bottom)); }
+        @media (min-width:769px){ .terms-sheet { border-radius:var(--radius); max-height:80vh; } }
+        .terms-sheet .grabber { width:44px; height:5px; background:#cbd5e1; border-radius:3px; margin:0 auto 18px; }
+        .terms-sheet h3 { color:var(--primary); font-size:1.3rem; margin-bottom:18px; font-weight:bold; }
+        .terms-sheet ol { list-style:none; counter-reset:tc; }
+        .terms-sheet li { counter-increment:tc; position:relative; padding-right:34px; margin-bottom:15px; font-size:.92rem; color:var(--text-main); line-height:1.75; }
+        .terms-sheet li::before {
+            content:counter(tc); position:absolute; right:0; top:3px; width:24px; height:24px;
+            border-radius:8px; background:var(--primary); color:var(--secondary);
+            font-size:.75rem; font-weight:bold; display:flex; align-items:center; justify-content:center;
+        }
+        .btn-close-terms { width:100%; margin-top:20px; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:transparent; color:var(--text-light); font-family:inherit; font-size:1rem; cursor:pointer; }
+        .btn-close-terms:hover { border-color:var(--primary); color:var(--primary); }
+
+        /* ملخص الشكر */
+        .ty-summary { background:#fff; border:1.5px solid #e2e8f0; border-radius:12px; padding:4px 16px; text-align:right; margin-bottom:20px; }
+        .ty-summary .r { padding:12px 0; border-bottom:1px solid #f1f5f9; }
+        .ty-summary .r:last-child { border-bottom:none; }
+        .ty-summary .r b { display:block; color:var(--primary); font-size:1rem; }
+        .ty-summary .r span { color:var(--text-light); font-size:.86rem; }
+        .btn-wa {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            background:#25D366; color:#fff; text-decoration:none; padding:16px; border-radius:12px;
+            font-weight:bold; font-size:1.1rem; margin-bottom:12px; box-shadow:0 8px 20px rgba(37,211,102,.3);
+        }
+        .btn-wa i { font-size:1.3rem; }
+        .btn-back-home { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:transparent; color:var(--text-light); font-family:inherit; font-size:1rem; cursor:pointer; }
+
+        /* ================================================================ */
+        /* ===== عرض اليوم الوطني 96 — الكسوة (كل قواعدها تحت html.nd96) ===== */
+        /* ================================================================ */
+        /* معالجة لونية وطنية محايدة: أخضر أساساً وذهبي للتمييز — بلا شعار رسمي ولا علم */
+        html.nd96 {
+            --primary:       #006C35;
+            --nd-green-deep: #00391C;
+            --nd-gold-ink:   #8C6D12;   /* ذهبي داكن للنص على الأبيض (تباين ≥ 4.5) */
+            --nd-gold-soft:  #F3DF9C;   /* ذهبي فاتح للنص الصغير على الأخضر */
+            --nd-cream:      #FDF9EC;
+        }
+        html.nd96 .hero { background:linear-gradient(135deg,var(--primary) 0%,var(--nd-green-deep) 100%); }
+        html.nd96 .hero .subtitle { color:#DCEFE3; }
+        html.nd96 .activities-bar { display:none; }   /* محاور البرنامج مخفية أثناء العرض */
+        html.nd96 .cta-button,
+        html.nd96 .period-card .cta-inner { color:var(--nd-green-deep); }
+        html.nd96 .kid-head .kid-num,
+        html.nd96 .terms-sheet li::before { color:var(--nd-gold-soft); }
+        html.nd96 .thankyou-card h2 { color:var(--primary); }
+        html.nd96 .track-badge .tb-price { color:var(--nd-gold-ink); }
+        /* العرض وحده يظهر: قسم «مدد الاشتراك» يختفي أثناء العرض ويعود بانتهائه */
+        html.nd96 #stdPricing { display:none; }
+        html.nd96 #stdPricing + p { margin-top:10px !important; }
+
+        /* ===== عرض اليوم الوطني 96 — كتلة العرض ===== */
+        .nd96-offer {
+            background:var(--surface); border-radius:var(--radius);
+            box-shadow:0 18px 40px rgba(0,57,28,.12); border-top:4px solid var(--secondary);
+            padding:34px 30px 26px; margin-bottom:40px; text-align:center;
+        }
+        .nd96-title { color:var(--primary); font-size:2.3rem; font-weight:bold; line-height:1.35; }
+        .nd96-slogan {
+            display:flex; align-items:center; justify-content:center; gap:14px;
+            color:var(--nd-gold-ink); font-size:1.35rem; font-weight:600; margin-top:2px;
+        }
+        .nd96-slogan::before, .nd96-slogan::after { content:''; width:34px; height:2px; background:var(--secondary); border-radius:2px; }
+
+        .nd96-count { margin:24px 0 22px; }
+        .nd96-count-lbl { color:var(--text-light); font-size:.95rem; margin-bottom:10px; }
+        .nd96-count-boxes { display:flex; flex-direction:row-reverse; justify-content:center; gap:12px; } /* الأيام يساراً والدقائق يميناً */
+        .nd96-box {
+            min-width:86px; padding:10px 10px 8px; border-radius:14px;
+            background:linear-gradient(160deg,var(--primary),var(--nd-green-deep));
+            box-shadow:inset 0 -3px 0 var(--secondary);
+            display:flex; flex-direction:column; align-items:center; line-height:1.25;
+        }
+        .nd96-box b { color:#fff; font-size:2.1rem; font-weight:bold; font-variant-numeric:tabular-nums; }
+        .nd96-box span { color:var(--nd-gold-soft); font-size:.85rem; margin-top:2px; }
+
+        .nd96-start { color:var(--text-main); font-size:1.02rem; margin-bottom:22px; }
+        .nd96-start i { color:var(--secondary); margin-inline-end:4px; }
+        .nd96-start b { color:var(--primary); }
+        .nd96-start small { display:block; color:var(--text-light); font-size:.85rem; }
+
+        .nd96-pkgs { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:900px; margin:0 auto 22px; }
+        .nd96-pkg {
+            display:block; width:100%; font-family:inherit; cursor:pointer; color:var(--text-main);
+            background:var(--surface); border:1.5px solid #e2e8f0; border-radius:14px; padding:0;
+            transition:transform .14s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .nd96-pkg:hover { border-color:var(--secondary); transform:translateY(-4px); box-shadow:0 12px 24px rgba(0,57,28,.1); }
+        .nd96-pkg:active { transform:scale(.97); }
+        .nd96-pkg:focus-visible { outline:3px solid var(--secondary); outline-offset:2px; }
+        .nd96-pkg-in { display:flex; flex-direction:column; align-items:center; gap:4px; padding:20px 14px 18px; }
+        .nd96-pkg-name { color:var(--primary); font-size:1.35rem; font-weight:bold; }
+        .nd96-pkg-ends { font-size:.95rem; line-height:1.5; }
+        .nd96-pkg-ends small { display:block; color:var(--text-light); font-size:.8rem; }
+        .nd96-pkg-price { color:var(--primary); font-size:2rem; font-weight:bold; line-height:1.3; margin-top:6px; }
+        .nd96-pkg-price small { font-size:1rem; font-weight:normal; color:var(--text-light); }
+        .nd96-pkg.feat { background:var(--nd-cream); border-color:var(--secondary); }
+        .nd96-pkg-note {
+            background:var(--secondary); color:var(--nd-green-deep); font-weight:bold;
+            font-size:.85rem; padding:2px 12px; border-radius:30px; margin-top:2px;
+        }
+
+        .nd96-cond {
+            display:inline-flex; align-items:center; gap:8px; max-width:100%;
+            background:var(--nd-cream); border-inline-start:4px solid var(--secondary); border-radius:8px;
+            color:var(--primary); font-weight:bold; font-size:1.02rem; padding:11px 18px; text-align:start;
+        }
+        .nd96-cond i { color:var(--secondary); }
+        .nd96-nw, .nd96-start b { white-space:nowrap; }
+        .nd96-cta { margin:22px 0 8px; }
+
+        /* سياسة الاستفادة — قابلة للطي، بتنسيق ملف السياسة */
+        .nd96-policy { text-align:start; margin-top:10px; border-top:1px dashed #e2e8f0; padding-top:10px; }
+        .nd96-policy summary {
+            list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+            color:var(--primary); font-weight:bold; font-size:1rem; padding:6px;
+        }
+        .nd96-policy summary::-webkit-details-marker { display:none; }
+        .nd96-policy summary span { text-decoration:underline; text-decoration-color:var(--secondary); text-underline-offset:6px; }
+        .nd96-policy summary i { font-size:.75rem; color:var(--secondary); transition:transform .25s ease; }
+        .nd96-policy[open] summary i { transform:rotate(180deg); }
+        .nd96-policy-body { padding:10px 4px 4px; font-size:.92rem; line-height:1.85; color:var(--text-main); }
+        .nd96-policy-body .nd96-valid { color:var(--text-light); font-size:.8rem; }
+        .nd96-policy-body .nd96-valid::after { content:''; display:block; width:160px; height:3px; margin-top:10px; background:linear-gradient(to left,var(--secondary) 45%,var(--primary) 45%); }
+        .nd96-policy-body h4 { color:var(--primary); font-size:1.05rem; margin:18px 0 6px; }
+        .nd96-policy-body p { margin-bottom:6px; }
+        .nd96-policy-body b { color:#1e293b; }
+        .nd96-policy-body a { color:var(--primary); font-weight:bold; }
+        .nd96-tbl-wrap { overflow-x:auto; margin:8px 0; }
+        .nd96-tbl { width:100%; border-collapse:collapse; font-size:.88rem; }
+        .nd96-tbl th { background:#E8F3EC; color:var(--primary); text-align:start; padding:8px 10px; font-weight:bold; }
+        .nd96-tbl td { padding:8px 10px; border-bottom:1px solid #EDF2EF; }
+        .nd96-tbl td.was { color:var(--text-light); }
+        .nd96-tbl td.now { color:var(--primary); font-weight:bold; }
+        .nd96-cnd { padding-inline-start:12px; }
+        .nd96-bank { background:#F4F7F5; border-inline-start:4px solid var(--primary); border-radius:6px; padding:10px 14px; margin:6px 0 10px; }
+        .nd96-iban { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:4px; }
+        .nd96-iban span { font-family:ui-monospace, Menlo, Consolas, monospace; font-weight:bold; font-size:1rem; letter-spacing:.5px; color:#1e293b; user-select:all; white-space:nowrap; }
+        .nd96-iban button {
+            font-family:inherit; font-size:.85rem; font-weight:bold; color:var(--primary); cursor:pointer;
+            background:#fff; border:1.5px solid var(--secondary); border-radius:30px; padding:3px 14px;
+        }
+        .nd96-iban button:active { transform:scale(.95); }
+
+        /* ===== عرض اليوم الوطني 96 — داخل نافذة التسجيل وشاشة الشكر ===== */
+        .nd96-sheet-chip {
+            display:table; margin:0 auto 12px; padding:4px 16px; border-radius:30px;
+            background:var(--primary); color:#fff; font-size:.88rem; font-weight:bold;
+            box-shadow:inset 0 -2px 0 var(--secondary);
+        }
+        .choice-card.nd96-feat { background:var(--nd-cream); }
+        .choice-card.nd96-feat.selected { border-color:var(--secondary); }
+        .choice-card .nd96-note {
+            display:inline-block; margin-top:10px; padding:2px 12px; border-radius:30px;
+            background:var(--secondary); color:var(--nd-green-deep); font-size:.82rem; font-weight:bold;
+        }
+        .nd96-pay-cond { display:block; margin-top:6px; color:var(--primary); font-weight:bold; font-size:.9rem; }
+        .nd96-pay-cond i { color:var(--secondary); margin-inline-end:4px; }
+        .nd96-preview-tag {
+            display:inline-flex; align-items:center; gap:6px; margin-bottom:14px; padding:4px 14px; border-radius:30px;
+            background:#FEF3C7; color:#92400E; border:1px solid #FCD34D; font-size:.85rem; font-weight:bold;
+        }
+
+        @media (max-width:768px) {
+            .nd96-offer { padding:26px 16px 20px; }
+            .nd96-title { font-size:1.75rem; }
+            .nd96-slogan { font-size:1.15rem; gap:10px; }
+            .nd96-slogan::before, .nd96-slogan::after { width:24px; }
+            .nd96-count-boxes { gap:10px; }
+            .nd96-box { min-width:76px; }
+            .nd96-box b { font-size:1.75rem; }
+            .nd96-start { font-size:.95rem; }
+            .nd96-pkgs { grid-template-columns:1fr; gap:10px; }
+            .nd96-pkg-in {
+                display:grid; grid-template-columns:1fr auto; align-items:center;
+                text-align:start; gap:0 12px; padding:13px 16px;
+            }
+            .nd96-pkg-name  { grid-column:1; grid-row:1; font-size:1.2rem; }
+            .nd96-pkg-ends  { grid-column:1; grid-row:2; font-size:.88rem; }
+            .nd96-pkg-price { grid-column:2; grid-row:1 / span 2; font-size:1.55rem; margin-top:0; }
+            .nd96-pkg-note  { grid-column:1 / -1; justify-self:start; margin-top:6px; }
+            .nd96-cond { font-size:.95rem; }
+            .nd96-iban span { font-size:.85rem; letter-spacing:0; }   /* الآيبان في سطر واحد */
+            .nd96-tbl { font-size:.8rem; }
+            .nd96-tbl th, .nd96-tbl td { padding:7px 6px; }
+            .nd96-tbl td.was, .nd96-tbl td.now { white-space:nowrap; }
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- ========== Hero ========== -->
+<section class="hero">
+    <div class="hero-content">
+        <img src="image/bare-logo.png" alt="شعار أكاديمية بارع" class="fade-in"
+             style="width:110px;height:auto;margin:0 auto 18px;display:block;">
+        <h1 class="fade-in">برنامج بارع</h1>
+        <p class="subtitle fade-in" style="animation-delay:.15s">الفصل الدراسي الأول 1448 هـ · شخصية، مهارة، قِيم، في بيئة آمنة</p>
+        <div class="activities-bar fade-in" style="animation-delay:.3s">
+            <span class="activity-chip"><i class="fas fa-futbol"></i> بطولات رياضية</span>
+            <span class="activity-chip"><i class="fas fa-lightbulb"></i> مسابقات ثقافية</span>
+            <span class="activity-chip camp"><i class="fas fa-campground"></i> مخيم بارع للمتميزين</span>
+            <span class="activity-chip"><i class="fas fa-book-open"></i> قيم إيمانية</span>
+            <span class="activity-chip"><i class="fas fa-water"></i> ألعاب مائية</span>
+        </div>
+    </div>
+</section>
+
+<div class="container">
+
+    <!-- بطاقات المعلومات -->
+    <div class="info-grid">
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-calendar-days"></i></div>
+            <h3>مدة البرنامج</h3>
+            <p>16 أسبوعاً · 64 يوماً</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-clock"></i></div>
+            <h3>الوقت</h3>
+            <p>4:30 – 7:30 م</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-calendar-week"></i></div>
+            <h3>أيام البرنامج</h3>
+            <p>الأحد – الأربعاء</p>
+        </div>
+        <div class="info-card">
+            <div class="info-icon"><i class="fas fa-location-dot"></i></div>
+            <h3>المقر</h3>
+            <p>أكاديمية بارع - حي الربوة الشرقية</p>
+        </div>
+    </div>
+
+    <!-- الفترات -->
+    <div id="stdPricing"><!-- عرض اليوم الوطني 96: غلاف محايد للتخطيط — يُخفى أثناء العرض -->
+    <h2 class="section-title">مدد الاشتراك</h2>
+
+    <div class="pay-terms-line">
+        <b>الاشتراك لفترة كاملة - ويُقبل السداد على دفعتين</b>
+        <span>(خصم الدفع المبكر عند السداد الكامل)</span>
+    </div>
+
+    <div class="period-grid" id="periodGrid"></div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-light);margin:96px 0 50px;font-size:1.05rem;">
+        من أولى ابتدائي إلى ثالث متوسط · الأحد إلى الأربعاء
+    </p>
+
+    <!-- التواصل -->
+    <h2 class="section-title">موقعنا وتواصلنا</h2>
+    <div class="contact-grid">
+        <div class="map-container">
+            <iframe src="https://maps.google.com/maps?q=أكاديمية%20بارع,%20بريدة&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                    loading="lazy" title="موقع الأكاديمية"></iframe>
+        </div>
+        <div class="social-container">
+            <h3>أكاديمية بارع</h3>
+            <div class="phone">حي الربوة الشرقية — بريدة</div>
+            <div class="social-icons">
+                <a href="https://wa.me/966509076627" target="_blank" rel="noopener" class="social-icon" title="واتساب"><i class="fab fa-whatsapp"></i></a>
+                <a href="https://snapchat.com/t/qPFDpcHZ" target="_blank" rel="noopener" class="social-icon" title="سناب شات"><i class="fab fa-snapchat-ghost"></i></a>
+                <a href="https://www.tiktok.com/@bare.ac" target="_blank" rel="noopener" class="social-icon" title="تيك توك"><i class="fab fa-tiktok"></i></a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer>جميع الحقوق محفوظة — أكاديمية بارع 1448 هـ</footer>
+
+<!-- ========== نافذة التسجيل ========== -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+
+<div class="sheet" id="sheet">
+    <div class="sheet-grabber"></div>
+
+    <div class="sheet-header">
+        <button class="sheet-back" id="sheetBack" onclick="goChoose()" aria-label="رجوع"><i class="fas fa-arrow-right"></i></button>
+        <div class="sheet-title" id="sheetTitle">اختر مدة الاشتراك</div>
+        <button class="sheet-close" onclick="closeSheet()" aria-label="إغلاق"><i class="fas fa-xmark"></i></button>
+    </div>
+
+    <div class="sheet-viewport">
+        <div class="sheet-track" id="sheetTrack">
+
+            <!-- شاشة الاختيار -->
+            <div class="sheet-screen" id="screenChoose">
+                <p class="choose-intro">اختر مدة الاشتراك — يمكنك تعديلها لكل ابن في الخطوة التالية.</p>
+                <div id="choiceCards"></div>
+            </div>
+
+            <!-- شاشة النموذج -->
+            <div class="sheet-screen" id="screenForm">
+                <div class="track-badge">
+                    <div>
+                        <div class="tb-name" id="tbName">—</div>
+                        <div class="tb-meta" id="tbMeta">—</div>
+                    </div>
+                    <div class="tb-price" id="tbPrice">—</div>
+                </div>
+
+                <form id="regForm" novalidate>
+
+                    <div class="form-group">
+                        <label for="fatherName">اسم الأب</label>
+                        <input type="text" id="fatherName" autocomplete="off">
+                        <div class="error-msg">مطلوب</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="familyName">العائلة</label>
+                        <input type="text" id="familyName" autocomplete="family-name">
+                        <div class="error-msg">مطلوب</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="guardianPhone">جوال ولي الأمر</label>
+                        <input type="tel" id="guardianPhone" inputmode="numeric" placeholder="05XXXXXXXX" maxlength="10">
+                        <div class="error-msg">يبدأ بـ 05 ويتكوّن من 10 أرقام</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="altPhone">جوال إضافي <span style="color:var(--text-light);font-weight:normal;font-size:.9em">— اختياري</span></label>
+                        <input type="tel" id="altPhone" inputmode="numeric" placeholder="05XXXXXXXX" maxlength="10">
+                        <div class="error-msg">يبدأ بـ 05 ويتكوّن من 10 أرقام</div>
+                    </div>
+
+                    <div id="kidsWrap"></div>
+                    <button type="button" class="btn-add-kid" onclick="addKid()">+ إضافة ابن آخر</button>
+
+                    <div class="pay-notice">
+                        <b>التسجيل يكتمل بعد السداد.</b>
+                        <span>سيتواصل معك مشرف البرنامج لاستكمال الإجراءات.</span>
+                    </div>
+
+                    <div class="agree-row">
+                        <input type="checkbox" id="agreeCheck">
+                        <label for="agreeCheck">أقررتُ بالاطلاع على <span class="terms-link" onclick="openTerms(event)">التنبيهات والاشتراطات</span></label>
+                    </div>
+                    <div class="error-msg" id="agreeError" style="margin-top:8px">يلزم الإقرار بالاطلاع قبل الإرسال</div>
+
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="sheet-footer" id="sheetFooter" style="display:none">
+        <button class="btn-submit" id="submitBtn" onclick="submitForm()">
+            <span class="spinner"></span>
+            <span class="btn-label"><i class="fas fa-paper-plane"></i> إرسال الطلب</span>
+        </button>
+    </div>
+</div>
+
+<!-- ========== نافذة الشروط ========== -->
+<div class="terms-modal" id="termsModal" onclick="if(event.target===this)closeTerms()">
+    <div class="terms-sheet">
+        <div class="grabber"></div>
+        <h3>التنبيهات والاشتراطات</h3>
+        <ol id="termsList"></ol>
+        <button class="btn-close-terms" onclick="closeTerms()">إغلاق</button>
+    </div>
+</div>
+
+<!-- ========== رسالة الشكر ========== -->
+<div id="thankYouMessage">
+    <div class="thankyou-card">
+        <img src="image/bare-logo-blue.png" alt="أكاديمية بارع" class="thankyou-logo">
+        <h2>استلمنا طلبك</h2>
+        <p>سيتواصل معك مشرف البرنامج لاستكمال إجراءات التسجيل والسداد.</p>
+        <div class="ty-summary" id="tySummary"></div>
+        <a class="btn-wa" id="waLink" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> تواصل معنا الآن</a>
+        <button class="btn-back-home" onclick="location.reload()">العودة للصفحة الرئيسة</button>
+    </div>
+</div>
+
+<script>
+'use strict';
+
+const SB_URL = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/rest/v1';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dGZoZ3FoaWJiY3NxYm52d3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyMjgwNDgsImV4cCI6MjA5MDgwNDA0OH0.oX2f-gCIBn8cHvNbgYIrnFc5JeUXtQ_i0AreSqgBWJs';
+const WA_NUMBER = '966509076627';
+
+/* ===== بيانات البرنامج — موضع التحديث الوحيد ===== */
+const PROGRAM = {
+    name: 'الفصل الدراسي الأول 1448',
+    periods: {
+        both:   { name:'البرنامج كاملاً', dates:'17 / 3 — 14 / 7 / 1448 هـ', meta:'16 أسبوعاً · 64 يوماً', price:'1,520', early:'1,280', win:'خلال أول أسبوعين من بداية البرنامج', opens:null,         closes:'2026-11-01' },
+        first:  { name:'الفترة الأولى',   dates:'17 / 3 — 10 / 5 / 1448 هـ', meta:'8 أسابيع · 32 يوماً',  price:'760',   early:'685',   win:'خلال أول أسبوعين من الفترة',       opens:null,         closes:'2026-11-01' },
+        second: { name:'الفترة الثانية',  dates:'14 / 5 — 14 / 7 / 1448 هـ', meta:'8 أسابيع · 32 يوماً',  price:'760',   early:'685',   win:'خلال أول أسبوعين من الفترة',       opens:'2026-10-11', closes:'2026-12-09' }
+    },
+    grades: ['أولى ابتدائي','ثانية ابتدائي','ثالثة ابتدائي','رابع ابتدائي','خامس ابتدائي','سادس ابتدائي','أول متوسط','ثاني متوسط','ثالث متوسط'],
+    terms: [
+        'للأكاديمية الحق في تصوير المشتركين وتوثيق الأنشطة، واستخدام الصور والمقاطع في النشر والترويج.',
+        'تبذل الأكاديمية وسعها في حفظ سلامة الطلاب، ولا تتحمل مسؤولية الإصابات، ولا مسؤولية الطالب قبل أوقات البرنامج أو بعدها.',
+        'يلتزم ولي الأمر بالإفصاح الكامل عن أي حالة صحية لدى الطالب.',
+        'في حال طارئ صحي، للأكاديمية اتخاذ الإجراءات الإسعافية الأولية ونقل الطالب إلى أقرب مركز طبي، مع إشعار ولي الأمر فوراً.',
+        'عند طلب إلغاء الاشتراك، تُحتسب رسوم المدة المنقضية بالسعر الأساسي دون أي خصم، وتُحسم من المبلغ المسدَّد، ويُسترد الباقي.',
+        'الغياب لأي سبب لا يُنقص من قيمة الاشتراك، ولا تُعوَّض الأيام الفائتة.',
+        'الاشتراك لفترة كاملة، ويُقبل سداد الرسوم على دفعتين. ويُطبَّق خصم الدفع المبكر عند السداد الكامل داخل مدة العرض.',
+        'في حال إلغاء الأكاديمية ليوم أو نشاط لظرف طارئ، لها تحديد موعد بديل دون التزام مالي.',
+        'الأكاديمية غير مسؤولة عن فقدان أو تلف الممتلكات الشخصية التي يجلبها المشترك.',
+        'يتحمل ولي الأمر تكاليف أي تلف متعمد يتسبب فيه الطالب في مرافق الأكاديمية أو أدواتها.',
+        'للأكاديمية حق استبعاد أي طالب عند المخالفة المتكررة للأنظمة.'
+    ]
+};
+
+const ORDER = ['both','first','second'];
+
+/* ================================================================== */
+/* ===== عرض اليوم الوطني 96 — طبقة العرض (المفتاح ND96 في <head>) ===== */
+/* ================================================================== */
+const offerMode = ND96_ON;   // يُحسب مرة عند التحميل؛ انتهاء العرض أثناء التصفح يعيد تحميل الصفحة
+function cat(){ return offerMode ? ND96.packages : PROGRAM.periods; }
+function catOrder(){ return offerMode ? ND96.order : ORDER; }
+
+/* نص «سياسة الاستفادة من عرض اليوم الوطني 96» — النص المعتمد المحدَّث، منقول حرفياً بأرقام غربية */
+const ND96_IBAN = 'SA29 8000 0697 6080 1066 6962';   // مصرف الراجحي — تحقّق: 24 خانة، mod 97 = 1
+const ND96_POLICY = `
+    <div class="nd96-valid">أكاديمية بارع · برنامج الفصل الدراسي الأول 1448 هـ<br>سارية حتى الثلاثاء 29 سبتمبر 2026 م</div>
+
+    <h4>1 · باقات العرض</h4>
+    <div class="nd96-tbl-wrap"><table class="nd96-tbl">
+        <thead><tr><th>الباقة</th><th>المدة</th><th>قبل العرض</th><th>بعد العرض</th></tr></thead>
+        <tbody>
+            <tr><td>شهر</td><td><span class="nd96-nw">4 أسابيع</span> · <span class="nd96-nw">16 يوماً</span></td><td class="was">380 ريالاً</td><td class="now">296 ريالاً</td></tr>
+            <tr><td>شهران</td><td><span class="nd96-nw">8 أسابيع</span> · <span class="nd96-nw">32 يوماً</span></td><td class="was">760 ريالاً</td><td class="now">596 ريالاً</td></tr>
+            <tr><td>ثلاثة أشهر</td><td><span class="nd96-nw">12 أسبوعاً</span> · <span class="nd96-nw">48 يوماً</span></td><td class="was">1140 ريالاً</td><td class="now">896 ريالاً</td></tr>
+        </tbody>
+    </table></div>
+    <p>الشهر أربعة أسابيع من أيام البرنامج (الأحد إلى الأربعاء).</p>
+
+    <h4>2 · شروط الاستفادة</h4>
+    <p>تتحقق الاستفادة عند استيفاء الشروط الثلاثة التالية معاً:</p>
+    <p class="nd96-cnd"><b>أ ·</b> اختيار إحدى باقات العرض.</p>
+    <p class="nd96-cnd"><b>ب ·</b> سداد قيمتها كاملة دفعة واحدة، دون تقسيم أو تأجيل.</p>
+    <p class="nd96-cnd"><b>ج ·</b> أن يتم السداد قبل نهاية العرض: الثلاثاء 29 سبتمبر 2026 م.</p>
+
+    <h4>3 · طريقة الدفع</h4>
+    <p>التحويل البنكي:</p>
+    <div class="nd96-bank">
+        <div>البنك: مصرف الراجحي</div>
+        <div>المستفيد: أكاديمية عبدالكريم المحيميد (الحساب باسم الجهة المالكة لأكاديمية بارع)</div>
+        <div>رقم الآيبان:</div>
+        <div class="nd96-iban"><span dir="ltr">${ND96_IBAN}</span><button type="button" onclick="nd96CopyIban()"><i class="far fa-copy"></i> نسخ</button></div>
+    </div>
+    <p>بعد التحويل، يُرجى إرسال صورة الإيصال مع اسم الطالب إلى الرقم <a href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">0509076627</a>.</p>
+    <p>ويمكن الدفع حضورياً (نقداً أو باستخدام جهاز الدفع) في مقر الأكاديمية من الأحد إلى الأربعاء، من 4:30 إلى 7:30 مساءً.</p>
+
+    <h4>4 · إجازة الخريف</h4>
+    <p>إجازة الخريف (20 – 28 نوفمبر 2026 م) خارج إطار البرنامج، ولا تُحتسب ضمن أيام أي باقة، ولا تُعوَّض.</p>
+
+    <h4>5 · الاسترداد</h4>
+    <p>رسوم العرض غير قابلة للاسترداد ولا للتأجيل.</p>
+
+    <h4>6 · بعد انتهاء العرض</h4>
+    <p>الاشتراك بالشهر متاح خلال العرض فقط، وبانتهائه تعود الأسعار والمدد المعتمدة.</p>
+
+    <h4>7 · تقديم هذه السياسة</h4>
+    <p>تُقدَّم هذه السياسة على ما يخالفها من التنبيهات والاشتراطات العامة للبرنامج، ولا سيما ما يتعلق بالاسترداد والسداد على دفعتين.</p>`;
+
+/* نافذة السياسة (من رابط الإقرار في النموذج) ونسخ الآيبان */
+function nd96OpenPolicy(e){ e.preventDefault(); e.stopPropagation(); document.getElementById('nd96PolicyModal').classList.add('active'); }
+function nd96ClosePolicy(){ document.getElementById('nd96PolicyModal').classList.remove('active'); }
+function nd96CopyIban(){
+    const fail = () => toast('تعذّر النسخ — انسخ الرقم يدوياً');
+    if(!(navigator.clipboard && navigator.clipboard.writeText)) return fail();
+    navigator.clipboard.writeText(ND96_IBAN.replace(/\s/g,'')).then(()=>toast('تم نسخ رقم الآيبان'), fail);
+}
+
+/* السطر لا ينكسر إلا عند الفاصل « · » — يمنع فصل «29» عن «سبتمبر» على الجوال */
+function nd96NoBreak(s){
+    return s.split(' · ').map(x=>`<span class="nd96-nw">${x}</span>`).join(' · ');
+}
+
+/* أرقام العدّاد (غربية) — الساعات والدقائق بخانتين */
+function nd96Num(n, pad){
+    return (pad && n < 10 ? '0' : '') + n;
+}
+
+/* كتلة العرض — أول عنصر في المحتوى قبل بطاقات المعلومات */
+function nd96Render(){
+    const el = document.createElement('section');
+    el.className = 'nd96-offer';
+    el.id = 'nd96Offer';
+    el.setAttribute('aria-labelledby', 'nd96Title');
+    el.innerHTML = `
+        <h2 class="nd96-title" id="nd96Title">${ND96.title}</h2>
+        <div class="nd96-slogan">${ND96.slogan}</div>
+
+        <div class="nd96-count" role="timer">
+            <div class="nd96-count-lbl">ينتهي العرض خلال</div>
+            <div class="nd96-count-boxes">
+                <div class="nd96-box"><b id="nd96D">—</b><span>يوم</span></div>
+                <div class="nd96-box"><b id="nd96H">—</b><span>ساعة</span></div>
+                <div class="nd96-box"><b id="nd96M">—</b><span>دقيقة</span></div>
+            </div>
+        </div>
+
+        <div class="nd96-start"><i class="fas fa-calendar-check"></i> بداية جميع باقات العرض: <b>${ND96.start}</b><small>${ND96.startH}</small></div>
+
+        <div class="nd96-pkgs">
+            ${ND96.order.map(k=>{ const p = ND96.packages[k]; return `
+            <button type="button" class="nd96-pkg${p.note?' feat':''}" onclick="openSheet('${k}')">
+                <span class="nd96-pkg-in">
+                    <span class="nd96-pkg-name">${p.name}</span>
+                    <span class="nd96-pkg-ends">تنتهي ${p.ends}<small>${p.endsH}</small></span>
+                    <span class="nd96-pkg-price">${p.price} <small>${p.unit}</small></span>
+                    ${p.note?`<span class="nd96-pkg-note">${p.note}</span>`:''}
+                </span>
+            </button>`; }).join('')}
+        </div>
+
+        <div class="nd96-cond"><i class="fas fa-circle-info"></i><span>${nd96NoBreak(ND96.condition)}</span></div>
+
+        <div class="cta-wrapper nd96-cta">
+            <button type="button" class="cta-button" onclick="openSheet()"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+        </div>
+
+        <details class="nd96-policy">
+            <summary><span>سياسة الاستفادة من العرض</span><i class="fas fa-chevron-down"></i></summary>
+            <div class="nd96-policy-body">${ND96_POLICY}</div>
+        </details>`;
+    const c = document.querySelector('.container');
+    c.insertBefore(el, c.firstElementChild);
+}
+
+/* بطاقات اختيار الباقة داخل نافذة التسجيل */
+function nd96ChoiceCards(){
+    return ND96.order.map(k=>{
+        const p = ND96.packages[k];
+        return `<div class="choice-card${p.note?' nd96-feat':''}" data-key="${k}" onclick="choose('${k}',event)">
+            <div class="choice-icon"><i class="fas fa-calendar-days"></i></div>
+            <h3>${p.name}</h3>
+            <div class="cc-dates">${p.dates}</div>
+            <div class="cc-meta">${p.meta}</div>
+            <div class="choice-price">${p.price} <span>${p.unit}</span></div>
+            ${p.note?`<div class="nd96-note">${p.note}</div>`:''}
+        </div>`;
+    }).join('');
+}
+
+/* شاشة الشكر في المعاينة — تُظهر صراحةً أن الطلب لم يُرسل */
+function nd96PreviewThanks(rows){
+    showThanks(rows);
+    const card = document.querySelector('.thankyou-card');
+    if(!card.querySelector('.nd96-preview-tag'))
+        card.querySelector('.thankyou-logo').insertAdjacentHTML('afterend',
+            '<div class="nd96-preview-tag"><i class="fas fa-eye"></i> معاينة — لم يُرسل الطلب</div>');
+}
+
+/* العدّاد التنازلي — وعند الصفر يعيد التحميل فتعود الصفحة كالإنتاج (بلا كتلة ولا كسوة) */
+let nd96Timer = null;
+function nd96Tick(){
+    const left = Date.parse(ND96.endsAt) - Date.now();
+    if(left <= 0){
+        // لا نقطع على الزائر تسجيلاً جارياً: ننتظر حتى تُغلق النوافذ
+        const busy = ['sheet','termsModal','thankYouMessage','nd96PolicyModal'].some(id=>{
+            const e = document.getElementById(id);
+            return e.classList.contains('active') || e.classList.contains('show');
+        });
+        if(!busy){ clearInterval(nd96Timer); location.reload(); }
+        return;
+    }
+    const m = Math.floor(left / 60000);
+    document.getElementById('nd96D').textContent = nd96Num(Math.floor(m / 1440));
+    document.getElementById('nd96H').textContent = nd96Num(Math.floor(m / 60) % 24, true);
+    document.getElementById('nd96M').textContent = nd96Num(m % 60, true);
+}
+
+if(offerMode){
+    nd96Render();
+    document.getElementById('screenChoose').insertAdjacentHTML('afterbegin', `<div class="nd96-sheet-chip">${ND96.title}</div>`);
+    document.querySelector('.pay-notice').insertAdjacentHTML('beforeend', `<span class="nd96-pay-cond"><i class="fas fa-circle-check"></i> ${nd96NoBreak(ND96.condition)}</span>`);
+
+    // إقرار سياسة العرض — إلزامي مع إقرار التنبيهات والاشتراطات
+    document.getElementById('agreeError').insertAdjacentHTML('afterend', `
+        <div class="agree-row">
+            <input type="checkbox" id="nd96AgreeCheck">
+            <label for="nd96AgreeCheck">أقررتُ بالاطلاع على <span class="terms-link" onclick="nd96OpenPolicy(event)">سياسة الاستفادة من العرض</span></label>
+        </div>
+        <div class="error-msg" id="nd96AgreeError" style="margin-top:8px">يلزم الإقرار بالاطلاع قبل الإرسال</div>`);
+
+    // نافذة السياسة — بنفس تنسيق نافذة الشروط، فوق نافذة التسجيل
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="terms-modal" id="nd96PolicyModal" onclick="if(event.target===this)nd96ClosePolicy()">
+            <div class="terms-sheet">
+                <div class="grabber"></div>
+                <h3>سياسة الاستفادة من ${ND96.title}</h3>
+                <div class="nd96-policy-body">${ND96_POLICY}</div>
+                <button class="btn-close-terms" onclick="nd96ClosePolicy()">إغلاق</button>
+            </div>
+        </div>`);
+
+    // Esc يغلق نافذة السياسة وحدها — يُسجَّل قبل مستمع الصفحة فلا تُغلق نافذة التسجيل معها
+    document.addEventListener('keydown', e=>{
+        if(e.key === 'Escape' && document.getElementById('nd96PolicyModal').classList.contains('active')){
+            nd96ClosePolicy();
+            e.stopImmediatePropagation();
+        }
+    });
+
+    nd96Tick();
+    nd96Timer = setInterval(nd96Tick, 1000);
+}
+/* ===== نهاية طبقة عرض اليوم الوطني 96 ===== */
+
+/* حالة التسجيل بحسب التاريخ */
+function isOpen(p){
+    const today = new Date().toISOString().slice(0,10);
+    if(p.opens  && today <  p.opens ) return false;
+    if(p.closes && today >  p.closes) return false;
+    return true;
+}
+function toast(msg){
+    let t = document.getElementById('closedToast');
+    if(!t){ t = document.createElement('div'); t.id='closedToast'; t.className='closed-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(window.__toastT);
+    window.__toastT = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+let picked = null, kidSeq = 0;
+
+/* ===== بطاقات الصفحة ===== */
+(function buildPage(){
+    document.getElementById('periodGrid').innerHTML = ORDER.map(k=>{
+        const p = PROGRAM.periods[k];
+        const open = isOpen(p);
+        return `<div class="period-card${open?'':' dim'}">
+            <h3>${p.name}</h3>
+            <div class="pc-meta">${p.meta}</div>
+            <div class="pc-lines">
+                <div class="row"><i class="fas fa-calendar-days"></i> ${p.dates}</div>
+                <div class="row"><i class="fas fa-clock"></i> 4:30 – 7:30 م</div>
+            </div>
+            <div class="pc-price">
+                <div class="amount">${p.price} <span>ريال</span></div>
+                <div class="pc-early">الدفع المبكر <b>${p.early} ريال</b><small>${p.win}</small></div>
+            </div>
+            <button class="cta-inner${open?'':' closed'}" onclick="${open?`openSheet('${k}')`:`toast('التسجيل في هذه الفترة غير متاح حالياً')`}"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+        </div>`;
+    }).join('');
+
+    document.getElementById('choiceCards').innerHTML = offerMode ? nd96ChoiceCards() : ORDER.map(k=>{
+        const p = PROGRAM.periods[k];
+        const open = isOpen(p);
+        return `<div class="choice-card${open?'':' dim'}" data-key="${k}" onclick="${open?`choose('${k}',event)`:`toast('التسجيل في هذه الفترة غير متاح حالياً')`}">
+            <div class="choice-icon"><i class="fas fa-${k==='both'?'calendar-check':'calendar-days'}"></i></div>
+            <h3>${p.name}</h3>
+            <div class="cc-dates">${p.dates}</div>
+            <div class="cc-meta">${p.meta}</div>
+            <div class="choice-price">${p.price} <span>ريال</span></div>
+            <div class="cc-early">الدفع المبكر <b>${p.early} ريال</b><small>${p.win}</small></div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('termsList').innerHTML = PROGRAM.terms.map(t=>`<li>${t}</li>`).join('');
+})();
+
+/* ===== النافذة ===== */
+function openSheet(key){
+    document.getElementById('sheetOverlay').classList.add('active');
+    document.getElementById('sheet').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    if(!document.querySelector('.kid-block')) addKid();
+    if(key && isOpen(cat()[key])) choose(key);
+    else goChoose();
+}
+function closeSheet(){
+    document.getElementById('sheetOverlay').classList.remove('active');
+    document.getElementById('sheet').classList.remove('active');
+    document.body.style.overflow = '';
+}
+function goChoose(){
+    document.getElementById('sheetTrack').classList.remove('show-form');
+    document.getElementById('sheetTitle').textContent = 'اختر مدة الاشتراك';
+    document.getElementById('sheetBack').style.display = 'none';
+    document.getElementById('sheetFooter').style.display = 'none';
+}
+function choose(key, ev){
+    if(ev){
+        const c = ev.currentTarget, r = document.createElement('span');
+        r.className = 'ripple';
+        const rect = c.getBoundingClientRect(), s = Math.max(rect.width, rect.height);
+        r.style.width = r.style.height = s + 'px';
+        r.style.left = (ev.clientX - rect.left - s/2) + 'px';
+        r.style.top  = (ev.clientY - rect.top  - s/2) + 'px';
+        c.appendChild(r); setTimeout(()=>r.remove(), 560);
+    }
+    picked = key;
+    const p = cat()[key];
+    document.querySelectorAll('.choice-card').forEach(c=>c.classList.toggle('selected', c.dataset.key===key));
+    document.getElementById('tbName').textContent  = p.name;
+    document.getElementById('tbMeta').textContent  = offerMode ? p.dates : p.dates + ' · ' + p.meta;
+    document.getElementById('tbPrice').textContent = p.price + ' ' + (p.unit || 'ريال');
+    document.querySelectorAll('.kidPeriod').forEach(s=>s.value = key);
+    setTimeout(()=>{
+        document.getElementById('sheetTrack').classList.add('show-form');
+        document.getElementById('sheetTitle').textContent = 'بيانات المشترك';
+        document.getElementById('sheetBack').style.display = 'flex';
+        document.getElementById('sheetFooter').style.display = 'block';
+        document.getElementById('screenForm').scrollTop = 0;
+    }, 200);
+}
+
+/* ===== الأبناء ===== */
+function addKid(){
+    kidSeq++;
+    const n = kidSeq;
+    const el = document.createElement('div');
+    el.className = 'kid-block';
+    el.dataset.kid = n;
+    el.innerHTML = `
+        <div class="kid-head">
+            <div class="kid-title"><span class="kid-num">${n}</span> بيانات الابن</div>
+            ${n>1?`<button type="button" class="kid-remove" onclick="removeKid(${n})">حذف</button>`:''}
+        </div>
+        <div class="form-group">
+            <label for="k${n}Name">الاسم الأول</label>
+            <input type="text" id="k${n}Name" class="kidName" autocomplete="off">
+            <div class="error-msg">مطلوب</div>
+        </div>
+        <div class="form-group">
+            <label for="k${n}Grade">المرحلة الدراسية</label>
+            <select id="k${n}Grade" class="kidGrade">
+                <option value="">اختر المرحلة</option>
+                ${PROGRAM.grades.map(g=>`<option>${g}</option>`).join('')}
+            </select>
+            <div class="error-msg">مطلوب</div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+            <label for="k${n}Period">مدة الاشتراك</label>
+            <select id="k${n}Period" class="kidPeriod">
+                ${catOrder().map(k=>`<option value="${k}">${cat()[k].name}</option>`).join('')}
+            </select>
+        </div>`;
+    document.getElementById('kidsWrap').appendChild(el);
+    if(picked) el.querySelector('.kidPeriod').value = picked;
+}
+function removeKid(n){
+    const el = document.querySelector(`.kid-block[data-kid="${n}"]`);
+    if(el) el.remove();
+    document.querySelectorAll('.kid-block').forEach((k,i)=>{ k.querySelector('.kid-num').textContent = i+1; });
+}
+
+/* ===== الشروط ===== */
+function openTerms(e){ e.preventDefault(); e.stopPropagation(); document.getElementById('termsModal').classList.add('active'); }
+function closeTerms(){ document.getElementById('termsModal').classList.remove('active'); }
+
+/* ===== التحقق ===== */
+const isPhone = v => /^05\d{8}$/.test(String(v).trim());
+function mark(el, ok){
+    el.style.borderColor = ok ? '' : '#ef4444';
+    const e = el.parentElement.querySelector('.error-msg');
+    if(e) e.classList.toggle('show', !ok);
+    return ok;
+}
+['guardianPhone','altPhone'].forEach(id=>{
+    document.getElementById(id).addEventListener('input', e=>{
+        e.target.value = e.target.value.replace(/\D/g,'').slice(0,10);
+    });
+});
+
+/* ===== الإرسال ===== */
+async function submitForm(){
+    let ok = true;
+    const father = document.getElementById('fatherName');
+    const family = document.getElementById('familyName');
+    const phone  = document.getElementById('guardianPhone');
+    const alt    = document.getElementById('altPhone');
+
+    ok = mark(father, father.value.trim().length > 0) && ok;
+    ok = mark(family, family.value.trim().length > 0) && ok;
+    ok = mark(phone,  isPhone(phone.value)) && ok;
+    if(alt.value.trim()) ok = mark(alt, isPhone(alt.value)) && ok; else mark(alt, true);
+
+    const kids = [];
+    document.querySelectorAll('.kid-block').forEach(k=>{
+        const nm = k.querySelector('.kidName'), gr = k.querySelector('.kidGrade'), pr = k.querySelector('.kidPeriod');
+        const a = mark(nm, nm.value.trim().length > 0);
+        const b = mark(gr, gr.value !== '');
+        ok = a && b && ok;
+        if(a && b) kids.push({ first_name:nm.value.trim(), grade:gr.value, period:pr.value });
+    });
+
+    const agreeOk = document.getElementById('agreeCheck').checked;
+    document.getElementById('agreeError').classList.toggle('show', !agreeOk);
+    ok = agreeOk && ok;
+    if(offerMode){   // عرض اليوم الوطني 96: إقرار سياسة العرض إلزامي مع إقرار الاشتراطات
+        const polOk = document.getElementById('nd96AgreeCheck').checked;
+        document.getElementById('nd96AgreeError').classList.toggle('show', !polOk);
+        ok = polOk && ok;
+    }
+
+    if(!ok){
+        const bad = document.querySelector('.error-msg.show');
+        if(bad) bad.scrollIntoView({ behavior:'smooth', block:'center' });
+        return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const rows = kids.map(k=>({
+        guardian_name: father.value.trim(),
+        family_name: family.value.trim(),
+        guardian_phone: phone.value.trim(),
+        guardian_phone_alt: alt.value.trim() || null,
+        first_name: k.first_name,
+        grade: k.grade,
+        period: k.period,
+        program: PROGRAM.name
+    }));
+
+    /* ⚠️ عرض اليوم الوطني 96 — معاينة فقط: لا يُرسل شيء أثناء العرض.
+       جدول interests يرفض قيم الباقات (CHECK period in first/second/both)،
+       فيُستبدل هذا السطر بقرار تخزين الباقة قبل أي نشر. */
+    if(offerMode){ btn.classList.remove('loading'); btn.disabled = false; nd96PreviewThanks(rows); return; }
+
+    try{
+        const res = await fetch(SB_URL + '/interests', {
+            method:'POST',
+            headers:{ 'apikey':SB_KEY, 'Authorization':'Bearer '+SB_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+            body: JSON.stringify(rows)
+        });
+        if(!res.ok) throw new Error(await res.text());
+        showThanks(rows);
+    }catch(err){
+        console.error(err);
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        alert('تعذّر إرسال الطلب. تأكد من اتصالك وأعد المحاولة، أو تواصل معنا على الواتساب.');
+    }
+}
+
+function showThanks(rows){
+    const fat = rows[0].guardian_name, fam = rows[0].family_name;
+    document.getElementById('tySummary').innerHTML = rows.map(r=>
+        `<div class="r"><b>${r.first_name} ${fat} ${fam}</b><span>${r.grade} · ${cat()[r.period].name}</span></div>`
+    ).join('');
+
+    const lines = rows.map(r=>`• ${r.first_name} ${fat} ${fam} — ${r.grade} — ${cat()[r.period].name}`).join('\n');
+    const msg = `السلام عليكم، سجّلت في برنامج بارع — ${PROGRAM.name}${offerMode ? ' · ' + ND96.title : ''}\n\n${lines}\n\nأرغب في استكمال إجراءات التسجيل.`;
+    document.getElementById('waLink').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+
+    closeSheet();
+    document.getElementById('thankYouMessage').classList.add('show');
+}
+
+document.addEventListener('keydown', e=>{
+    if(e.key !== 'Escape') return;
+    if(document.getElementById('termsModal').classList.contains('active')) closeTerms();
+    else if(document.getElementById('sheet').classList.contains('active')) closeSheet();
+});
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+</script>
+</body>
+</html>
