@@ -25,11 +25,11 @@
         tagline:   'شخصية، مهارة، قِيم، في بيئة آمنة',   // عبارة الواجهة أثناء العرض
         order:  ['m1','m2','m3'],
         packages: {
-            // was = السعر المعتمد قبل العرض (يظهر مشطوباً). باقة الشهر بلا تاريخ انتهاء معروض.
+            // was = السعر المعتمد قبل العرض · giftWas = قيمة هدية التيشرت (كلاهما يظهر مشطوباً)
             // from/to = بداية الباقة ونهايتها (هجري، أم القرى). 16 ربيع الآخر = الأحد 27 سبتمبر 2026
-            m1: { name:'شهر',        price:'296', was:'380',  unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 10 جمادى الأولى 1448 هـ' },
-            m2: { name:'شهران',      price:'596', was:'760',  unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 8 جمادى الآخرة 1448 هـ' },
-            m3: { name:'ثلاثة أشهر', price:'896', was:'1140', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 14 رجب 1448 هـ',
+            m1: { name:'شهر',        price:'296', was:'380',  giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 10 جمادى الأولى 1448 هـ' },
+            m2: { name:'شهران',      price:'596', was:'760',  giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 8 جمادى الآخرة 1448 هـ' },
+            m3: { name:'ثلاثة أشهر', price:'896', was:'1140', giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 14 رجب 1448 هـ',
                   note:'حتى ختام البرنامج' }
         }
     };
@@ -475,6 +475,7 @@
             --nd-blue:      #0050AF;   /* «الكرم» */
             --nd-mist:      #A7C4C2;   /* نص ثانوي على الداكن */
             --nd-tint:      #EEF6F1;   /* سطح فاتح بلمسة خضراء */
+            --nd-strike:    #E5484D;   /* خط الشطب المائل (سعر قبل العرض + قيمة الهدية) */
             --primary:      var(--nd-night);
             --secondary:    var(--nd-green);
             --bg-color:     #F4F7F6;
@@ -564,10 +565,13 @@
             position:relative; display:inline-block; padding:0 2px;
             color:#7FA3A0; font-size:1.2rem; font-weight:400; text-decoration:none;
         }
-        .nd96-pkg-was::after, .choice-card .nd96-cc-was::after {
+        .nd96-pkg-was::after, .choice-card .nd96-cc-was::after, .nd96-gift-was::after {
             content:''; position:absolute; inset-inline:-3px; top:50%; height:2px; border-radius:2px;
-            background:#E5484D; transform:rotate(-18deg);
+            background:var(--nd-strike); transform:rotate(-18deg);
         }
+        .nd96-gift { display:block; margin-top:6px; color:var(--nd-mist); font-size:.9rem; }
+        .nd96-gift-was { position:relative; display:inline-block; padding:0 2px; text-decoration:none; color:inherit; }
+        .choice-card .nd96-gift { color:var(--text-light); font-size:.88rem; margin-top:8px; }
         .nd96-pkg.feat {   /* ثلاثة أشهر — بإطار «الكرم» وخلفية من لوحته */
             border:2px solid var(--nd-blue);
             background:linear-gradient(rgba(0,34,82,.84),rgba(0,34,82,.9)), url('nd96/generosity.jpg') center/cover;
@@ -634,7 +638,7 @@
         }
         .choice-card .nd96-cc-was {
             position:relative; display:inline-block; padding:0 2px;
-            color:#94a3b8; font-size:1rem; font-weight:normal; margin-inline-start:6px; text-decoration:none;
+            color:#94a3b8; font-size:1rem; font-weight:normal; margin-inline-end:6px; text-decoration:none;
         }
         html.nd96 .track-badge { background:var(--nd-tint); }
         html.nd96 .track-badge .tb-price { color:var(--nd-green-ink); }
@@ -669,7 +673,7 @@
             .nd96-count-boxes { gap:10px; }
             .nd96-box { min-width:76px; }
             .nd96-box b { font-size:1.8rem; }
-            .nd96-pkgs { grid-template-columns:1fr; gap:10px; padding:0 16px; margin-top:18px; }
+            .nd96-pkgs { grid-template-columns:1fr; grid-auto-rows:1fr; gap:10px; padding:0 16px; margin-top:18px; }
             .nd96-pkg-in {
                 display:grid; grid-template-columns:1fr auto; align-items:center;
                 text-align:start; gap:0 8px; padding:13px 14px;
@@ -679,6 +683,7 @@
             .nd96-pkg-prices { grid-column:2; grid-row:1 / span 2; flex-direction:column; align-items:flex-end; gap:0; margin-top:0; }
             .nd96-pkg-price { font-size:1.6rem; }
             .nd96-pkg-was { font-size:.95rem; line-height:1.2; }
+            .nd96-gift      { grid-column:1 / -1; justify-self:start; font-size:.82rem; margin-top:6px; }
             .nd96-pkg-note  { grid-column:1 / -1; justify-self:start; margin-top:6px; }
             .nd96-cond { font-size:.95rem; max-width:calc(100% - 32px); }
             .nd96-cta { padding:0 16px; }
@@ -981,6 +986,11 @@ function nd96NoBreak(s){
     return s.split(' · ').map(x=>`<span class="nd96-nw">${x}</span>`).join(' · ');
 }
 
+/* سطر الهدية — نص واحد تستعمله بطاقات الصفحة وبطاقات نافذة التسجيل. الرقم من giftWas */
+function nd96GiftLine(p){
+    return `<span class="nd96-gift">+ تيشرت بارع هدية <s class="nd96-gift-was">${p.giftWas}</s> ريالاً</span>`;
+}
+
 /* أرقام العدّاد (غربية) — الساعات والدقائق بخانتين */
 function nd96Num(n, pad){
     return (pad && n < 10 ? '0' : '') + n;
@@ -1018,9 +1028,10 @@ function nd96Render(){
                     <span class="nd96-pkg-name">${p.name}</span>
                     <span class="nd96-pkg-dates"><span><em>البداية</em> ${p.from}</span><span><em>النهاية</em> ${p.to}</span></span>
                     <span class="nd96-pkg-prices">
-                        <span class="nd96-pkg-price">${p.price} <small>${p.unit}</small></span>
                         <s class="nd96-pkg-was" title="السعر قبل العرض">${p.was}</s>
+                        <span class="nd96-pkg-price">${p.price} <small>${p.unit}</small></span>
                     </span>
+                    ${nd96GiftLine(p)}
                     ${p.note?`<span class="nd96-pkg-note">${p.note}</span>`:''}
                 </span>
             </button>`; }).join('')}
@@ -1053,7 +1064,8 @@ function nd96ChoiceCards(){
             <h3>${p.name}</h3>
             <div class="cc-dates"><b>البداية</b> ${p.from}</div>
             <div class="cc-meta"><b>النهاية</b> ${p.to}</div>
-            <div class="choice-price">${p.price} <span>${p.unit}</span> <s class="nd96-cc-was" title="السعر قبل العرض">${p.was}</s></div>
+            <div class="choice-price"><s class="nd96-cc-was" title="السعر قبل العرض">${p.was}</s> ${p.price} <span>${p.unit}</span></div>
+            ${nd96GiftLine(p)}
             ${p.note?`<div class="nd96-note">${p.note}</div>`:''}
         </div>`;
     }).join('');
