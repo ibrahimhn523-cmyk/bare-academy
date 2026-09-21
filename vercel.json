@@ -1,6 +1,24 @@
 {
+  "redirects": [
+    {
+      "source": "/index96.html",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/index96",
+      "destination": "/",
+      "permanent": false
+    }
+  ],
   "rewrites": [
-    { "source": "/trader/:path*", "destination": "/trader/index.html" },
-    { "source": "/view/:path*", "destination": "/view/index.html" }
+    {
+      "source": "/trader/:path*",
+      "destination": "/trader/index.html"
+    },
+    {
+      "source": "/view/:path*",
+      "destination": "/view/index.html"
+    }
   ]
 }

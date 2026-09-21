@@ -6,6 +6,39 @@
     <meta name="theme-color" content="#1e293b">
     <title>أكاديمية بارع - برنامج الفصل الدراسي الأول 1448هـ</title>
 
+    <script>
+    /* =====================================================================
+       عرض اليوم الوطني 96 — المفتاح الوحيد وموضع التحديث الوحيد
+       • الإطفاء اليدوي: enabled:false ثم حفظ → يختفي العرض والكسوة فوراً، بلا حذف كود.
+       • الانتهاء الذاتي: عند endsAt (توقيت الرياض بإزاحة +03:00 صريحة) تعود الصفحة كالإنتاج.
+       • حالة فشل معلومة: الحساب بساعة جهاز الزائر؛ ساعة خاطئة تُظهر العرض قبل أوانه أو بعده.
+       • تاريخ غير صالح = عرض مطفأ (Date.parse → NaN).
+       ===================================================================== */
+    const ND96 = {
+        enabled: true,
+        endsAt:  '2026-09-29T23:59:59+03:00',
+        title:     'عرض اليوم الوطني 96',
+        slogan:    'عزّنا بطبعنا',
+        condition: 'السداد كاملاً مرة واحدة · قبل الثلاثاء 29 سبتمبر',
+        tagline:   'شخصية، مهارة، قِيم، في بيئة آمنة',   // عبارة الواجهة أثناء العرض
+        order:  ['nd96_m1','nd96_m2','nd96_m3'],   // تُحفظ كما هي في interests.period
+        packages: {
+            // was = السعر المعتمد قبل العرض · giftWas = قيمة هدية التيشرت (كلاهما يظهر مشطوباً)
+            // from/to = بداية الباقة ونهايتها (هجري، أم القرى). 16 ربيع الآخر = الأحد 27 سبتمبر 2026
+            nd96_m1: { name:'شهر',        price:'296', was:'380',  giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 10 جمادى الأولى 1448 هـ' },
+            nd96_m2: { name:'شهران',      price:'596', was:'760',  giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 8 جمادى الآخرة 1448 هـ' },
+            nd96_m3: { name:'ثلاثة أشهر', price:'896', was:'1140', giftWas:'35', unit:'ريالاً', from:'الأحد 16 ربيع الآخر 1448 هـ', to:'الأربعاء 14 رجب 1448 هـ',
+                  note:'حتى ختام البرنامج' }
+        }
+    };
+    function nd96Live(){ return ND96.enabled === true && Date.now() < Date.parse(ND96.endsAt); }
+    const ND96_ON = nd96Live();
+    if (ND96_ON) {
+        document.documentElement.classList.add('nd96');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#002628');
+    }
+    </script>
+
     <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -420,6 +453,242 @@
         .btn-wa i { font-size:1.3rem; }
         .btn-back-home { width:100%; padding:14px; border:1.5px solid #e2e8f0; border-radius:12px; background:transparent; color:var(--text-light); font-family:inherit; font-size:1rem; cursor:pointer; }
 
+        /* ================================================================ */
+        /* ===== عرض اليوم الوطني 96 — الكسوة (كل قواعدها تحت html.nd96) ===== */
+        /* ================================================================ */
+        /* هوية «عزّنا بطبعنا» الرسمية (SND-GUIDELINE): الخلفية الليلية وأخضر الهوية، أزرق «الكرم»،
+           ليموني «الأصالة» للزر، «خط السعودية» للعناوين و IBM Plex Sans Arabic للنصوص.
+           الخطوط والصور لا تُحمَّل إلا أثناء العرض — لا يستعملها شيء خارج html.nd96. */
+        @font-face { font-family:'Saudi'; src:url('fonts/nd96/Saudi-Bold.ttf') format('truetype'); font-weight:700; font-display:swap; }
+        @font-face { font-family:'Saudi'; src:url('fonts/nd96/Saudi-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
+        @font-face { font-family:'Plex Arabic'; src:url('fonts/nd96/IBMPlexSansArabic-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
+        @font-face { font-family:'Plex Arabic'; src:url('fonts/nd96/IBMPlexSansArabic-SemiBold.ttf') format('truetype'); font-weight:500 900; font-display:swap; }
+
+        html.nd96 {
+            --nd-night:     #002628;   /* الخلفية الليلية — Colors.pdf */
+            --nd-teal:      #00343A;   /* سطح داكن — Colors.pdf */
+            --nd-green:     #00894A;   /* الأخضر الأساسي — Colors.pdf */
+            --nd-green-ink: #00733E;   /* أخضر للنص على الفاتح (تباين ≥ 4.5) */
+            --nd-lime:      #5ABA1C;   /* «الأصالة» — زر التسجيل */
+            --nd-blue:      #0050AF;   /* «الكرم» */
+            --nd-mist:      #A7C4C2;   /* نص ثانوي على الداكن */
+            --nd-tint:      #EEF6F1;   /* سطح فاتح بلمسة خضراء */
+            --nd-strike:    #E5484D;   /* خط الشطب المائل (سعر قبل العرض + قيمة الهدية) */
+            --primary:      var(--nd-night);
+            --secondary:    var(--nd-green);
+            --bg-color:     #F4F7F6;
+        }
+
+        /* الخطوط: IBM Plex للنصوص، «خط السعودية» للعناوين والأرقام */
+        html.nd96 body,
+        html.nd96 .form-group input[type="text"], html.nd96 .form-group input[type="tel"], html.nd96 .form-group select,
+        html.nd96 .btn-submit, html.nd96 .closed-toast, html.nd96 .thankyou-card p { font-family:'Plex Arabic', Tahoma, Arial, sans-serif; }
+        html.nd96 .hero h1, html.nd96 .section-title, html.nd96 .sheet-title, html.nd96 .choice-card h3,
+        html.nd96 .choice-card .choice-price, html.nd96 .thankyou-card h2, html.nd96 .social-container h3,
+        .nd96-title, .nd96-slogan, .nd96-box b, .nd96-pkg-name, .nd96-pkg-price,
+        .nd96-policy-body h4 { font-family:'Saudi', 'Plex Arabic', Tahoma, sans-serif; }
+
+        /* الواجهة العلوية: ليلية + الشعار الرسمي في الركن + شريط سدو متدرّج */
+        html.nd96 .hero { background:var(--nd-night); border-bottom:0; padding-bottom:64px; }
+        html.nd96 .hero::before { background-image:radial-gradient(var(--nd-green) 1px,transparent 1px); opacity:.12; }
+        html.nd96 .hero::after {
+            content:''; position:absolute; inset-inline:0; bottom:0; height:14px;
+            background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='14'%3E%3Crect width='8' height='6' fill='%2300894A'/%3E%3Crect y='6' width='16' height='8' fill='%2300894A'/%3E%3C/svg%3E") repeat-x left bottom;
+        }
+        html.nd96 .hero .subtitle { color:var(--nd-mist); }
+        html.nd96 .activities-bar { display:none; }   /* محاور البرنامج مخفية أثناء العرض */
+        .nd96-logo {   /* عرضه 240 = ضعف شعار بارع (110)، والفراغ حوله أكبر من مربّعين من نقشه */
+            position:absolute; top:22px; inset-inline-start:24px; width:240px; height:auto; z-index:3;
+        }
+        html.nd96 .container { margin-top:28px; }   /* الكتلة الداكنة على الصفحة الفاتحة لا فوق الواجهة */
+
+        /* العرض وحده يظهر: قسم «مدد الاشتراك» يختفي أثناء العرض ويعود بانتهائه */
+        html.nd96 #stdPricing { display:none; }
+        html.nd96 #stdPricing + p { margin-top:10px !important; }
+
+        /* بقية الصفحة (فاتحة) بألوان الهوية */
+        html.nd96 .social-container h3 { color:var(--nd-lime); }
+        html.nd96 .cta-button { background:var(--nd-lime); color:var(--nd-night); box-shadow:0 10px 22px rgba(90,186,28,.28); }
+        html.nd96 .cta-button:hover { background:#67C829; box-shadow:0 14px 26px rgba(90,186,28,.36); }
+
+        /* ===== عرض اليوم الوطني 96 — كتلة العرض (داكنة) ===== */
+        .nd96-offer {
+            background:var(--nd-night); color:#fff; border-radius:var(--radius); overflow:hidden;
+            box-shadow:0 22px 44px rgba(0,38,40,.22); margin-bottom:40px; padding-bottom:26px; text-align:center;
+        }
+        .nd96-head { display:grid; grid-template-columns:minmax(0,1fr) 250px; gap:28px; align-items:center; padding:30px 32px 6px; }
+        .nd96-art {
+            aspect-ratio:1/1; border-radius:12px; border:3px solid var(--nd-teal);
+            background:url('nd96/generosity.jpg') center/cover no-repeat;
+            box-shadow:0 0 0 1px rgba(0,137,74,.5), 0 14px 30px rgba(0,0,0,.35);
+        }
+        .nd96-title { color:#fff; font-size:2.5rem; font-weight:700; line-height:1.3; }
+        .nd96-slogan {
+            display:flex; align-items:center; justify-content:center; gap:12px;
+            color:var(--nd-lime); font-size:1.3rem; font-weight:400; margin-top:4px;
+        }
+        .nd96-slogan::before, .nd96-slogan::after { content:''; width:9px; height:9px; background:var(--nd-green); }
+
+        .nd96-count { margin:20px 0 16px; }
+        .nd96-count-lbl { color:var(--nd-mist); font-size:.95rem; margin-bottom:8px; }
+        .nd96-count-boxes { display:flex; flex-direction:row-reverse; justify-content:center; gap:12px; } /* الأيام يساراً والدقائق يميناً */
+        .nd96-box {
+            min-width:84px; padding:10px 10px 8px; border-radius:12px; background:var(--nd-teal);
+            border:1px solid rgba(0,137,74,.45); box-shadow:inset 0 -3px 0 var(--nd-green);
+            display:flex; flex-direction:column; align-items:center; line-height:1.2;
+        }
+        .nd96-box b { color:#fff; font-size:2.2rem; font-weight:700; font-variant-numeric:tabular-nums; }
+        .nd96-box span { color:var(--nd-mist); font-size:.85rem; margin-top:2px; }
+
+
+        .nd96-pkgs { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; max-width:920px; margin:22px auto 22px; padding:0 24px; }
+        .nd96-pkg {
+            display:flex; flex-direction:column; justify-content:center;   /* محتوى البطاقات القصيرة في الوسط */
+            width:100%; font-family:inherit; cursor:pointer; color:#fff;
+            background:var(--nd-teal); border:1px solid rgba(167,196,194,.2); border-radius:14px; padding:0;
+            transition:transform .14s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .nd96-pkg:hover { border-color:var(--nd-green); transform:translateY(-4px); box-shadow:0 12px 24px rgba(0,0,0,.25); }
+        .nd96-pkg:active { transform:scale(.97); }
+        .nd96-pkg:focus-visible { outline:3px solid var(--nd-lime); outline-offset:2px; }
+        .nd96-pkg-in { display:flex; flex-direction:column; align-items:center; gap:4px; padding:20px 14px 18px; }
+        .nd96-pkg-name { color:#fff; font-size:1.4rem; font-weight:700; }
+        .nd96-pkg-dates { display:flex; flex-direction:column; color:var(--nd-mist); font-size:.86rem; line-height:1.6; }
+        .nd96-pkg-dates em { font-style:normal; font-weight:700; color:#fff; margin-inline-end:4px; }
+        html.nd96 .choice-card .cc-dates b, html.nd96 .choice-card .cc-meta b { color:var(--primary); margin-inline-end:4px; }
+        .nd96-pkg-prices { display:flex; align-items:baseline; justify-content:center; gap:10px; margin-top:6px; }
+        .nd96-pkg-price { color:#fff; font-size:2.1rem; font-weight:700; line-height:1.3; }
+        .nd96-pkg-price small { font-family:'Plex Arabic', Tahoma, sans-serif; font-size:.95rem; font-weight:400; color:var(--nd-mist); }
+        .nd96-pkg-was {   /* السعر المعتمد قبل العرض — شطب مائل (الأفقي كان يُظهر 380 كأنها 300) */
+            position:relative; display:inline-block; padding:0 2px;
+            color:#7FA3A0; font-size:1.2rem; font-weight:400; text-decoration:none;
+        }
+        .nd96-pkg-was::after, .choice-card .nd96-cc-was::after, .nd96-gift-was::after {
+            content:''; position:absolute; inset-inline:-3px; top:50%; height:2px; border-radius:2px;
+            background:var(--nd-strike); transform:rotate(-18deg);
+        }
+        .nd96-gift { display:block; margin-top:6px; color:var(--nd-mist); font-size:.9rem; }
+        .nd96-gift-was { position:relative; display:inline-block; padding:0 2px; text-decoration:none; color:inherit; }
+        .choice-card .nd96-gift { color:var(--text-light); font-size:.88rem; margin-top:8px; }
+        .nd96-pkg.feat {   /* ثلاثة أشهر — بإطار «الكرم» وخلفية من لوحته */
+            border:2px solid var(--nd-blue);
+            background:linear-gradient(rgba(0,34,82,.84),rgba(0,34,82,.9)), url('nd96/generosity.jpg') center/cover;
+        }
+        .nd96-pkg.feat:hover { border-color:#3A7BD0; }
+        .nd96-pkg.feat .nd96-pkg-was { color:#9DBEE8; }
+        .nd96-pkg-note { background:var(--nd-lime); color:var(--nd-night); font-weight:700; font-size:.85rem; padding:2px 12px; border-radius:30px; margin-top:4px; }
+
+        .nd96-cond {
+            display:inline-flex; align-items:center; gap:8px; max-width:calc(100% - 48px);
+            background:rgba(0,137,74,.16); border-inline-start:4px solid var(--nd-green); border-radius:8px;
+            color:#fff; font-weight:700; font-size:1.02rem; padding:11px 18px; text-align:start;
+        }
+        .nd96-cond i { color:var(--nd-lime); }
+        .nd96-nw { white-space:nowrap; }
+        .nd96-cta { margin:22px 0 6px; padding:0 24px; }
+
+        /* سياسة الاستفادة — رابطها في الكتلة الداكنة، ومحتواها في لوحة فاتحة */
+        .nd96-policy { text-align:start; margin:12px 24px 0; border-top:1px dashed rgba(167,196,194,.28); padding-top:10px; }
+        .nd96-policy summary {
+            list-style:none; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
+            color:#fff; font-weight:700; font-size:1rem; padding:6px;
+        }
+        .nd96-policy summary::-webkit-details-marker { display:none; }
+        .nd96-policy summary span { text-decoration:underline; text-decoration-color:var(--nd-lime); text-underline-offset:6px; }
+        .nd96-policy summary i { font-size:.75rem; color:var(--nd-lime); transition:transform .25s ease; }
+        .nd96-policy[open] summary i { transform:rotate(180deg); }
+        .nd96-policy .nd96-policy-body { background:#fff; border-radius:12px; padding:16px 18px; margin-top:10px; }
+        .nd96-policy-body { font-size:.92rem; line-height:1.85; color:var(--text-main); }
+        .nd96-policy-body .nd96-valid { color:var(--text-light); font-size:.8rem; }
+        .nd96-policy-body .nd96-valid::after { content:''; display:block; width:160px; height:3px; margin-top:10px; background:linear-gradient(to left,var(--nd-lime) 45%,var(--nd-green) 45%); }
+        .nd96-policy-body h4 { color:var(--nd-night); font-size:1.05rem; margin:18px 0 6px; }
+        .nd96-policy-body p { margin-bottom:6px; }
+        .nd96-policy-body b { color:#1e293b; }
+        .nd96-policy-body a { color:var(--nd-green-ink); font-weight:700; }
+        .nd96-tbl-wrap { overflow-x:auto; margin:8px 0; }
+        .nd96-tbl { width:100%; border-collapse:collapse; font-size:.88rem; }
+        .nd96-tbl th { background:var(--nd-tint); color:var(--nd-night); text-align:start; padding:8px 10px; font-weight:700; }
+        .nd96-tbl td { padding:8px 10px; border-bottom:1px solid #E3ECE8; }
+        .nd96-tbl td.was { color:var(--text-light); }
+        .nd96-tbl td.now { color:var(--nd-green-ink); font-weight:700; }
+        .nd96-cnd { padding-inline-start:12px; }
+        .nd96-bank { background:var(--nd-tint); border-inline-start:4px solid var(--nd-green); border-radius:6px; padding:10px 14px; margin:6px 0 10px; }
+        .nd96-iban { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-top:4px; }
+        .nd96-iban span { font-family:ui-monospace, Menlo, Consolas, monospace; font-weight:bold; font-size:1rem; letter-spacing:.5px; color:#1e293b; user-select:all; white-space:nowrap; }
+        .nd96-iban button {
+            font-family:inherit; font-size:.85rem; font-weight:bold; color:var(--nd-green-ink); cursor:pointer;
+            background:#fff; border:1.5px solid var(--nd-green); border-radius:30px; padding:3px 14px;
+        }
+        .nd96-iban button:active { transform:scale(.95); }
+
+        /* ===== عرض اليوم الوطني 96 — نافذة التسجيل وشاشة الشكر (فاتحة) ===== */
+        .nd96-sheet-chip {
+            display:table; margin:0 auto 12px; padding:4px 16px; border-radius:30px;
+            background:var(--nd-night); color:#fff; font-size:.88rem; font-weight:bold;
+            box-shadow:inset 0 -3px 0 var(--nd-green);
+        }
+        html.nd96 .choice-card.selected { background:var(--nd-tint); }
+        .choice-card.nd96-feat { background:#EEF4FC; border-color:rgba(0,80,175,.35); }
+        .choice-card.nd96-feat.selected { border-color:var(--nd-blue); }
+        .choice-card .nd96-note {
+            display:inline-block; margin-top:10px; padding:2px 12px; border-radius:30px;
+            background:var(--nd-blue); color:#fff; font-size:.82rem; font-weight:bold;
+        }
+        .choice-card .nd96-cc-was {
+            position:relative; display:inline-block; padding:0 2px;
+            color:#94a3b8; font-size:1rem; font-weight:normal; margin-inline-end:6px; text-decoration:none;
+        }
+        html.nd96 .track-badge { background:var(--nd-tint); }
+        html.nd96 .track-badge .tb-price { color:var(--nd-green-ink); }
+        html.nd96 .pay-notice { background:var(--nd-tint); }
+        html.nd96 .terms-link { color:var(--nd-green-ink); }
+        html.nd96 .btn-add-kid:hover { background:var(--nd-tint); }
+        html.nd96 .kid-head .kid-num,
+        html.nd96 .terms-sheet li::before { color:var(--nd-lime); }
+        html.nd96 .thankyou-card h2 { color:var(--nd-night); }
+        html.nd96 .thankyou-progress-bar { background:linear-gradient(90deg,var(--nd-green),var(--nd-lime)); }
+        .nd96-pay-cond { display:block; margin-top:6px; color:var(--nd-night); font-weight:bold; font-size:.9rem; }
+        .nd96-pay-cond i { color:var(--nd-green); margin-inline-end:4px; }
+
+        @media (max-width:768px) {
+            .nd96-logo { top:14px; inset-inline-start:16px; width:180px; }
+            html.nd96 .hero-content > img { width:90px !important; }   /* نصف عرض الشعار الرسمي */
+            html.nd96 .hero { padding-bottom:46px; }
+            html.nd96 .container { margin-top:22px; }
+            .nd96-head { grid-template-columns:1fr; gap:0; padding:0 0 4px; }
+            .nd96-art {   /* على الجوال: شريط في رأس الكتلة يتلاشى في الليلي */
+                order:-1; position:relative; aspect-ratio:auto; height:170px;
+                border:0; border-radius:0; box-shadow:none; background-position:center 42%;
+            }
+            .nd96-art::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,38,40,0) 40%,var(--nd-night) 100%); }
+            .nd96-head-txt { padding:4px 16px 0; }
+            .nd96-title { font-size:1.8rem; }
+            .nd96-slogan { font-size:1.15rem; gap:10px; }
+            .nd96-count-boxes { gap:10px; }
+            .nd96-box { min-width:76px; }
+            .nd96-box b { font-size:1.8rem; }
+            .nd96-pkgs { grid-template-columns:1fr; grid-auto-rows:1fr; gap:10px; padding:0 16px; margin-top:18px; }
+            .nd96-pkg-in {
+                display:grid; grid-template-columns:1fr auto; align-items:center;
+                text-align:start; gap:0 8px; padding:13px 14px;
+            }
+            .nd96-pkg-name  { grid-column:1; grid-row:1; font-size:1.25rem; }
+            .nd96-pkg-dates { grid-column:1; grid-row:2; font-size:.76rem; }
+            .nd96-pkg-prices { grid-column:2; grid-row:1 / span 2; flex-direction:column; align-items:flex-end; gap:0; margin-top:0; }
+            .nd96-pkg-price { font-size:1.6rem; }
+            .nd96-pkg-was { font-size:.95rem; line-height:1.2; }
+            .nd96-gift      { grid-column:1 / -1; justify-self:start; font-size:.82rem; margin-top:6px; }
+            .nd96-pkg-note  { grid-column:1 / -1; justify-self:start; margin-top:6px; }
+            .nd96-cond { font-size:.95rem; max-width:calc(100% - 32px); }
+            .nd96-cta { padding:0 16px; }
+            .nd96-policy { margin:12px 16px 0; }
+            .nd96-policy .nd96-policy-body { padding:14px 10px; }
+            .nd96-iban span { font-size:.85rem; letter-spacing:0; }   /* الآيبان في سطر واحد */
+            .nd96-tbl { font-size:.8rem; }
+            .nd96-tbl th, .nd96-tbl td { padding:7px 6px; }
+            .nd96-tbl td.was, .nd96-tbl td.now { white-space:nowrap; }
+        }
+
     </style>
 </head>
 <body>
@@ -468,6 +737,7 @@
     </div>
 
     <!-- الفترات -->
+    <div id="stdPricing"><!-- عرض اليوم الوطني 96: غلاف محايد للتخطيط — يُخفى أثناء العرض -->
     <h2 class="section-title">مدد الاشتراك</h2>
 
     <div class="pay-terms-line">
@@ -476,6 +746,7 @@
     </div>
 
     <div class="period-grid" id="periodGrid"></div>
+    </div>
 
     <p style="text-align:center;color:var(--text-light);margin:96px 0 50px;font-size:1.05rem;">
         من أولى ابتدائي إلى ثالث متوسط · الأحد إلى الأربعاء
@@ -643,6 +914,215 @@ const PROGRAM = {
 
 const ORDER = ['both','first','second'];
 
+/* ================================================================== */
+/* ===== عرض اليوم الوطني 96 — طبقة العرض (المفتاح ND96 في <head>) ===== */
+/* ================================================================== */
+const offerMode = ND96_ON;   // يُحسب مرة عند التحميل؛ انتهاء العرض أثناء التصفح يعيد تحميل الصفحة
+function cat(){ return offerMode ? ND96.packages : PROGRAM.periods; }
+function catOrder(){ return offerMode ? ND96.order : ORDER; }
+
+/* نص «سياسة الاستفادة من عرض اليوم الوطني 96» — النص المعتمد المحدَّث، منقول حرفياً بأرقام غربية */
+const ND96_IBAN = 'SA29 8000 0697 6080 1066 6962';   // مصرف الراجحي — تحقّق: 24 خانة، mod 97 = 1
+const ND96_POLICY = `
+    <div class="nd96-valid">أكاديمية بارع · برنامج الفصل الدراسي الأول 1448 هـ<br>سارية حتى الثلاثاء 29 سبتمبر 2026 م</div>
+
+    <h4>1 · باقات العرض</h4>
+    <div class="nd96-tbl-wrap"><table class="nd96-tbl">
+        <thead><tr><th>الباقة</th><th>المدة</th><th>قبل العرض</th><th>بعد العرض</th></tr></thead>
+        <tbody>
+            <tr><td>شهر</td><td><span class="nd96-nw">4 أسابيع</span> · <span class="nd96-nw">16 يوماً</span></td><td class="was">380 ريالاً</td><td class="now">296 ريالاً</td></tr>
+            <tr><td>شهران</td><td><span class="nd96-nw">8 أسابيع</span> · <span class="nd96-nw">32 يوماً</span></td><td class="was">760 ريالاً</td><td class="now">596 ريالاً</td></tr>
+            <tr><td>ثلاثة أشهر</td><td><span class="nd96-nw">12 أسبوعاً</span> · <span class="nd96-nw">48 يوماً</span></td><td class="was">1140 ريالاً</td><td class="now">896 ريالاً</td></tr>
+        </tbody>
+    </table></div>
+    <p>الشهر أربعة أسابيع من أيام البرنامج (الأحد إلى الأربعاء).</p>
+
+    <h4>2 · شروط الاستفادة</h4>
+    <p>تتحقق الاستفادة عند استيفاء الشروط الثلاثة التالية معاً:</p>
+    <p class="nd96-cnd"><b>أ ·</b> اختيار إحدى باقات العرض.</p>
+    <p class="nd96-cnd"><b>ب ·</b> سداد قيمتها كاملة دفعة واحدة، دون تقسيم أو تأجيل.</p>
+    <p class="nd96-cnd"><b>ج ·</b> أن يتم السداد قبل نهاية العرض: الثلاثاء 29 سبتمبر 2026 م.</p>
+
+    <h4>3 · طريقة الدفع</h4>
+    <p>التحويل البنكي:</p>
+    <div class="nd96-bank">
+        <div>البنك: مصرف الراجحي</div>
+        <div>المستفيد: أكاديمية عبدالكريم المحيميد (الحساب باسم الجهة المالكة لأكاديمية بارع)</div>
+        <div>رقم الآيبان:</div>
+        <div class="nd96-iban"><span dir="ltr">${ND96_IBAN}</span><button type="button" onclick="nd96CopyIban()"><i class="far fa-copy"></i> نسخ</button></div>
+    </div>
+    <p>بعد التحويل، يُرجى إرسال صورة الإيصال مع اسم الطالب إلى الرقم <a href="https://wa.me/${WA_NUMBER}" target="_blank" rel="noopener">0509076627</a>.</p>
+    <p>ويمكن الدفع حضورياً (نقداً أو باستخدام جهاز الدفع) في مقر الأكاديمية من الأحد إلى الأربعاء، من 4:30 إلى 7:30 مساءً.</p>
+
+    <h4>4 · إجازة الخريف</h4>
+    <p>إجازة الخريف (20 – 28 نوفمبر 2026 م) خارج إطار البرنامج، ولا تُحتسب ضمن أيام أي باقة، ولا تُعوَّض.</p>
+
+    <h4>5 · الاسترداد</h4>
+    <p>رسوم العرض غير قابلة للاسترداد ولا للتأجيل.</p>
+
+    <h4>6 · بعد انتهاء العرض</h4>
+    <p>الاشتراك بالشهر متاح خلال العرض فقط، وبانتهائه تعود الأسعار والمدد المعتمدة.</p>
+
+    <h4>7 · تقديم هذه السياسة</h4>
+    <p>تُقدَّم هذه السياسة على ما يخالفها من التنبيهات والاشتراطات العامة للبرنامج، ولا سيما ما يتعلق بالاسترداد والسداد على دفعتين.</p>`;
+
+/* نافذة السياسة (من رابط الإقرار في النموذج) ونسخ الآيبان */
+function nd96OpenPolicy(e){ e.preventDefault(); e.stopPropagation(); document.getElementById('nd96PolicyModal').classList.add('active'); }
+function nd96ClosePolicy(){ document.getElementById('nd96PolicyModal').classList.remove('active'); }
+function nd96CopyIban(){
+    const fail = () => toast('تعذّر النسخ — انسخ الرقم يدوياً');
+    if(!(navigator.clipboard && navigator.clipboard.writeText)) return fail();
+    navigator.clipboard.writeText(ND96_IBAN.replace(/\s/g,'')).then(()=>toast('تم نسخ رقم الآيبان'), fail);
+}
+
+/* السطر لا ينكسر إلا عند الفاصل « · » — يمنع فصل «29» عن «سبتمبر» على الجوال */
+function nd96NoBreak(s){
+    return s.split(' · ').map(x=>`<span class="nd96-nw">${x}</span>`).join(' · ');
+}
+
+/* سطر الهدية — نص واحد تستعمله بطاقات الصفحة وبطاقات نافذة التسجيل. الرقم من giftWas */
+function nd96GiftLine(p){
+    return `<span class="nd96-gift">+ تيشرت بارع هدية <s class="nd96-gift-was">${p.giftWas}</s> ريالاً</span>`;
+}
+
+/* أرقام العدّاد (غربية) — الساعات والدقائق بخانتين */
+function nd96Num(n, pad){
+    return (pad && n < 10 ? '0' : '') + n;
+}
+
+/* كتلة العرض — أول عنصر في المحتوى قبل بطاقات المعلومات */
+function nd96Render(){
+    const el = document.createElement('section');
+    el.className = 'nd96-offer';
+    el.id = 'nd96Offer';
+    el.setAttribute('aria-labelledby', 'nd96Title');
+    el.innerHTML = `
+        <div class="nd96-head">
+            <div class="nd96-head-txt">
+                <h2 class="nd96-title" id="nd96Title">${ND96.title}</h2>
+                <div class="nd96-slogan">${ND96.slogan}</div>
+
+                <div class="nd96-count" role="timer">
+                    <div class="nd96-count-lbl">ينتهي العرض خلال</div>
+                    <div class="nd96-count-boxes">
+                        <div class="nd96-box"><b id="nd96D">—</b><span>يوم</span></div>
+                        <div class="nd96-box"><b id="nd96H">—</b><span>ساعة</span></div>
+                        <div class="nd96-box"><b id="nd96M">—</b><span>دقيقة</span></div>
+                    </div>
+                </div>
+            </div>
+            <!-- لوحة «الكرم» الرسمية من هوية اليوم الوطني (الدلّة والفناجيل) -->
+            <div class="nd96-art" role="img" aria-label="لوحة «الكرم» من هوية اليوم الوطني السعودي"></div>
+        </div>
+
+        <div class="nd96-pkgs">
+            ${ND96.order.map(k=>{ const p = ND96.packages[k]; return `
+            <button type="button" class="nd96-pkg${p.note?' feat':''}" onclick="openSheet('${k}')">
+                <span class="nd96-pkg-in">
+                    <span class="nd96-pkg-name">${p.name}</span>
+                    <span class="nd96-pkg-dates"><span><em>البداية</em> ${p.from}</span><span><em>النهاية</em> ${p.to}</span></span>
+                    <span class="nd96-pkg-prices">
+                        <s class="nd96-pkg-was" title="السعر قبل العرض">${p.was}</s>
+                        <span class="nd96-pkg-price">${p.price} <small>${p.unit}</small></span>
+                    </span>
+                    ${nd96GiftLine(p)}
+                    ${p.note?`<span class="nd96-pkg-note">${p.note}</span>`:''}
+                </span>
+            </button>`; }).join('')}
+        </div>
+
+        <div class="nd96-cond"><i class="fas fa-circle-info"></i><span>${nd96NoBreak(ND96.condition)}</span></div>
+
+        <div class="cta-wrapper nd96-cta">
+            <button type="button" class="cta-button" onclick="openSheet()"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+        </div>
+
+        <details class="nd96-policy">
+            <summary><span>سياسة الاستفادة من العرض</span><i class="fas fa-chevron-down"></i></summary>
+            <div class="nd96-policy-body">${ND96_POLICY}</div>
+        </details>`;
+    const c = document.querySelector('.container');
+    c.insertBefore(el, c.firstElementChild);
+
+    // الشعار الرسمي (مرسوم من Logo.pdf بلا تعديل) — في الركن الأعلى الأيمن حسب الدليل
+    document.querySelector('.hero').insertAdjacentHTML('afterbegin',
+        '<img class="nd96-logo" src="nd96/logo.png" width="801" height="142" alt="اليوم الوطني السعودي — عزّنا بطبعنا">');
+}
+
+/* بطاقات اختيار الباقة داخل نافذة التسجيل */
+function nd96ChoiceCards(){
+    return ND96.order.map(k=>{
+        const p = ND96.packages[k];
+        return `<div class="choice-card${p.note?' nd96-feat':''}" data-key="${k}" onclick="choose('${k}',event)">
+            <div class="choice-icon"><i class="fas fa-calendar-days"></i></div>
+            <h3>${p.name}</h3>
+            <div class="cc-dates"><b>البداية</b> ${p.from}</div>
+            <div class="cc-meta"><b>النهاية</b> ${p.to}</div>
+            <div class="choice-price"><s class="nd96-cc-was" title="السعر قبل العرض">${p.was}</s> ${p.price} <span>${p.unit}</span></div>
+            ${nd96GiftLine(p)}
+            ${p.note?`<div class="nd96-note">${p.note}</div>`:''}
+        </div>`;
+    }).join('');
+}
+
+
+/* العدّاد التنازلي — وعند الصفر يعيد التحميل فتعود الصفحة كالإنتاج (بلا كتلة ولا كسوة) */
+let nd96Timer = null;
+function nd96Tick(){
+    const left = Date.parse(ND96.endsAt) - Date.now();
+    if(left <= 0){
+        // لا نقطع على الزائر تسجيلاً جارياً: ننتظر حتى تُغلق النوافذ
+        const busy = ['sheet','termsModal','thankYouMessage','nd96PolicyModal'].some(id=>{
+            const e = document.getElementById(id);
+            return e.classList.contains('active') || e.classList.contains('show');
+        });
+        if(!busy){ clearInterval(nd96Timer); location.reload(); }
+        return;
+    }
+    const m = Math.floor(left / 60000);
+    document.getElementById('nd96D').textContent = nd96Num(Math.floor(m / 1440));
+    document.getElementById('nd96H').textContent = nd96Num(Math.floor(m / 60) % 24, true);
+    document.getElementById('nd96M').textContent = nd96Num(m % 60, true);
+}
+
+if(offerMode){
+    nd96Render();
+    document.querySelector('.hero .subtitle').textContent = ND96.tagline;   // عبارة واحدة بلا «الفصل الدراسي الأول»
+    document.getElementById('screenChoose').insertAdjacentHTML('afterbegin', `<div class="nd96-sheet-chip">${ND96.title}</div>`);
+    document.querySelector('.pay-notice').insertAdjacentHTML('beforeend', `<span class="nd96-pay-cond"><i class="fas fa-circle-check"></i> ${nd96NoBreak(ND96.condition)}</span>`);
+
+    // إقرار سياسة العرض — إلزامي مع إقرار التنبيهات والاشتراطات
+    document.getElementById('agreeError').insertAdjacentHTML('afterend', `
+        <div class="agree-row">
+            <input type="checkbox" id="nd96AgreeCheck">
+            <label for="nd96AgreeCheck">أقررتُ بالاطلاع على <span class="terms-link" onclick="nd96OpenPolicy(event)">سياسة الاستفادة من العرض</span></label>
+        </div>
+        <div class="error-msg" id="nd96AgreeError" style="margin-top:8px">يلزم الإقرار بالاطلاع قبل الإرسال</div>`);
+
+    // نافذة السياسة — بنفس تنسيق نافذة الشروط، فوق نافذة التسجيل
+    document.body.insertAdjacentHTML('beforeend', `
+        <div class="terms-modal" id="nd96PolicyModal" onclick="if(event.target===this)nd96ClosePolicy()">
+            <div class="terms-sheet">
+                <div class="grabber"></div>
+                <h3>سياسة الاستفادة من ${ND96.title}</h3>
+                <div class="nd96-policy-body">${ND96_POLICY}</div>
+                <button class="btn-close-terms" onclick="nd96ClosePolicy()">إغلاق</button>
+            </div>
+        </div>`);
+
+    // Esc يغلق نافذة السياسة وحدها — يُسجَّل قبل مستمع الصفحة فلا تُغلق نافذة التسجيل معها
+    document.addEventListener('keydown', e=>{
+        if(e.key === 'Escape' && document.getElementById('nd96PolicyModal').classList.contains('active')){
+            nd96ClosePolicy();
+            e.stopImmediatePropagation();
+        }
+    });
+
+    nd96Tick();
+    nd96Timer = setInterval(nd96Tick, 1000);
+}
+/* ===== نهاية طبقة عرض اليوم الوطني 96 ===== */
+
 /* حالة التسجيل بحسب التاريخ */
 function isOpen(p){
     const today = new Date().toISOString().slice(0,10);
@@ -680,7 +1160,7 @@ let picked = null, kidSeq = 0;
         </div>`;
     }).join('');
 
-    document.getElementById('choiceCards').innerHTML = ORDER.map(k=>{
+    document.getElementById('choiceCards').innerHTML = offerMode ? nd96ChoiceCards() : ORDER.map(k=>{
         const p = PROGRAM.periods[k];
         const open = isOpen(p);
         return `<div class="choice-card${open?'':' dim'}" data-key="${k}" onclick="${open?`choose('${k}',event)`:`toast('التسجيل في هذه الفترة غير متاح حالياً')`}">
@@ -702,7 +1182,7 @@ function openSheet(key){
     document.getElementById('sheet').classList.add('active');
     document.body.style.overflow = 'hidden';
     if(!document.querySelector('.kid-block')) addKid();
-    if(key && isOpen(PROGRAM.periods[key])) choose(key);
+    if(key && isOpen(cat()[key])) choose(key);
     else goChoose();
 }
 function closeSheet(){
@@ -727,11 +1207,11 @@ function choose(key, ev){
         c.appendChild(r); setTimeout(()=>r.remove(), 560);
     }
     picked = key;
-    const p = PROGRAM.periods[key];
+    const p = cat()[key];
     document.querySelectorAll('.choice-card').forEach(c=>c.classList.toggle('selected', c.dataset.key===key));
     document.getElementById('tbName').textContent  = p.name;
-    document.getElementById('tbMeta').textContent  = p.dates + ' · ' + p.meta;
-    document.getElementById('tbPrice').textContent = p.price + ' ريال';
+    document.getElementById('tbMeta').textContent  = offerMode ? p.from + ' — ' + p.to : p.dates + ' · ' + p.meta;
+    document.getElementById('tbPrice').textContent = p.price + ' ' + (p.unit || 'ريال');
     document.querySelectorAll('.kidPeriod').forEach(s=>s.value = key);
     setTimeout(()=>{
         document.getElementById('sheetTrack').classList.add('show-form');
@@ -770,7 +1250,7 @@ function addKid(){
         <div class="form-group" style="margin-bottom:0">
             <label for="k${n}Period">مدة الاشتراك</label>
             <select id="k${n}Period" class="kidPeriod">
-                ${ORDER.map(k=>`<option value="${k}">${PROGRAM.periods[k].name}</option>`).join('')}
+                ${catOrder().map(k=>`<option value="${k}">${cat()[k].name}</option>`).join('')}
             </select>
         </div>`;
     document.getElementById('kidsWrap').appendChild(el);
@@ -825,6 +1305,11 @@ async function submitForm(){
     const agreeOk = document.getElementById('agreeCheck').checked;
     document.getElementById('agreeError').classList.toggle('show', !agreeOk);
     ok = agreeOk && ok;
+    if(offerMode){   // عرض اليوم الوطني 96: إقرار سياسة العرض إلزامي مع إقرار الاشتراطات
+        const polOk = document.getElementById('nd96AgreeCheck').checked;
+        document.getElementById('nd96AgreeError').classList.toggle('show', !polOk);
+        ok = polOk && ok;
+    }
 
     if(!ok){
         const bad = document.querySelector('.error-msg.show');
@@ -844,7 +1329,7 @@ async function submitForm(){
         first_name: k.first_name,
         grade: k.grade,
         period: k.period,
-        program: PROGRAM.name
+        program: offerMode ? PROGRAM.name + ' · ' + ND96.title : PROGRAM.name   // عرض 96: period = مفتاح الباقة (nd96_m*)
     }));
 
     try{
@@ -866,11 +1351,11 @@ async function submitForm(){
 function showThanks(rows){
     const fat = rows[0].guardian_name, fam = rows[0].family_name;
     document.getElementById('tySummary').innerHTML = rows.map(r=>
-        `<div class="r"><b>${r.first_name} ${fat} ${fam}</b><span>${r.grade} · ${PROGRAM.periods[r.period].name}</span></div>`
+        `<div class="r"><b>${r.first_name} ${fat} ${fam}</b><span>${r.grade} · ${cat()[r.period].name}</span></div>`
     ).join('');
 
-    const lines = rows.map(r=>`• ${r.first_name} ${fat} ${fam} — ${r.grade} — ${PROGRAM.periods[r.period].name}`).join('\n');
-    const msg = `السلام عليكم، سجّلت في برنامج بارع — ${PROGRAM.name}\n\n${lines}\n\nأرغب في استكمال إجراءات التسجيل.`;
+    const lines = rows.map(r=>`• ${r.first_name} ${fat} ${fam} — ${r.grade} — ${cat()[r.period].name}`).join('\n');
+    const msg = `السلام عليكم، سجّلت في برنامج بارع — ${PROGRAM.name}${offerMode ? ' · ' + ND96.title : ''}\n\n${lines}\n\nأرغب في استكمال إجراءات التسجيل.`;
     document.getElementById('waLink').href = `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
 
     closeSheet();

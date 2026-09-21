@@ -451,7 +451,8 @@ function openStudentCard(id) {
    يقرأ من جدول interests الذي تكتب فيه صفحة التسجيل العامة.
 ══════════════════════════════════════════ */
 
-const INT_PERIOD_AR  = { both: 'البرنامج كاملاً', first: 'الفترة الأولى', second: 'الفترة الثانية' };
+const INT_PERIOD_AR  = { both: 'البرنامج كاملاً', first: 'الفترة الأولى', second: 'الفترة الثانية',
+                         nd96_m1: 'عرض 96 · شهر', nd96_m2: 'عرض 96 · شهران', nd96_m3: 'عرض 96 · ثلاثة أشهر' };
 const INT_STATUS_AR  = { pending: 'معلّق', contacted: 'تم التواصل', enrolled: 'مسجَّل', cancelled: 'ملغى' };
 const INT_STATUS_CLS = { pending: 'b-unpaid', contacted: 'b-partial', enrolled: 'b-paid', cancelled: 'b-archived' };
 const INT_FAMILY_COLORS = 6;   // عدد ألوان تمييز الأسر
