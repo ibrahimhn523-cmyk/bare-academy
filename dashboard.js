@@ -14,39 +14,47 @@ const TB = {
   INTERESTS      : 'interests'
 };
 
-/* ── Supabase Helpers ── */
+/* ── Supabase Helpers ──
+   SB_KEY (anon) يُرسَل في apikey فقط ليعرّف المشروع.
+   الصلاحية تأتي من توكن المدير في Authorization (ADR-016)، فبلا دخول لا تُقرأ أي بيانات. */
 function _h(extra = {}) {
-  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', ...extra };
+  return { 'apikey': SB_KEY, 'Authorization': `Bearer ${_session?.access_token || SB_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal', ...extra };
 }
 
 async function sbRead(table, qs = '') {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}?select=*&order=id.asc${qs ? '&' + qs : ''}`, { headers: _h() });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
   return r.json();
 }
 
 async function sbInsert(table, data) {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}`, { method: 'POST', headers: _h(), body: JSON.stringify(data) });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
 
 async function sbInsertReturn(table, data) {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}`, { method: 'POST', headers: _h({ 'Prefer': 'return=representation' }), body: JSON.stringify(data) });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
   const arr = await r.json(); return arr[0] || null;
 }
 
 async function sbUpdate(table, id, data) {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, { method: 'PATCH', headers: _h(), body: JSON.stringify(data) });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
 
 async function sbDelete(table, id) {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}?id=eq.${id}`, { method: 'DELETE', headers: _h() });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.message || `HTTP ${r.status}`); }
 }
 
 async function sbReadKey(table, key, val) {
+  await authFresh();
   const r = await fetch(`${SB_URL}/${table}?${key}=eq.${encodeURIComponent(val)}&select=*`, { headers: _h() });
   if (!r.ok) return null;
   const arr = await r.json(); return arr[0] || null;
@@ -55,6 +63,7 @@ async function sbReadKey(table, key, val) {
 /* ── Activity Log ── */
 async function addLog(action, label) {
   try {
+    await authFresh();
     await fetch(`${SB_URL}/logs`, {
       method: 'POST',
       headers: _h(),
@@ -1812,6 +1821,7 @@ async function renderCommLog() {
   body.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري تحميل السجل…</p></div>`;
 
   try {
+    await authFresh();
     const qs = `programId=eq.${_currentProg?.id || 0}&order=sentAt.desc&limit=200`;
     const rows = await fetch(`${SB_URL}/${TB.COMM_LOG}?select=*&${qs}`, { headers: _h() })
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)));
@@ -2028,7 +2038,7 @@ async function logCommSend({ sub, msg, templateName, sendType }) {
       templateName : templateName || 'بدون قالب',
       messageText  : msg || '',
       sendType     : sendType || 'single',
-      sentBy       : 'admin'
+      sentBy       : _session?.email || 'admin'
     });
   } catch(e) {
     console.warn('فشل حفظ سجل التواصل:', e.message);
@@ -2637,9 +2647,11 @@ function toggleSidebar() {
   }
 }
 
-function handleLogout() {
+async function handleLogout() {
   if (!confirm('تسجيل الخروج؟')) return;
-  sessionStorage.removeItem(GATE_KEY);
+  const token = _session?.access_token;
+  _authClear();
+  if (token) await _authRevoke(token);   // يُبطل توكن التجديد على الخادم أيضاً
   window.location.reload();
 }
 
@@ -2680,6 +2692,7 @@ async function loadLogs() {
   if (!el) return;
   el.innerHTML = `<div class="empty"><div class="ei">⏳</div><p>جاري التحميل…</p></div>`;
   try {
+    await authFresh();
     const r = await fetch(`${SB_URL}/logs?select=*&order=id.desc&limit=150`, { headers: _h() });
     if (!r.ok) throw new Error();
     const rows = await r.json();
@@ -2748,6 +2761,7 @@ async function confirmDeleteProg() {
   const subIds   = progSubs.map(s => s.id);
 
   try {
+    await authFresh();
     // 1. حذف الدفعات المرتبطة بالاشتراكات
     if (subIds.length) {
       await fetch(`${SB_URL}/payments?subscriptionId=in.(${subIds.join(',')})`,
@@ -2955,21 +2969,92 @@ async function saveBulkSub() {
 }
 
 /* ══════════════════════════════════════════
-   GATE — بوابة الدخول
-   حارس يسبق init() فيمنع أي نداء لقاعدة البيانات قبل التحقق.
-   البصمة SHA-256 فقط — كلمة المرور نفسها ليست في أي ملف.
-   ⚠️ هذا يمنع الاكتشاف العابر، لا من يقرأ الكود ويكسر البصمة.
+   AUTH — دخول المدير عبر Supabase Auth (ADR-016)
+   حارس يسبق init() فيمنع أي نداء لقاعدة البيانات قبل الدخول.
+   الحماية الفعلية في قاعدة البيانات: سياسات RLS لا تسمح إلا لتوكن
+   حسابٍ دوره app_metadata.role = 'admin'. فحص الدور هنا لتوضيح الخطأ فقط.
+   الجلسة في sessionStorage فتنتهي بإغلاق المتصفح، والتوكن يُجدَّد قبل انتهائه.
 ══════════════════════════════════════════ */
-const GATE_HASH = 'e52762e493d709e01f7dc2284ed85314b4b7c9670f7273e408aeb2303348b13b';
-const GATE_KEY  = 'dash_auth';
+const AUTH_URL   = 'https://oytfhgqhibbcsqbnvwyv.supabase.co/auth/v1';
+const AUTH_STORE = 'bare_dash_session';
+const AUTH_SKEW  = 120;        // ثوانٍ: هامش التجديد قبل انتهاء التوكن
 
-async function _sha256Hex(txt) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+let _session    = null;        // { access_token, refresh_token, expires_at, email }
+let _refreshing = null;        // وعد التجديد الجاري — يمنع تجديدَين متزامنَين
+let _refreshTimer = null;
+let _booted     = false;       // init() مرة واحدة؛ الدخول بعد انتهاء الجلسة لا يعيد التحميل
+
+async function _authPost(grant, body) {
+  const r = await fetch(`${AUTH_URL}/token?grant_type=${grant}`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const e = new Error(data.error_description || data.msg || data.message || `HTTP ${r.status}`);
+    e.status = r.status;
+    throw e;
+  }
+  return data;
+}
+
+function _authRevoke(token) {
+  return fetch(`${AUTH_URL}/logout`, {
+    method: 'POST', headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${token}` }
+  }).catch(() => {});
+}
+
+function _authSave(data) {
+  _session = {
+    access_token : data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at   : data.expires_at || Math.floor(Date.now() / 1000) + (data.expires_in || 3600),
+    email        : data.user?.email || _session?.email || ''
+  };
+  try { sessionStorage.setItem(AUTH_STORE, JSON.stringify(_session)); } catch(e) {}
+  _authSchedule();
+}
+
+function _authClear() {
+  _session = null;
+  clearTimeout(_refreshTimer);
+  try { sessionStorage.removeItem(AUTH_STORE); } catch(e) {}
+}
+
+function _authSchedule(ms) {
+  clearTimeout(_refreshTimer);
+  if (!_session) return;
+  if (ms === undefined) ms = (_session.expires_at - AUTH_SKEW) * 1000 - Date.now();
+  _refreshTimer = setTimeout(() => authFresh(true), Math.max(ms, 0));
+}
+
+function _authExpired() {
+  _authClear();
+  document.getElementById('dash-gate').classList.remove('unlocked');
+  gateError('انتهت الجلسة — سجّل الدخول من جديد');
+}
+
+/* يُستدعى قبل كل نداء لقاعدة البيانات: يجدّد التوكن إن قارب الانتهاء */
+async function authFresh(force = false) {
+  if (!_session) return;
+  if (!force && _session.expires_at - AUTH_SKEW > Date.now() / 1000) return;
+  if (!_refreshing) {
+    _refreshing = _authPost('refresh_token', { refresh_token: _session.refresh_token })
+      .then(_authSave)
+      .catch(e => {
+        if (e.status >= 400 && e.status < 500) _authExpired();   // التوكن مرفوض: الجلسة انتهت
+        else _authSchedule(30000);                               // انقطاع شبكة: إعادة المحاولة بعد 30 ث
+      })
+      .finally(() => { _refreshing = null; });
+  }
+  return _refreshing;
 }
 
 function gateUnlock() {
   document.getElementById('dash-gate').classList.add('unlocked');
+  if (_booted) return;
+  _booted = true;
   init();
 }
 
@@ -2979,20 +3064,28 @@ function gateError(msg) {
 }
 
 async function gateSubmit() {
+  const em  = document.getElementById('dash-gate-email');
   const inp = document.getElementById('dash-gate-pass');
   const btn = document.getElementById('dash-gate-btn');
   document.getElementById('dash-gate-err').classList.remove('show');
-  if (!inp.value) { gateError('أدخل كلمة المرور'); return; }
-  if (!window.crypto?.subtle) { gateError('المتصفح لا يدعم التحقق — افتح الصفحة عبر HTTPS'); return; }
+  if (!em.value.trim() || !inp.value) { gateError('أدخل البريد وكلمة المرور'); return; }
 
   btn.disabled = true;
   try {
-    const hash = await _sha256Hex(inp.value);
-    if (hash !== GATE_HASH) { gateError('كلمة المرور غير صحيحة'); inp.select(); return; }
-    sessionStorage.setItem(GATE_KEY, '1');   // ينتهي بإغلاق المتصفح
+    const data = await _authPost('password', { email: em.value.trim(), password: inp.value });
+    if (data.user?.app_metadata?.role !== 'admin') {
+      _authRevoke(data.access_token);
+      gateError('هذا الحساب لا يملك صلاحية لوحة التحكم');
+      return;
+    }
+    inp.value = '';
+    _authSave(data);
     gateUnlock();
   } catch(e) {
-    gateError('تعذّر التحقق — أعد المحاولة');
+    gateError(e.status === 400 ? 'البريد أو كلمة المرور غير صحيحة'
+            : e.status === 429 ? 'محاولات كثيرة — انتظر قليلاً ثم أعد المحاولة'
+            : 'تعذّر الدخول — تحقّق من الاتصال وأعد المحاولة');
+    inp.select();
   } finally {
     btn.disabled = false;
   }
@@ -3001,9 +3094,18 @@ async function gateSubmit() {
 /* ── Start ── */
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('dash-gate-btn').addEventListener('click', gateSubmit);
-  document.getElementById('dash-gate-pass').addEventListener('keydown', e => {
-    if (e.key === 'Enter') gateSubmit();
-  });
-  if (sessionStorage.getItem(GATE_KEY) === '1') { gateUnlock(); return; }
-  document.getElementById('dash-gate-pass').focus();
+  ['dash-gate-email', 'dash-gate-pass'].forEach(id =>
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') gateSubmit(); }));
+  // المؤقتات تتباطأ في التبويب المخفي، فيُفحص التوكن عند العودة إليه
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) authFresh(); });
+
+  try { sessionStorage.removeItem('dash_auth'); } catch(e) {}   // بقايا بوابة كلمة المرور القديمة
+  let saved = null;
+  try { saved = JSON.parse(sessionStorage.getItem(AUTH_STORE) || 'null'); } catch(e) {}
+  if (saved?.refresh_token) {
+    _session = saved;
+    authFresh().then(() => { if (_session) { _authSchedule(); gateUnlock(); } });
+    return;
+  }
+  document.getElementById('dash-gate-email').focus();
 });
