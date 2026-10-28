@@ -369,6 +369,7 @@ tbody tr.prog-row:active td { background: #e0e7ff; }
   background: var(--bg); color: var(--text); text-align: center;
 }
 .dash-gate-input:focus { outline: none; border-color: var(--primary); }
+.dash-gate-input-2 { margin-top: 10px; }
 .dash-gate-err {
   display: none; margin-top: 12px; padding: 9px 12px; border-radius: 7px;
   background: #fee2e2; color: #b91c1c; font-size: .83rem; font-weight: 600;
