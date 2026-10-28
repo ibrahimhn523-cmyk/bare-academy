@@ -1317,7 +1317,7 @@ function klPick(pct){
     const r = klCalc(days, pct);
     document.getElementById('klResult').innerHTML = `
         <div class="kl-row"><span>قيمة اشتراك ${KL.weeks} أسابيع</span><b>${klAmount(KL.fullPrice)} ريالاً</b></div>
-        <div class="kl-row"><span>قيمة الاشتراك للمدة المتبقية <small>${days} ${days === 1 ? 'يوماً' : 'يوماً'} × ${klAmount(KL.dayPrice)} ريالاً لليوم</small></span><b>${klAmount(r.base)} ريالاً</b></div>
+        <div class="kl-row"><span>قيمة الاشتراك للمدة المتبقية <small>${days} يوماً</small></span><b>${klAmount(r.base)} ريالاً</b></div>
         <div class="kl-row"><span>قيمة الكوبون ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
         <div class="kl-row kl-total"><span>المبلغ النهائي</span><b>${klAmount(r.final)} ريالاً</b></div>`;
     document.getElementById('klResult').classList.add('show');
