@@ -847,6 +847,41 @@
             .kl-offer .kl-total b { font-size:1.3rem; }
             .kl-offer .kl-cta { width:100%; font-size:1.15rem; padding:14px 20px; }
         }
+        /* ===== بطاقة الزيارة (التسجيل بالحضور) ===== */
+        .visit-card {
+            background:var(--surface); border-radius:var(--radius); box-shadow:var(--shadow);
+            border-top:4px solid var(--secondary); padding:26px 24px; margin:0 0 50px; text-align:center;
+            transition:box-shadow .3s ease;
+        }
+        .visit-card.flash { animation:visitFlash 1.6s ease; }
+        @keyframes visitFlash {
+            0%,100% { box-shadow:var(--shadow); }
+            25%,75% { box-shadow:0 0 0 4px rgba(254,187,3,.35), var(--shadow); }
+        }
+        .visit-title { color:var(--primary); font-size:1.35rem; font-weight:bold; margin-bottom:16px; }
+        .visit-title i { color:var(--secondary); margin-inline-end:6px; }
+        .visit-rows { display:flex; flex-direction:column; gap:9px; margin-bottom:20px; }
+        .visit-row { display:flex; align-items:center; justify-content:center; gap:9px; color:var(--text-main); font-size:1.02rem; }
+        .visit-row i { color:var(--secondary); width:20px; }
+        .visit-btns { display:flex; justify-content:center; gap:12px; flex-wrap:wrap; }
+        .visit-btn {
+            display:inline-flex; align-items:center; justify-content:center; gap:9px;
+            padding:13px 26px; border-radius:50px; font-size:1.05rem; font-weight:bold; text-decoration:none;
+            transition:transform .12s ease, box-shadow .3s ease;
+        }
+        .visit-btn:active { transform:scale(.97); }
+        .visit-btn.map { background:var(--primary); color:#fff; }
+        .visit-btn.map:hover { box-shadow:0 10px 20px rgba(0,0,0,.18); }
+        .visit-btn.wa { background:#25D366; color:#fff; box-shadow:0 8px 18px rgba(37,211,102,.26); }
+        .visit-btn.wa:hover { box-shadow:0 12px 22px rgba(37,211,102,.34); }
+        html.kl .visit-btn.map { background:var(--secondary); color:var(--primary); }
+        @media (max-width:768px) {
+            .visit-card { padding:22px 16px; margin-bottom:40px; }
+            .visit-title { font-size:1.15rem; }
+            .visit-row { font-size:.95rem; }
+            .visit-btns { flex-direction:column; }
+            .visit-btn { width:100%; }
+        }
 
     </style>
 </head>
@@ -1175,7 +1210,7 @@ function nd96Render(){
 
         <div class="nd96-pkgs">
             ${ND96.order.map(k=>{ const p = ND96.packages[k]; return `
-            <button type="button" class="nd96-pkg${p.note?' feat':''}" onclick="openSheet('${k}')">
+            <button type="button" class="nd96-pkg${p.note?' feat':''}" onclick="${REG.formEnabled ? `openSheet('${k}')` : 'goVisit()'}">
                 <span class="nd96-pkg-in">
                     <span class="nd96-pkg-name">${p.name}</span>
                     <span class="nd96-pkg-dates"><span><em>البداية</em> ${p.from}</span><span><em>النهاية</em> ${p.to}</span></span>
@@ -1192,7 +1227,7 @@ function nd96Render(){
         <div class="nd96-cond"><i class="fas fa-circle-info"></i><span>${nd96NoBreak(ND96.condition)}</span></div>
 
         <div class="cta-wrapper nd96-cta">
-            <button type="button" class="cta-button" onclick="openSheet()"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+            <button type="button" class="cta-button" onclick="${REG.formEnabled ? 'openSheet()' : 'goVisit()'}"><i class="fas fa-location-dot"></i> ${REG.formEnabled ? 'سجّل الآن' : 'سجّل بالحضور'}</button>
         </div>
 
         <details class="nd96-policy">
@@ -1281,6 +1316,56 @@ if(offerMode){
 }
 /* ===== نهاية طبقة عرض اليوم الوطني 96 ===== */
 /* ================================================================== */
+/* ===== التسجيل بالحضور — بطاقة الزيارة بدل نموذج التسجيل ========== */
+/* ================================================================== */
+/* REG.formEnabled = true يعيد نموذج التسجيل الإلكتروني كما كان (الفصل القادم مثلاً). */
+const REG = {
+    formEnabled: false,
+    title:   'التسجيل بالحضور إلى مقر الأكاديمية',
+    place:   'أكاديمية بارع — حي الربوة الشرقية، بريدة',
+    days:    'الأحد — الأربعاء',
+    hours:   '4:30 — 7:30 مساءً',
+    mapUrl:  'https://maps.google.com/?q=أكاديمية بارع, بريدة',
+    waText:  'السلام عليكم، أرغب في الاستفسار عن التسجيل في برنامج بارع.'
+};
+
+/* زر «سجّل الآن» في وضع الحضور: ينزل ببطاقة الزيارة ويلفت إليها */
+function goVisit(){
+    const card = document.getElementById('visitCard');
+    if(!card) return;
+    card.scrollIntoView({ behavior:'smooth', block:'center' });
+    card.classList.remove('flash');
+    void card.offsetWidth;                  // إعادة تشغيل الوميض
+    card.classList.add('flash');
+}
+
+function regCtaAttr(){
+    return REG.formEnabled ? `openSheet('second')` : `goVisit()`;
+}
+
+function visitRender(){
+    const el = document.createElement('section');
+    el.className = 'visit-card';
+    el.id = 'visitCard';
+    el.innerHTML = `
+        <h2 class="visit-title"><i class="fas fa-location-dot"></i> ${REG.title}</h2>
+        <div class="visit-rows">
+            <div class="visit-row"><i class="fas fa-map-location-dot"></i><span>${REG.place}</span></div>
+            <div class="visit-row"><i class="fas fa-calendar-week"></i><span>${REG.days}</span></div>
+            <div class="visit-row"><i class="fas fa-clock"></i><span>${REG.hours}</span></div>
+        </div>
+        <div class="visit-btns">
+            <a class="visit-btn map" href="${REG.mapUrl}" target="_blank" rel="noopener"><i class="fas fa-diamond-turn-right"></i> الموقع على الخريطة</a>
+            <a class="visit-btn wa" href="https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(REG.waText.normalize('NFC'))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> استفسار على واتساب</a>
+        </div>`;
+    const anchor = document.getElementById('stdPricing');
+    anchor.parentNode.insertBefore(el, anchor.nextSibling);
+}
+
+if(!REG.formEnabled) visitRender();
+/* ===== نهاية التسجيل بالحضور ===== */
+
+/* ================================================================== */
 /* ===== طبقة كوبون كنقز ليق (المفتاح KL في <head>) ================== */
 /* ================================================================== */
 
@@ -1351,7 +1436,7 @@ function klRender(){
 
         <ol class="kl-terms">${KL.terms.map(t => `<li>${t}</li>`).join('')}</ol>
 
-        <button type="button" class="kl-cta" onclick="openSheet('second')"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>`;
+        <button type="button" class="kl-cta" onclick="${regCtaAttr()}"><i class="fas fa-location-dot"></i> ${REG.formEnabled ? 'سجّل الآن' : 'سجّل بالحضور'}</button>`;
     const c = document.querySelector('.container');
     c.insertBefore(el, c.firstElementChild);
 }
@@ -1391,7 +1476,7 @@ let picked = null, kidSeq = 0;
             <div class="pc-price">
                 <div class="amount">${p.price} <span>ريال</span></div>
             </div>
-            <button class="cta-inner${open?'':' closed'}" onclick="${open?`openSheet('${k}')`:`toast('التسجيل في هذه الفترة غير متاح حالياً')`}"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
+            <button class="cta-inner${open?'':' closed'}" onclick="${open?regCtaAttr():`toast('التسجيل في هذه الفترة غير متاح حالياً')`}"><i class="fas fa-location-dot"></i> ${REG.formEnabled ? 'سجّل الآن' : 'سجّل بالحضور'}</button>
         </div>`;
     }).join('');
 
@@ -1412,6 +1497,7 @@ let picked = null, kidSeq = 0;
 
 /* ===== النافذة ===== */
 function openSheet(key){
+    if(!REG.formEnabled){ goVisit(); return; }          // التسجيل بالحضور: النموذج مطفأ
     document.getElementById('sheetOverlay').classList.add('active');
     document.getElementById('sheet').classList.add('active');
     document.body.style.overflow = 'hidden';
