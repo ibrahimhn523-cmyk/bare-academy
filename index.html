@@ -1321,6 +1321,7 @@ if(offerMode){
 /* REG.formEnabled = true يعيد نموذج التسجيل الإلكتروني كما كان (الفصل القادم مثلاً). */
 const REG = {
     formEnabled: false,
+    showPricing: false,                 // قسم «مدد الاشتراك» — مُطفأ مؤقتاً
     title:   'التسجيل بالحضور إلى مقر الأكاديمية',
     place:   'أكاديمية بارع — حي الربوة الشرقية، بريدة',
     days:    'الأحد — الأربعاء',
@@ -1359,6 +1360,7 @@ function visitRender(){
             <a class="visit-btn wa" href="https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(REG.waText.normalize('NFC'))}" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> استفسار على واتساب</a>
         </div>`;
     const anchor = document.getElementById('stdPricing');
+    if(!REG.showPricing) anchor.style.display = 'none';      // إخفاء مؤقت لقسم مدد الاشتراك
     anchor.parentNode.insertBefore(el, anchor.nextSibling);
 }
 
