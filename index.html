@@ -37,6 +37,35 @@
         document.documentElement.classList.add('nd96');
         document.querySelector('meta[name="theme-color"]').setAttribute('content', '#002628');
     }
+
+    /* =====================================================================
+       كوبون كنقز ليق — المفتاح الوحيد وموضع التحديث الوحيد
+       • الإطفاء اليدوي: enabled:false ثم حفظ → يختفي القسم فوراً، بلا حذف كود.
+       • الانتهاء الذاتي: نهاية الاثنين 29/05/1448هـ بتوقيت الرياض، بإزاحة +03:00 صريحة.
+       • القسم تعريفي فقط: لا يُحفظ عن الكوبون شيء في قاعدة البيانات.
+       • weekWeds: أربعاء كل أسبوع من الفترة الثانية، مكتوبة صريحة بلا اشتقاق،
+         فأسبوع إجازة الخريف (الأحد 22 — الأربعاء 25 نوفمبر) خارجها أصلاً.
+       ===================================================================== */
+    const KL = {
+        enabled: true,
+        endsAt:  '2026-11-09T23:59:59+03:00',
+        title:     'كوبون خصم خاص',
+        validLine: 'العرض ساري حتى الاثنين 29/05/1448هـ',
+        rates:     [50, 30, 25, 15],
+        weekPrice: 95,                      // 760 ÷ 8 أسابيع
+        weekWeds:  ['2026-10-28','2026-11-04','2026-11-11','2026-11-18',
+                    '2026-12-02','2026-12-09','2026-12-16','2026-12-23'],
+        terms: [
+            'الخصم يشمل الاشتراك الجديد وتجديد الاشتراك.',
+            'يُحسب الخصم من السعر الأساسي للأسابيع المتبقية من الفترة.',
+            'يُسلَّم الكوبون الورقي عند السداد.',
+            'كوبون واحد لكل طالب، ولا يُجمع مع أي عرض آخر.',
+            'العرض ساري حتى الاثنين 29/05/1448هـ.'
+        ]
+    };
+    function klLive(){ return KL.enabled === true && Date.now() < Date.parse(KL.endsAt); }
+    const KL_ON = klLive();
+    if (KL_ON) document.documentElement.classList.add('kl');
     </script>
 
     <!-- PWA -->
@@ -689,6 +718,95 @@
             .nd96-tbl td.was, .nd96-tbl td.now { white-space:nowrap; }
         }
 
+        /* ================================================================ */
+        /* ===== كوبون كنقز ليق — كل الأنماط تحت .kl-offer وحدها ========== */
+        /* ================================================================ */
+        /* الألوان من تصميم الكوبون الورقي نفسه: أسود #000 وذهب #FEBB03 */
+        .kl-offer {
+            --kl-gold:#FEBB03; --kl-gold-dim:#C79405; --kl-ink:#0A0A0A; --kl-line:rgba(254,187,3,.28);
+            background:var(--kl-ink); color:#fff; border-radius:var(--radius); overflow:hidden;
+            border:1px solid var(--kl-line); box-shadow:0 22px 44px rgba(0,0,0,.3);
+            padding:30px 26px 26px; margin-bottom:40px; text-align:center;
+        }
+        .kl-offer .kl-logos { display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:18px; }
+        .kl-offer .kl-logos img { height:56px; width:auto; display:block; }
+        .kl-offer .kl-div { width:2px; height:46px; background:var(--kl-gold); opacity:.55; border-radius:2px; }
+
+        .kl-offer .kl-title {
+            display:inline-block; background:var(--kl-gold); color:var(--kl-ink);
+            font-size:1.9rem; font-weight:bold; line-height:1.3; padding:6px 26px;
+            border-radius:6px 22px 6px 22px; transform:rotate(-.6deg);
+        }
+        .kl-offer .kl-valid {
+            display:flex; align-items:center; justify-content:center; gap:10px;
+            color:var(--kl-gold); font-size:.95rem; margin-top:14px;
+        }
+        .kl-offer .kl-valid .kl-sep { width:1px; height:16px; background:var(--kl-line); }
+
+        /* الحاسبة */
+        .kl-offer .kl-calc {
+            background:rgba(254,187,3,.06); border:1px solid var(--kl-line); border-radius:14px;
+            padding:18px 16px; margin:22px auto 0; max-width:520px;
+        }
+        .kl-offer .kl-weeks { color:#E9E3D2; font-size:1rem; }
+        .kl-offer .kl-weeks b { color:var(--kl-gold); font-size:1.3rem; }
+        .kl-offer .kl-ask { color:#B9B2A2; font-size:.9rem; margin:12px 0 10px; }
+        .kl-offer .kl-pct { direction:ltr; unicode-bidi:isolate; }
+        .kl-offer .kl-rates { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+        .kl-offer .kl-rate {
+            font-family:inherit; font-size:1.25rem; font-weight:bold; cursor:pointer;
+            color:var(--kl-gold); background:transparent; border:1.5px solid var(--kl-line);
+            border-radius:12px; padding:12px 4px; transition:transform .12s ease, background .2s, color .2s, border-color .2s;
+        }
+        .kl-offer .kl-rate:hover { border-color:var(--kl-gold); }
+        .kl-offer .kl-rate:active { transform:scale(.96); }
+        .kl-offer .kl-rate.on { background:var(--kl-gold); color:var(--kl-ink); border-color:var(--kl-gold); }
+        .kl-offer .kl-rate:focus-visible { outline:3px solid var(--kl-gold); outline-offset:2px; }
+
+        .kl-offer .kl-result { display:none; margin-top:16px; border-top:1px dashed var(--kl-line); padding-top:12px; }
+        .kl-offer .kl-result.show { display:block; }
+        .kl-offer .kl-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:7px 2px; font-size:1rem; }
+        .kl-offer .kl-row span { color:#B9B2A2; }
+        .kl-offer .kl-row b { color:#fff; font-weight:bold; white-space:nowrap; }
+        .kl-offer .kl-row .kl-minus { color:var(--kl-gold); }
+        .kl-offer .kl-total { border-top:1px solid var(--kl-line); margin-top:6px; padding-top:12px; }
+        .kl-offer .kl-total span { color:#E9E3D2; }
+        .kl-offer .kl-total b { color:var(--kl-gold); font-size:1.5rem; }
+
+        /* الشروط */
+        .kl-offer .kl-terms { list-style:none; counter-reset:klt; text-align:start; max-width:520px; margin:22px auto 0; }
+        .kl-offer .kl-terms li {
+            counter-increment:klt; position:relative; padding-inline-start:30px; margin-bottom:9px;
+            color:#C9C2B2; font-size:.9rem; line-height:1.75;
+        }
+        .kl-offer .kl-terms li::before {
+            content:counter(klt); position:absolute; inset-inline-start:0; top:3px; width:21px; height:21px;
+            border-radius:6px; background:rgba(254,187,3,.14); color:var(--kl-gold);
+            font-size:.72rem; font-weight:bold; display:flex; align-items:center; justify-content:center;
+        }
+
+        .kl-offer .kl-cta {
+            display:inline-flex; align-items:center; justify-content:center; gap:10px;
+            background:var(--kl-gold); color:var(--kl-ink); border:none; border-radius:50px;
+            font-family:inherit; font-size:1.25rem; font-weight:bold; padding:15px 46px; margin-top:24px;
+            cursor:pointer; box-shadow:0 10px 22px rgba(254,187,3,.22); transition:transform .12s ease, box-shadow .3s ease;
+        }
+        .kl-offer .kl-cta:hover { transform:translateY(-3px); box-shadow:0 15px 26px rgba(254,187,3,.3); }
+        .kl-offer .kl-cta:active { transform:scale(.97); }
+
+        @media (max-width:768px) {
+            .kl-offer { padding:24px 16px 22px; }
+            .kl-offer .kl-logos img { height:46px; }
+            .kl-offer .kl-div { height:38px; }
+            .kl-offer .kl-title { font-size:1.45rem; padding:6px 18px; }
+            .kl-offer .kl-valid { font-size:.86rem; gap:8px; }
+            .kl-offer .kl-rates { grid-template-columns:repeat(2,1fr); }
+            .kl-offer .kl-rate { font-size:1.15rem; padding:11px 4px; }
+            .kl-offer .kl-row { font-size:.95rem; }
+            .kl-offer .kl-total b { font-size:1.3rem; }
+            .kl-offer .kl-cta { width:100%; font-size:1.15rem; padding:14px 20px; }
+        }
+
     </style>
 </head>
 <body>
@@ -742,7 +860,6 @@
 
     <div class="pay-terms-line">
         <b>الاشتراك لفترة كاملة - ويُقبل السداد على دفعتين</b>
-        <span>(خصم الدفع المبكر عند السداد الكامل)</span>
     </div>
 
     <div class="period-grid" id="periodGrid"></div>
@@ -912,7 +1029,7 @@ const PROGRAM = {
     ]
 };
 
-const ORDER = ['both','first','second'];
+const ORDER = ['second'];   // كوبون كنقز ليق: تُعرض الفترة الثانية وحدها (البيانات أعلاه كما هي)
 
 /* ================================================================== */
 /* ===== عرض اليوم الوطني 96 — طبقة العرض (المفتاح ND96 في <head>) ===== */
@@ -1122,6 +1239,83 @@ if(offerMode){
     nd96Timer = setInterval(nd96Tick, 1000);
 }
 /* ===== نهاية طبقة عرض اليوم الوطني 96 ===== */
+/* ================================================================== */
+/* ===== طبقة كوبون كنقز ليق (المفتاح KL في <head>) ================== */
+/* ================================================================== */
+
+/* اليوم بتوقيت الرياض بصيغة YYYY-MM-DD، فتصح المقارنة النصية مع weekWeds */
+function klToday(){
+    return new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Riyadh', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
+}
+
+/* الأسابيع المتبقية: يُحتسب الأسبوع ما دام اليوم لم يتجاوز أربعاءه */
+function klWeeksLeft(todayISO){
+    const t = todayISO || klToday();
+    return KL.weekWeds.filter(w => t <= w).length;
+}
+
+/* الحساب: قيمة الأسابيع المتبقية ثم الخصم ثم المبلغ بعده — بلا تقريب */
+function klCalc(weeks, pct){
+    const base = weeks * KL.weekPrice;
+    const discount = base * pct / 100;
+    return { base, discount, final: base - discount };
+}
+
+/* عرض المبلغ كما ينتج (484.5 لا 484.50 ولا 485) */
+function klAmount(n){ return String(+n.toFixed(2)); }
+
+/* النسبة بعلامة % على يسار الرقم بصرياً، كما في الكوبون الورقي */
+function klPct(p){ return '<span class="kl-pct">%' + p + '</span>'; }
+
+let klPicked = null;
+
+function klPick(pct){
+    klPicked = pct;
+    document.querySelectorAll('.kl-rate').forEach(b => b.classList.toggle('on', +b.dataset.pct === pct));
+    const weeks = klWeeksLeft();
+    const r = klCalc(weeks, pct);
+    document.getElementById('klResult').innerHTML = `
+        <div class="kl-row"><span>قيمة الأسابيع المتبقية</span><b>${klAmount(r.base)} ريالاً</b></div>
+        <div class="kl-row"><span>الخصم ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
+        <div class="kl-row kl-total"><span>المبلغ بعد الخصم</span><b>${klAmount(r.final)} ريالاً</b></div>`;
+    document.getElementById('klResult').classList.add('show');
+}
+
+function klRender(){
+    const weeks = klWeeksLeft();
+    const el = document.createElement('section');
+    el.className = 'kl-offer';
+    el.id = 'klOffer';
+    el.setAttribute('aria-labelledby', 'klTitle');
+    el.innerHTML = `
+        <div class="kl-logos">
+            <img src="coupon/bare-gold.png" width="104" height="140" alt="أكاديمية بارع">
+            <span class="kl-div"></span>
+            <img src="coupon/kl-symbol.png" width="140" height="140" alt="كنقز ليق">
+        </div>
+
+        <h2 class="kl-title" id="klTitle">${KL.title}</h2>
+        <div class="kl-valid"><i class="fas fa-calendar-days"></i><span class="kl-sep"></span>${KL.validLine}</div>
+
+        ${weeks > 0 ? `
+        <div class="kl-calc">
+            <div class="kl-weeks">الأسابيع المتبقية من الفترة: <b>${weeks}</b></div>
+            <div class="kl-ask">اختر نسبة كوبونك</div>
+            <div class="kl-rates">
+                ${KL.rates.map(p => `<button type="button" class="kl-rate" data-pct="${p}" onclick="klPick(${p})">${klPct(p)}</button>`).join('')}
+            </div>
+            <div class="kl-result" id="klResult"></div>
+        </div>` : ''}
+
+        <ol class="kl-terms">${KL.terms.map(t => `<li>${t}</li>`).join('')}</ol>
+
+        <button type="button" class="kl-cta" onclick="openSheet('second')"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>`;
+    const c = document.querySelector('.container');
+    c.insertBefore(el, c.firstElementChild);
+}
+
+if(KL_ON) klRender();
+/* ===== نهاية طبقة كوبون كنقز ليق ===== */
 
 /* حالة التسجيل بحسب التاريخ */
 function isOpen(p){
@@ -1154,7 +1348,6 @@ let picked = null, kidSeq = 0;
             </div>
             <div class="pc-price">
                 <div class="amount">${p.price} <span>ريال</span></div>
-                <div class="pc-early">الدفع المبكر <b>${p.early} ريال</b><small>${p.win}</small></div>
             </div>
             <button class="cta-inner${open?'':' closed'}" onclick="${open?`openSheet('${k}')`:`toast('التسجيل في هذه الفترة غير متاح حالياً')`}"><i class="fas fa-pen-to-square"></i> سجّل الآن</button>
         </div>`;
@@ -1169,7 +1362,6 @@ let picked = null, kidSeq = 0;
             <div class="cc-dates">${p.dates}</div>
             <div class="cc-meta">${p.meta}</div>
             <div class="choice-price">${p.price} <span>ريال</span></div>
-            <div class="cc-early">الدفع المبكر <b>${p.early} ريال</b><small>${p.win}</small></div>
         </div>`;
     }).join('');
 
