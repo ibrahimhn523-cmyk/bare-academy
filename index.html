@@ -43,8 +43,7 @@
        • الإطفاء اليدوي: enabled:false ثم حفظ → يختفي القسم فوراً، بلا حذف كود.
        • الانتهاء الذاتي: نهاية الاثنين 29/05/1448هـ بتوقيت الرياض، بإزاحة +03:00 صريحة.
        • القسم تعريفي فقط: لا يُحفظ عن الكوبون شيء في قاعدة البيانات.
-       • weekWeds: أربعاء كل أسبوع من الفترة الثانية، مكتوبة صريحة بلا اشتقاق،
-         فأسبوع إجازة الخريف (الأحد 22 — الأربعاء 25 نوفمبر) خارجها أصلاً.
+       • days: أيام البرنامج صريحة (أحد — أربعاء)، والحساب يجري بها يوماً يوماً.
        ===================================================================== */
     const KL = {
         enabled: true,
@@ -52,9 +51,19 @@
         title:     'كوبون خصم خاص',
         validLine: 'العرض ساري حتى الاثنين 29/05/1448هـ',
         rates:     [50, 30, 25, 15],
-        weekPrice: 95,                      // 760 ÷ 8 أسابيع
-        weekWeds:  ['2026-10-28','2026-11-04','2026-11-11','2026-11-18',
-                    '2026-12-02','2026-12-09','2026-12-16','2026-12-23'],
+        weeks:      8,
+        fullPrice:  760,                     // رسوم الفترة الثانية كاملة
+        dayPrice:   23.75,                   // 760 ÷ 32 يوماً
+        // أيام البرنامج (الأحد — الأربعاء) مكتوبة صريحة بلا اشتقاق،
+        // فأسبوع إجازة الخريف (22 — 25 نوفمبر) خارجها أصلاً.
+        days: ['2026-10-25','2026-10-26','2026-10-27','2026-10-28',
+               '2026-11-01','2026-11-02','2026-11-03','2026-11-04',
+               '2026-11-08','2026-11-09','2026-11-10','2026-11-11',
+               '2026-11-15','2026-11-16','2026-11-17','2026-11-18',
+               '2026-11-29','2026-11-30','2026-12-01','2026-12-02',
+               '2026-12-06','2026-12-07','2026-12-08','2026-12-09',
+               '2026-12-13','2026-12-14','2026-12-15','2026-12-16',
+               '2026-12-20','2026-12-21','2026-12-22','2026-12-23'],
         terms: [
             'الخصم يشمل الاشتراك الجديد وتجديد الاشتراك.',
             'يُحسب الخصم من السعر الأساسي للأسابيع المتبقية من الفترة.',
@@ -1275,26 +1284,26 @@ if(offerMode){
 /* ===== طبقة كوبون كنقز ليق (المفتاح KL في <head>) ================== */
 /* ================================================================== */
 
-/* اليوم بتوقيت الرياض بصيغة YYYY-MM-DD، فتصح المقارنة النصية مع weekWeds */
+/* اليوم بتوقيت الرياض بصيغة YYYY-MM-DD، فتصح المقارنة النصية مع KL.days */
 function klToday(){
     return new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Riyadh', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
 }
 
-/* الأسابيع المتبقية: يُحتسب الأسبوع ما دام اليوم لم يتجاوز أربعاءه */
-function klWeeksLeft(todayISO){
+/* الأيام المتبقية: كل يوم برنامج (أحد — أربعاء) يُحتسب ما دام اليوم لم يتجاوزه */
+function klDaysLeft(todayISO){
     const t = todayISO || klToday();
-    return KL.weekWeds.filter(w => t <= w).length;
+    return KL.days.filter(d => t <= d).length;
 }
 
-/* الحساب: قيمة الأسابيع المتبقية ثم الخصم ثم المبلغ بعده — بلا تقريب */
-function klCalc(weeks, pct){
-    const base = weeks * KL.weekPrice;
+/* الحساب: قيمة المدة المتبقية بالأيام، ثم قيمة الكوبون، ثم المبلغ النهائي */
+function klCalc(days, pct){
+    const base = days * KL.dayPrice;
     const discount = base * pct / 100;
     return { base, discount, final: base - discount };
 }
 
 /* عرض المبلغ كما ينتج (484.5 لا 484.50 ولا 485) */
-function klAmount(n){ return String(+n.toFixed(2)); }
+function klAmount(n){ return String(+n.toFixed(2)); }   // 688.75 · 172.19 · 516.56
 
 /* النسبة بعلامة % على يسار الرقم بصرياً، كما في الكوبون الورقي */
 function klPct(p){ return '<span class="kl-pct">%' + p + '</span>'; }
@@ -1304,19 +1313,18 @@ let klPicked = null;
 function klPick(pct){
     klPicked = pct;
     document.querySelectorAll('.kl-rate').forEach(b => b.classList.toggle('on', +b.dataset.pct === pct));
-    const weeks = klWeeksLeft();
-    const r = klCalc(weeks, pct);
-    const full = KL.weekWeds.length * KL.weekPrice;          // رسوم الفترة كاملة
+    const days = klDaysLeft();
+    const r = klCalc(days, pct);
     document.getElementById('klResult').innerHTML = `
-        <div class="kl-row"><span>رسوم الفترة كاملة <small>${KL.weekWeds.length} أسابيع</small></span><b>${klAmount(full)} ريالاً</b></div>
-        <div class="kl-row"><span>المتبقي من الفترة <small>${weeks} ${weeks === 1 ? 'أسبوع' : weeks === 2 ? 'أسبوعان' : weeks <= 10 ? 'أسابيع' : 'أسبوعاً'} × ${KL.weekPrice} ريالاً</small></span><b>${klAmount(r.base)} ريالاً</b></div>
-        <div class="kl-row"><span>خصم كوبونك ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
-        <div class="kl-row kl-total"><span>المبلغ المطلوب</span><b>${klAmount(r.final)} ريالاً</b></div>`;
+        <div class="kl-row"><span>قيمة اشتراك ${KL.weeks} أسابيع</span><b>${klAmount(KL.fullPrice)} ريالاً</b></div>
+        <div class="kl-row"><span>قيمة الاشتراك للمدة المتبقية <small>${days} ${days === 1 ? 'يوماً' : 'يوماً'} × ${klAmount(KL.dayPrice)} ريالاً لليوم</small></span><b>${klAmount(r.base)} ريالاً</b></div>
+        <div class="kl-row"><span>قيمة الكوبون ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
+        <div class="kl-row kl-total"><span>المبلغ النهائي</span><b>${klAmount(r.final)} ريالاً</b></div>`;
     document.getElementById('klResult').classList.add('show');
 }
 
 function klRender(){
-    const weeks = klWeeksLeft();
+    const days = klDaysLeft();
     const el = document.createElement('section');
     el.className = 'kl-offer';
     el.id = 'klOffer';
@@ -1331,9 +1339,9 @@ function klRender(){
         <h2 class="kl-title" id="klTitle">${KL.title}</h2>
         <div class="kl-valid"><i class="fas fa-calendar-days"></i><span class="kl-sep"></span>${KL.validLine}</div>
 
-        ${weeks > 0 ? `
+        ${days > 0 ? `
         <div class="kl-calc">
-            <div class="kl-weeks">الأسابيع المتبقية من الفترة: <b>${weeks}</b></div>
+            <div class="kl-weeks">المتبقي من الفترة: <b>${days}</b> يوماً من أيام البرنامج</div>
             <div class="kl-ask">اختر نسبة الخصم المدوّنة في كوبونك ليظهر مبلغك</div>
             <div class="kl-rates">
                 ${KL.rates.map(p => `<button type="button" class="kl-rate" data-pct="${p}" onclick="klPick(${p})">${klPct(p)}</button>`).join('')}
