@@ -65,7 +65,10 @@
     };
     function klLive(){ return KL.enabled === true && Date.now() < Date.parse(KL.endsAt); }
     const KL_ON = klLive();
-    if (KL_ON) document.documentElement.classList.add('kl');
+    if (KL_ON) {
+        document.documentElement.classList.add('kl');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0A0A0A');
+    }
     </script>
 
     <!-- PWA -->
@@ -718,6 +721,34 @@
             .nd96-tbl td.was, .nd96-tbl td.now { white-space:nowrap; }
         }
 
+        /* ===== كسوة كنقز ليق على الصفحة كلها — ما دام الكوبون سارياً (html.kl) ===== */
+        html.kl {
+            --primary:   #0A0A0A;   /* أسود الكوبون */
+            --secondary: #FEBB03;   /* ذهب الكوبون */
+            --bg-color:  #F5F3EE;
+        }
+        html.kl .hero { background:linear-gradient(135deg,#141414 0%,#000 100%); border-bottom-color:var(--secondary); }
+        html.kl .hero::before { opacity:.09; }
+        html.kl .hero .subtitle { color:#D8D2C4; }
+        html.kl .activity-chip { background:rgba(254,187,3,.1); border-color:rgba(254,187,3,.4); color:#F3EFE4; }
+        html.kl .activity-chip.camp { background:rgba(254,187,3,.2); border-color:var(--secondary); }
+        html.kl .cta-button,
+        html.kl .period-card .cta-inner {
+            background:linear-gradient(135deg,var(--secondary) 0%,#D79C04 100%); color:var(--primary);
+            box-shadow:0 10px 20px rgba(254,187,3,.25);
+        }
+        html.kl .cta-button:hover,
+        html.kl .period-card .cta-inner:hover { box-shadow:0 15px 25px rgba(254,187,3,.33); }
+        html.kl .social-container h3 { color:var(--secondary); }
+        html.kl .social-icon:hover { background:var(--secondary); color:var(--primary); }
+        html.kl .sheet-overlay,
+        html.kl #thankYouMessage { background:rgba(10,10,10,.72); }
+        html.kl .thankyou-card h2 { color:var(--primary); }
+        html.kl .thankyou-progress-bar { background:linear-gradient(90deg,#D79C04,var(--secondary)); }
+        html.kl .choice-card.selected { background:#FFFBEE; }
+        html.kl .kid-head .kid-num,
+        html.kl .terms-sheet li::before { background:var(--primary); color:var(--secondary); }
+
         /* ================================================================ */
         /* ===== كوبون كنقز ليق — كل الأنماط تحت .kl-offer وحدها ========== */
         /* ================================================================ */
@@ -767,6 +798,7 @@
         .kl-offer .kl-result.show { display:block; }
         .kl-offer .kl-row { display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:7px 2px; font-size:1rem; }
         .kl-offer .kl-row span { color:#B9B2A2; }
+        .kl-offer .kl-row span small { display:block; color:#8C8679; font-size:.78rem; margin-top:1px; }
         .kl-offer .kl-row b { color:#fff; font-weight:bold; white-space:nowrap; }
         .kl-offer .kl-row .kl-minus { color:var(--kl-gold); }
         .kl-offer .kl-total { border-top:1px solid var(--kl-line); margin-top:6px; padding-top:12px; }
@@ -1274,10 +1306,12 @@ function klPick(pct){
     document.querySelectorAll('.kl-rate').forEach(b => b.classList.toggle('on', +b.dataset.pct === pct));
     const weeks = klWeeksLeft();
     const r = klCalc(weeks, pct);
+    const full = KL.weekWeds.length * KL.weekPrice;          // رسوم الفترة كاملة
     document.getElementById('klResult').innerHTML = `
-        <div class="kl-row"><span>قيمة الأسابيع المتبقية</span><b>${klAmount(r.base)} ريالاً</b></div>
-        <div class="kl-row"><span>الخصم ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
-        <div class="kl-row kl-total"><span>المبلغ بعد الخصم</span><b>${klAmount(r.final)} ريالاً</b></div>`;
+        <div class="kl-row"><span>رسوم الفترة كاملة <small>${KL.weekWeds.length} أسابيع</small></span><b>${klAmount(full)} ريالاً</b></div>
+        <div class="kl-row"><span>المتبقي من الفترة <small>${weeks} ${weeks === 1 ? 'أسبوع' : weeks === 2 ? 'أسبوعان' : weeks <= 10 ? 'أسابيع' : 'أسبوعاً'} × ${KL.weekPrice} ريالاً</small></span><b>${klAmount(r.base)} ريالاً</b></div>
+        <div class="kl-row"><span>خصم كوبونك ${klPct(pct)}</span><b class="kl-minus">− ${klAmount(r.discount)} ريالاً</b></div>
+        <div class="kl-row kl-total"><span>المبلغ المطلوب</span><b>${klAmount(r.final)} ريالاً</b></div>`;
     document.getElementById('klResult').classList.add('show');
 }
 
@@ -1300,7 +1334,7 @@ function klRender(){
         ${weeks > 0 ? `
         <div class="kl-calc">
             <div class="kl-weeks">الأسابيع المتبقية من الفترة: <b>${weeks}</b></div>
-            <div class="kl-ask">اختر نسبة كوبونك</div>
+            <div class="kl-ask">اختر نسبة الخصم المدوّنة في كوبونك ليظهر مبلغك</div>
             <div class="kl-rates">
                 ${KL.rates.map(p => `<button type="button" class="kl-rate" data-pct="${p}" onclick="klPick(${p})">${klPct(p)}</button>`).join('')}
             </div>
